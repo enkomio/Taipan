@@ -1,0 +1,28 @@
+﻿{
+  "manifest_version": 2,
+  "minimum_chrome_version": "60",
+
+  "name": "Taipna sniffer extension",
+  "description": "This extension allows Taipan to intercept HTTP requests and HTTP responses",
+  "version": "1.0",
+  
+  "background": {
+    "scripts": ["sniffer.js"],
+    "persistent": true
+  },
+
+  "externally_connectable": {
+    "ids": [ "*" ],
+    "matches": [ "TARGET_URL" ]
+  },
+
+    "content_scripts": [{
+    "js": ["content.js"],
+    "matches": [ "TARGET_URL" ]
+  }],
+  
+  "permissions": [ 
+	"TARGET_URL", "storage", "unlimitedStorage", "contextMenus", "cookies", "tabs", "notifications", "webRequest", "webRequestBlocking", "activeTab", "\u003Call_urls>" ],
+	
+   "key": "YmZ4gj7bAdPJLkJWITioN5wG2MKMktDDObaBp57Vhwy40kdZaHExmzHZVILNnoEjY5aHr5ONEtJRMksVpOwDJrgWbi2efdEYDsTMmASoIvRMb9ReeD2u90LZqpDt2nvF5MBukkp22x9klimbXqHtpWesLFFBwuGAqsGPrnBBTDGJbHAO58CRsUaM6q8EVgodF7BHx22XxC8ecVCbEufuHBWhSNfbOnFjtG7hWL1mlJn4Ol5dYmnYUMUZ5QGX347IJlW0IToWJWZlaLhmnOxn4f9FUL8ov3NnWnEzRmuWG2xFmAnwRXlYehkZ6uFBFbWLtfAd2krNbI24qvsW7kvDzWYEmHupvdVO4IbmKMzLh8YX8g5iLr4dMCcVB0Db5emS1aHqEk4R"
+}
