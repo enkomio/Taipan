@@ -35,6 +35,11 @@ module Cli =
                 | Version -> "display Taipan version."
                 | Verbose -> "print verbose messages."
 
+    let printColor(msg: String, color: ConsoleColor) =
+        Console.ForegroundColor <- color
+        Console.WriteLine(msg)
+        Console.ResetColor() 
+
     let printBanner() =
         Console.ForegroundColor <- ConsoleColor.Cyan        
         let banner = "-=[ Taipan Web Application Security Scanner ]=-"
@@ -48,9 +53,7 @@ module Cli =
         Console.WriteLine(body)
 
     let printError(errorMsg: String) =
-        Console.ForegroundColor <- ConsoleColor.Red
-        Console.WriteLine(errorMsg)
-        Console.ResetColor() 
+        printColor(errorMsg, ConsoleColor.Red)
 
     let version() = 
         FileVersionInfo.GetVersionInfo(Assembly.GetExecutingAssembly().Location).ProductVersion
@@ -127,15 +130,16 @@ module Cli =
             _scanService <- Some <| new ScanService(logProvider)
 
         programLogger.ScanCommands()        
-        _scanService.Value.GetScanResult(scanContext, queryId, logProvider) |> ignore    
+        _scanService.Value.GetScanResult(scanContext, queryId, logProvider)  
 
     let getScanServices() =
         _scanService.Value
-
+            
+    // scan manager
     let runScanFromTemplateContent(templateString: String, url: String, queryId: Guid, logProvider: ILogProvider) =
         let template = new TemplateProfile()
         template.AcquireSettingsFromXml(templateString)
-        runScan(url, template, queryId, logProvider)
+        runScan(url, template, queryId, logProvider) |> ignore
 
     let completeScan(queryId: Guid) =
         if _scanService.IsSome then
@@ -144,8 +148,9 @@ module Cli =
             
     let runScanWithTemplate(url: String, template: TemplateProfile, logProvider: ILogProvider) = 
         let queryId = Guid.NewGuid()
-        runScan(url, template, queryId, logProvider)        
+        let scanResult = runScan(url, template, queryId, logProvider)        
         completeScan(queryId)
+        scanResult
 
     let loadProfile(profileName: String) =
         let mutable profile = new TemplateProfile()
@@ -177,13 +182,36 @@ module Cli =
 
             profile
 
+    let printToConsoleResult(scanResult: ScanResult) =
+        let webServerFingerprint = scanResult.GetWebServerFingerprint()
+
+        // print hidden resources
+        let hiddenREsources = scanResult.GetHiddenResourceDiscovered()
+        if hiddenREsources.Any() then
+            printColor("-= Hidden Resources =-", ConsoleColor.DarkCyan)
+            hiddenREsources
+            |> Seq.iter(fun hiddenRes ->
+                Console.WriteLine("\t{0}", hiddenRes.BaseUri.AbsolutePath.PadRight(30), hiddenRes.Response.StatusCode)
+            )
+
+        // print fingerprint        
+        let webApplicationIdentified = scanResult.GetWebApplicationsIdentified()
+        if webApplicationIdentified.Any() then
+            ()
+
+        // print security issues
+        let issues = scanResult.GetSecurityIssues()
+        if issues.Any() then
+            ()
+
     let runScanWithTemplateName(urlToScan: String, profileName: String, isVerbose: Boolean) =
         let profile = loadProfile(profileName)
         match Uri.IsWellFormedUriString(urlToScan, UriKind.Absolute) with
         | false -> printError(String.Format("Url {0} is not valid", urlToScan)) |> ignore
         | true ->             
             let (logProvider, logFile) = configureLoggers(urlToScan, profile.Name, isVerbose)
-            runScanWithTemplate(urlToScan, profile, logProvider)
+            let scanResult = runScanWithTemplate(urlToScan, profile, logProvider)
+            printToConsoleResult(scanResult)
             programLogger.ScanCompleted(logFile)
 
     [<EntryPoint>]
