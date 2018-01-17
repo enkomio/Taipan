@@ -183,26 +183,67 @@ module Cli =
             profile
 
     let printToConsoleResult(scanResult: ScanResult) =
+        Console.WriteLine()
+        
+        // print server fingerprint
         let webServerFingerprint = scanResult.GetWebServerFingerprint()
 
-        // print hidden resources
-        let hiddenREsources = scanResult.GetHiddenResourceDiscovered()
-        if hiddenREsources.Any() then
-            printColor("-= Hidden Resources =-", ConsoleColor.DarkCyan)
-            hiddenREsources
-            |> Seq.iter(fun hiddenRes ->
-                Console.WriteLine("\t{0}", hiddenRes.BaseUri.AbsolutePath.PadRight(30), hiddenRes.Response.StatusCode)
+        printColor("-= Web Server =-" , ConsoleColor.DarkCyan)
+        Console.WriteLine("\t{0}", webServerFingerprint.Server)
+        Console.WriteLine()
+        
+        let frameworks = webServerFingerprint.Frameworks
+        if frameworks.Any() then
+            printColor("-= Web Frameworks =-", ConsoleColor.DarkCyan)
+            frameworks
+            |> Seq.iter(fun framework ->
+                Console.WriteLine("\t{0}", framework)
             )
+            Console.WriteLine()
+
+        let languages = webServerFingerprint.Languages
+        if languages.Any() then
+            printColor("-= Web Programming Language =-", ConsoleColor.DarkCyan)
+            languages
+            |> Seq.iter(fun lang ->
+                Console.WriteLine("\t{0}", lang)
+            )
+            Console.WriteLine()
+        
+        // print hidden resources
+        let hiddenResources = scanResult.GetHiddenResourceDiscovered()
+        if hiddenResources.Any() then
+            printColor("-= Hidden Resources =-", ConsoleColor.DarkCyan)
+            hiddenResources
+            |> Seq.iter(fun hiddenRes ->
+                Console.WriteLine("\t{0} {1} ({2})", hiddenRes.BaseUri.AbsolutePath.PadRight(40), hiddenRes.Response.StatusCode, int32 hiddenRes.Response.StatusCode)
+            )
+            Console.WriteLine()
 
         // print fingerprint        
         let webApplicationIdentified = scanResult.GetWebApplicationsIdentified()
         if webApplicationIdentified.Any() then
-            ()
+            printColor("-= Identified Web Applications =-", ConsoleColor.DarkCyan)
+            webApplicationIdentified
+            |> Seq.iter(fun webApp ->
+                let versions = String.Join(",", webApp.IdentifiedVersions |> Seq.map(fun kv -> kv.Key.Version))
+                Console.WriteLine("\t{0} v{1} {2}", webApp.WebApplicationFingerprint.Name, versions, webApp.Request.Request.Uri.AbsolutePath)
+            )
+            Console.WriteLine()
 
         // print security issues
         let issues = scanResult.GetSecurityIssues()
         if issues.Any() then
-            ()
+            printColor("-= Security Issues =-", ConsoleColor.DarkCyan)
+            issues
+            |> Seq.iter(fun issue ->
+                let paramName = 
+                    if issue.Details.Properties.ContainsKey("parameter")
+                    then issue.Details.Properties.["parameter"]
+                    else String.Empty
+                Console.WriteLine("\t{0} {1} {2}", issue.Name, issue.Uri.AbsoluteUri, paramName)
+            )
+            Console.WriteLine()
 
     let runScanWithTemplateName(urlToScan: String, profileName: String, isVerbose: Boolean) =
         let profile = loadProfile(profileName)
