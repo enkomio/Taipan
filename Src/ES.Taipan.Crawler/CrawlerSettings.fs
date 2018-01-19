@@ -61,6 +61,9 @@ type CrawlerSettings() =
     /// A list of default value to set when specific query or data parameter are found
     member val DefaultParameters = new List<DefaultParameter>() with get, set
 
+    /// If true, when the crawler completes, it re-crawl all pages that were founf
+    member val ReCrawlPages = false with get, set
+
     member this.ToXml() =
         let addOnIdsToActivate = new XElement(x"AddOnIdsToActivate")
         this.AddOnIdsToActivate
@@ -103,6 +106,7 @@ type CrawlerSettings() =
               new XElement(x"ActivateAllAddOns", this.ActivateAllAddOns),
               new XElement(x"MutateWebLinks", this.MutateWebLinks),
               new XElement(x"SubmitPost", this.SubmitPost),
+              new XElement(x"ReCrawlPages", this.ReCrawlPages),
               allowedHosts,
               blacklistedPattern,
               defaultParameters,
@@ -127,6 +131,7 @@ type CrawlerSettings() =
         this.ActivateAllAddOns <- Boolean.Parse(root.Element(x"ActivateAllAddOns").Value)
         this.MutateWebLinks <- Boolean.Parse(root.Element(x"MutateWebLinks").Value)
         this.SubmitPost <- Boolean.Parse(root.Element(x"SubmitPost").Value)
+        this.ReCrawlPages <- Boolean.Parse(root.Element(x"ReCrawlPages").Value)
 
         root.Element(x"AllowedHosts").Elements(x"Host")
         |> Seq.map (fun xelem -> xelem.Value)

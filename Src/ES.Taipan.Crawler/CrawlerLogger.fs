@@ -69,3 +69,19 @@ type CrawlerLogger() =
     [<Log(11, Message = "Go in Idle state", Level = LogLevel.Verbose)>]
     member this.GoIdle() =
         this.WriteLog(11, [||])
+
+    [<Log(2, Message = "[ReCrawled] {0} [Referer: {1}] {2}=> {3} - Length: {4}", Level = LogLevel.Verbose)>]
+    member this.PageReProcessed(webLink: WebLink, response: HttpResponse) = 
+        let modification =  if webLink.OriginalWebLink.IsSome then "[Mutation] " else String.Empty
+        let referer = 
+            match HttpUtility.tryGetHeader("Referer", webLink.Request.HttpRequest.Headers) with
+            | Some refHdr -> refHdr.Value
+            | None -> String.Empty
+            
+        let statusCode =
+            if HttpUtility.isRedirect(response.StatusCode) then
+                match HttpUtility.tryGetHeader("Location", response.Headers) with
+                | Some hdr -> String.Format("{0} to {1}", response.StatusCode, hdr.Value)
+                | _ -> response.StatusCode.ToString()
+            else response.StatusCode.ToString()
+        this.WriteLog(2, [|webLink; referer; modification; statusCode; response.Html.Length|])

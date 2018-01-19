@@ -263,27 +263,29 @@ module MockData
             crawlerProfile.CrawlerSettings.CrawlPageWithoutExtension <- true
             crawlerProfile.CrawlerSettings.CrawlOnlyPageWithTheSpecifiedExtensions <- false
             crawlerProfile.CrawlerSettings.HasLinkNavigationLimit <- false
-            crawlerProfile.CrawlerSettings.WebPageExtensions.AddRange([
-                ".flv"; ".docx"; "gif"; "jpeg"; "jpg"; "jpe"; "png"; "vis"; "tif"; "tiff"; "psd"; "bmp"; "ief"; "wbmp"; "ras"; "pnm"; "pbm"; "pgm"; "ppm"; 
-                "rgb"; "xbm"; "xpm"; "xwd"; "djv"; "djvu"; "iw4"; "iw44"; "fif"; "ifs"; "dwg"; "svf"; "wi"; "uff"; "mpg"; "mov"; "mpeg"; "mpeg2"; "avi"; 
-                "asf"; "asx"; "wmv"; "qt"; "movie"; "ice"; "viv"; "vivo"; "fvi"; "tar"; "tgz"; "gz"; "zip"; "jar"; "cab"; "hqx"; "arj"; "rar"; "rpm"; "ace"; 
-                "wav"; "vox"; "ra"; "rm"; "ram"; "wma"; "au"; "snd"; "mid"; "midi"; "kar"; "mpga"; "mp2"; "mp3"; "mp4"; "aif"; "aiff"; "aifc"; "es"; "esl"; 
-                "pac"; "pae"; "a3c"; "pdf"; "doc"; "xls"; "ppt"; "mp"; "msi"; "rmf"; "smi"; "bin"; "m4p"; "m4a"; "PS"; "EPS"; "svg"
-            ])
-            crawlerProfile.CrawlerSettings.ContentTypeToFilter.AddRange([
-                "image/bmp"; "image/fif"; "image/gif"; "image/ief"; "image/jpeg"; "image/png"; "image/tiff"; "image/vasa"; "image/vnd.rn-realpix"; 
-                "image/x-cmu-raster"; "image/x-freehand"; "image/x-jps"; "image/x-portable-anymap"; "image/x-portable-bitmap"; "image/x-portable-graymap"; 
-                "image/x-portable-pixmap"; "image/x-rgb"; "image/x-xbitmap"; "image/x-xpixmap"; "image/x-xres"; "image/x-xwindowdump"; "video/animaflex"; 
-                "video/x-ms-asf"; "video/x-ms-asf-plugin"; "video/avi"; "video/msvideo"; "video/x-msvideo"; "video/avs-video"; "video/dl"; "video/x-dl"; 
-                "video/x-dv"; "video/fli"; "video/x-fli"; "video/x-atomic3d-feature"; "video/gl"; "video/x-gl"; "audio/x-gsm"; "video/x-isvideo"; "audio/nspaudio"; 
-                "audio/x-nspaudio"; "audio/mpeg"; "audio/x-mpequrl"; "x-music/x-midi"; "audio/midi"; "audio/x-mid"; "audio/x-midi"; "music/crescendo"; 
-                "audio/x-vnd.audioexplosion.mjuicemediafile"; "video/x-motion-jpeg"; "audio/mod"; "audio/x-mod"; "audio/x-mpeg"; "video/mpeg"; "video/x-mpeq2a"; 
-                "audio/mpeg3"; "audio/x-mpeg-3"; "video/x-mpeg"; "video/x-sgi-movie"; "audio/make"; "audio/vnd.qcelp"; "video/quicktime"; "video/x-qtc"; 
-                "audio/x-pn-realaudio"; "audio/x-pn-realaudio-plugin"; "audio/x-realaudio"; "audio/mid"; "video/vnd.rn-realvideo"; "audio/s3m"; "video/x-scm"; 
-                "audio/x-psid"; "audio/basic"; "audio/x-adpcm.tsi"; "audio/tsp-audio"; "audio/tsplayereb"; "video/vivo"; "video/vnd.vivo"; "video/vnd.vivodeo/vdo"; 
-                "audio/voc"; "audio/x-voc"; "video/vosaic"; "audio/voxware"; "audio/x-twinvq-plugin"; "audio/x-twinvq"; "audio/wav"; "audio/x-wav"; 
-                "video/x-amt-demorun"; "audio/xm"; "video/x-amt-showrun"
-            ])
+            crawlerProfile.CrawlerSettings.WebPageExtensions.AddRange
+                ([
+                    ".flv"; ".docx"; "gif"; "jpeg"; "jpg"; "jpe"; "png"; "vis"; "tif"; "tiff"; "psd"; "bmp"; "ief"; "wbmp"; "ras"; "pnm"; "pbm"; "pgm"; "ppm"; 
+                    "rgb"; "xbm"; "xpm"; "xwd"; "djv"; "djvu"; "iw4"; "iw44"; "fif"; "ifs"; "dwg"; "svf"; "wi"; "uff"; "mpg"; "mov"; "mpeg"; "mpeg2"; "avi"; 
+                    "asf"; "asx"; "wmv"; "qt"; "movie"; "ice"; "viv"; "vivo"; "fvi"; "tar"; "tgz"; "gz"; "zip"; "jar"; "cab"; "hqx"; "arj"; "rar"; "rpm"; "ace"; 
+                    "wav"; "vox"; "ra"; "rm"; "ram"; "wma"; "au"; "snd"; "mid"; "midi"; "kar"; "mpga"; "mp2"; "mp3"; "mp4"; "aif"; "aiff"; "aifc"; "es"; "esl"; 
+                    "pac"; "pae"; "a3c"; "pdf"; "doc"; "xls"; "ppt"; "mp"; "msi"; "rmf"; "smi"; "bin"; "m4p"; "m4a"; "PS"; "EPS"; "svg"
+                ])
+            crawlerProfile.CrawlerSettings.ContentTypeToFilter.AddRange
+                ([
+                    "image/bmp"; "image/fif"; "image/gif"; "image/ief"; "image/jpeg"; "image/png"; "image/tiff"; "image/vasa"; "image/vnd.rn-realpix"; 
+                    "image/x-cmu-raster"; "image/x-freehand"; "image/x-jps"; "image/x-portable-anymap"; "image/x-portable-bitmap"; "image/x-portable-graymap"; 
+                    "image/x-portable-pixmap"; "image/x-rgb"; "image/x-xbitmap"; "image/x-xpixmap"; "image/x-xres"; "image/x-xwindowdump"; "video/animaflex"; 
+                    "video/x-ms-asf"; "video/x-ms-asf-plugin"; "video/avi"; "video/msvideo"; "video/x-msvideo"; "video/avs-video"; "video/dl"; "video/x-dl"; 
+                    "video/x-dv"; "video/fli"; "video/x-fli"; "video/x-atomic3d-feature"; "video/gl"; "video/x-gl"; "audio/x-gsm"; "video/x-isvideo"; "audio/nspaudio"; 
+                    "audio/x-nspaudio"; "audio/mpeg"; "audio/x-mpequrl"; "x-music/x-midi"; "audio/midi"; "audio/x-mid"; "audio/x-midi"; "music/crescendo"; 
+                    "audio/x-vnd.audioexplosion.mjuicemediafile"; "video/x-motion-jpeg"; "audio/mod"; "audio/x-mod"; "audio/x-mpeg"; "video/mpeg"; "video/x-mpeq2a"; 
+                    "audio/mpeg3"; "audio/x-mpeg-3"; "video/x-mpeg"; "video/x-sgi-movie"; "audio/make"; "audio/vnd.qcelp"; "video/quicktime"; "video/x-qtc"; 
+                    "audio/x-pn-realaudio"; "audio/x-pn-realaudio-plugin"; "audio/x-realaudio"; "audio/mid"; "video/vnd.rn-realvideo"; "audio/s3m"; "video/x-scm"; 
+                    "audio/x-psid"; "audio/basic"; "audio/x-adpcm.tsi"; "audio/tsp-audio"; "audio/tsplayereb"; "video/vivo"; "video/vnd.vivo"; "video/vnd.vivodeo/vdo"; 
+                    "audio/voc"; "audio/x-voc"; "video/vosaic"; "audio/voxware"; "audio/x-twinvq-plugin"; "audio/x-twinvq"; "audio/wav"; "audio/x-wav"; 
+                    "video/x-amt-demorun"; "audio/xm"; "video/x-amt-showrun"
+                ])
             
             // disable Javascript Engine
             crawlerProfile.HttpRequestorSettings.UseJavascriptEngineForRequest <- false

@@ -242,5 +242,8 @@ type CrawlerState(settings: CrawlerSettings, httpRequestorSettings: HttpRequesto
                 (_pagesToProcess.Any() || _pagesInProcess.Any()) && not _stopRequested
             )
 
+    member this.GetAllProcessedPages() =
+        _pagesProcessed |> Seq.readonly
+
     member this.CompleteAdding() =
         _pagesToProcess.CompleteAdding()

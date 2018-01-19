@@ -9,6 +9,11 @@ type PageProcessedMessage(link: WebLink, webResponse: WebResponse, crawlerId: In
     member val Link = link with get
     member val WebResponse = webResponse with get
 
+type PageReProcessedMessage(link: WebLink, webResponse: WebResponse, crawlerId: Int32) =     
+    member val CrawlerId = crawlerId with get
+    member val Link = link with get
+    member val WebResponse = webResponse with get
+
 type NewPageAddedMessage(link: WebLink, crawlerId: Int32) =     
     member val CrawlerId = crawlerId with get
     member val Link = link with get

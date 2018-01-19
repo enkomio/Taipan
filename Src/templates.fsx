@@ -59,6 +59,7 @@ let createTemplate(name: String, guid: String) =
     defaultProfile.WebAppFingerprinterSettings.StopAtTheFirstApplicationIdentified <- false
 
     // crawler settings 
+    defaultProfile.CrawlerSettings.ReCrawlPages <- true
     defaultProfile.CrawlerSettings.MaxNumOfRequestsToTheSamePage <- 100
     defaultProfile.CrawlerSettings.MaxNumberOfPagesToCrawl <- 2000
     defaultProfile.CrawlerSettings.Scope <- NavigationScope.EnteredPathAndBelow            
@@ -155,7 +156,7 @@ let fullScanNoJavascript() =
     template.HttpRequestorSettings.UseJavascriptEngineForRequest <- false
     
     // disable the Crawler parser
-    template.CrawlerSettings.ActivateAllAddOns <- false
+    template.CrawlerSettings.ActivateAllAddOns <- false    
     template.CrawlerSettings.AddOnIdsToActivate.Clear()
     template.CrawlerSettings.AddOnIdsToActivate.AddRange
         ([
@@ -177,6 +178,7 @@ let notInvasive() =
     // crawler settings
     template.RunCrawler <- true
     template.CrawlerSettings.ActivateAllAddOns <- true
+    template.CrawlerSettings.ReCrawlPages <- false
     template.CrawlerSettings.SubmitPost <- false
     
     // disable the Crawler parser

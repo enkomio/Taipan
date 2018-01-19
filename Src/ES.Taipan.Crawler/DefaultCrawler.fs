@@ -157,29 +157,50 @@ type DefaultCrawler(settings: CrawlerSettings, webRequestor: IWebPageRequestor, 
             else
                 _serviceMetrics.CurrentState("Completed")
 
+    let doReCrawling() =
+        _serviceDiagnostics.Activate()
+        _serviceMetrics.CurrentState("Re-Crawling")
+        _crawlerState.GetAllProcessedPages()
+        |> Seq.iter(fun webPage ->
+            if not _stateController.IsStopped && not(_crawlerState.IsStopRequested()) then   
+                _stateController.WaitIfPauseRequested()                 
+                let webRequest = webPage.Request
+                let webResponse = webRequestor.RequestWebPage(webRequest)                
+                _logger.PageReProcessed(webPage, webResponse.HttpResponse)
+                messageBroker.Dispatch(this, new PageReProcessedMessage(webPage, webResponse, _crawlerId))
+        )
+
+    let doCrawling() =
+        // code to get request done per second metric
+        let numOfServicedRequests = ref 0
+        let timer = new System.Timers.Timer(1000.)                
+        timer.Elapsed.Add(fun _ -> 
+            let oldVal = Interlocked.Exchange(numOfServicedRequests, 0)
+            _serviceMetrics.RequestPerSeconds(oldVal)
+        )                
+        timer.Start()
+
+        // main crawling loop 
+        for webRequest in _crawlerState.GetNextWebRequest() do                                
+            lock _statusMonitor (fun () ->                    
+                _serviceDiagnostics.Activate()
+                _serviceMetrics.CurrentState("Running")
+                _stateController.WaitIfPauseRequested()     
+                processWebRequest(webRequest) 
+                Interlocked.Increment(numOfServicedRequests) |> ignore
+                    
+                // check the crawler status
+                checkCrawlerState()
+            )
+
     let crawlerLoop() =
         async {
-             // code to get request done per second metric
-            let numOfServicedRequests = ref 0
-            let timer = new System.Timers.Timer(1000.)                
-            timer.Elapsed.Add(fun _ -> 
-                let oldVal = Interlocked.Exchange(numOfServicedRequests, 0)
-                _serviceMetrics.RequestPerSeconds(oldVal)
-            )                
-            timer.Start()
+            // run the crawler
+            doCrawling()
 
-            // main process loop                
-            for webRequest in _crawlerState.GetNextWebRequest() do                                
-                lock _statusMonitor (fun () ->                    
-                    _serviceDiagnostics.Activate()
-                    _serviceMetrics.CurrentState("Running")
-                    _stateController.WaitIfPauseRequested()     
-                    processWebRequest(webRequest) 
-                    Interlocked.Increment(numOfServicedRequests) |> ignore
-                    
-                    // check the crawler status
-                    checkCrawlerState()
-                )
+            // run the re-crawling if necessary
+            if settings.ReCrawlPages then
+                doReCrawling()
            
             if _crawlerState.IsStopRequested() then
                 // wait until the run to completation is called

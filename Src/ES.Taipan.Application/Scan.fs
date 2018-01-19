@@ -383,8 +383,9 @@ type Scan(scanContext: ScanContext, logProvider: ILogProvider) as this =
             ip <- Some(Dns.GetHostAddresses(uri.Host) |> Seq.head)
             let webRequestor = _container.Value.Resolve<IWebPageRequestor>()
             let webResponse = webRequestor.RequestInitialWebPage(new WebRequest(uri))
-            hostReachable <- webResponse.PageExists
-        with _ -> 
+            let noNeededCrawler = scanContext.Template.RunResourceDiscoverer || scanContext.Template.RunWebAppFingerprinter
+            hostReachable <- webResponse.PageExists || noNeededCrawler
+        with e -> 
             _logger.HostNotReachable(scanContext.StartRequest.HttpRequest.Uri.Host)
             
         // if the host is reachable start the scan around a generic try/catch to avoid to crash everything :\
