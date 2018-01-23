@@ -31,14 +31,12 @@ type DefaultMessageBroker() =
         )
 
     member this.Unsubscribe<'a>(subscriber: 'a) =
-        lock _subscriberLock (fun _ ->
+        lock _subscriberLock (fun _ ->                        
             // delete the specified subscriber
-            for subscription in _messageSubscribers do
-                for i in [0.._messageSubscribers.Count - 1] do
-                    let sub = subscription.Value.[i]
-                    if Object.ReferenceEquals(sub, subscriber) then
-                        subscription.Value.Remove(sub) |> ignore
-
+            for subscriberList in _messageSubscribers.Values do
+                if subscriberList |> Seq.exists(fun sub -> Object.ReferenceEquals(sub, subscriber)) then
+                    subscriberList.Remove(subscriber) |> ignore
+                    
             // delete all empty list of subscriber
             _messageSubscribers
             |> Seq.toList
