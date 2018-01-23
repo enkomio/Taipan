@@ -87,10 +87,12 @@ type JavascriptScraper() as this =
                             extractLinkMessage.BlackListedAddOn <- [this.Id]
 
                             // send message and wait for response       
-                            let waitLock = new ManualResetEventSlim()                               
-                            messageBroker.Subscribe(handleWebLinksExtractedMessage waitLock id)
+                            let waitLock = new ManualResetEventSlim()
+                            let subscriber = handleWebLinksExtractedMessage waitLock id                      
+                            messageBroker.Subscribe(subscriber)
                             messageBroker.Dispatch(this, extractLinkMessage)
                             waitLock.Wait()
+                            messageBroker.Unsubscribe(subscriber)
 
                             // add extracted links and fill Source property
                             let responseMessage = _messages.[id]
