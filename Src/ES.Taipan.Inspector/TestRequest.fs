@@ -4,6 +4,7 @@ open System
 open ES.Taipan.Infrastructure.Network
 
 type TestRequestType =
+    | ReCrawledPage
     | CrawledPage
     | WebApplicationIdentified
     | HiddenResource

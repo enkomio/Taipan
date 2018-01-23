@@ -307,7 +307,7 @@ module MockData
             let inspectorProfile = new ES.Taipan.Application.TemplateProfile(Id = Guid.Parse("72383EB3-2873-466B-A400-2F83E796CD9D"), Name = "Identify vulnerabilities")
             inspectorProfile.RunVulnerabilityScanner <- true            
             inspectorProfile.RunCrawler <- true
-            inspectorProfile.CrawlerSettings.Scope <- NavigationScope.EnteredPathAndBelow
+            inspectorProfile.CrawlerSettings.Scope <- NavigationScope.EnteredPathAndBelow            
             inspectorProfile
 
         let ``Full template``() =

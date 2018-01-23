@@ -84,6 +84,7 @@
     <Compile Include="SqlInjection\BlindSqliChecker.fs" />
     <Compile Include="SqlInjection\SqlInjectionAddOn.fs" />
     <Compile Include="SSLTest\SSLTestAddOn.fs" />
+    <Compile Include="StoredCrossSiteScripting\StoredCrossSiteScriptingAddOn.fs" />
     <Compile Include="VCSInformationDisclosure\GitDownloader.fs" />
     <Compile Include="VCSInformationDisclosure\VCSInformationDisclosureAddOn.fs" />
     <Compile Include="WebApplicationVulnerability\WebApplicationVulnerabilityAddOn.fs" />

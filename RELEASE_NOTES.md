@@ -1,4 +1,5 @@
 ### 1.2.5 - XX/XX/2018
+* Implemented Re-Crawling of identified web pages
 
 ### 1.2.4 - 21/12/2017
 * Added Blind SQL Injection check

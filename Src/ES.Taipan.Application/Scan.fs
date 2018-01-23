@@ -123,6 +123,7 @@ type Scan(scanContext: ScanContext, logProvider: ILogProvider) as this =
     let _processStarted = new Event<Scan>()
     let _processCompleted = new Event<Scan>()
     let _pageProcessed = new Event<PageProcessedMessage>()
+    let _pageReProcessed = new Event<PageReProcessedMessage>()
     let _webServerFingerprinted = new Event<WebServerFingerprint>()
     let _newSecurityIssueFound = new Event<NewSecurityIssueFoundMessage>()
     let _newApplicationIdentified = new Event<NewWebApplicationIdentifiedMessage>()
@@ -189,6 +190,7 @@ type Scan(scanContext: ScanContext, logProvider: ILogProvider) as this =
     member this.ProcessStarted = _processStarted.Publish
     member this.ProcessCompleted = _processCompleted.Publish
     member this.PageProcessed = _pageProcessed.Publish
+    member this.PageReProcessed = _pageReProcessed.Publish
     member this.NewSecurityIssueFound = _newSecurityIssueFound.Publish
     member this.NewApplicationIdentified = _newApplicationIdentified.Publish
     member this.NewResourceDiscovered = _newResourceDiscovered.Publish
@@ -238,6 +240,15 @@ type Scan(scanContext: ScanContext, logProvider: ILogProvider) as this =
         if scanContext.Template.RunVulnerabilityScanner then
             _messageBroker.Value.Dispatch(this, convertPageProcessedToTestRequest(message))
 
+    abstract PageReProcessedMessageHandler : Object * Envelope<PageReProcessedMessage> -> unit
+    default this.PageReProcessedMessageHandler(sender: Object, envelope: Envelope<PageReProcessedMessage>) =
+        let message = envelope.Item
+        _pageReProcessed.Trigger(message)
+
+        // notify other components
+        if scanContext.Template.RunVulnerabilityScanner then
+            _messageBroker.Value.Dispatch(this, convertPageReProcessedToTestRequest(message))
+
     member this.GetServiceMetrics() =
         let services =
             _scanWorkflow.GetServices()
@@ -259,6 +270,7 @@ type Scan(scanContext: ScanContext, logProvider: ILogProvider) as this =
         // handlers registration        
         _messageBroker <- Some <| container.Resolve<IMessageBroker>()
         _messageBroker.Value.Subscribe<PageProcessedMessage>(this.PageProcessedMessageHandler)
+        _messageBroker.Value.Subscribe<PageReProcessedMessage>(this.PageReProcessedMessageHandler)
         _messageBroker.Value.Subscribe<NewWebApplicationIdentifiedMessage>(this.NewWebApplicationIdentifiedMessageHandle)
         _messageBroker.Value.Subscribe<NewResourceDiscoveredMessage>(this.NewResourceDiscoveredMessageHandle)
         _messageBroker.Value.Subscribe<NewSecurityIssueFoundMessage>(this.NewSecurityIssueFoundMessageHandle)

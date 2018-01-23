@@ -520,3 +520,19 @@
         // run the scan
         Utility.runScan(scanContext) 
         |> Utility.verifyInspector [("GIT Information and Source Code Disclosure", "/inspector/test32/.git/")]
+
+    let ``Identify a Stored Croos Site Scripting``(grovieraUrl: Uri) =
+        let scanContext = 
+            new ScanContext(
+                 StartRequest = new WebRequest(new Uri(grovieraUrl, "/inspector/test33/")),
+                Template = Templates.``Website inspector``()
+            )
+
+        // enable re-crawling
+        scanContext.Template.CrawlerSettings.ReCrawlPages <- true
+                
+        activatePlugin(scanContext, "5B9F1F2F-4A91-48A9-8615-2EA25E73E5B3")
+        
+        // run the scan
+        Utility.runScan(scanContext) 
+        |> Utility.verifyInspector [("Stored Cross Site Scripting", "/inspector/test33/")]

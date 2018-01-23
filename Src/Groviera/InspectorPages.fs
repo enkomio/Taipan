@@ -71,6 +71,7 @@ module InspectorPages =
         <li>TEST30: <a href="/inspector/test30/">/inspector/test30/</a> Password sent over HTTP</li>
         <li>TEST31: <a href="/inspector/test31/">/inspector/test31/</a> Password witha utocomplete enabled</li>
         <li>TEST32: <a href="/inspector/test32/">/inspector/test32/</a> Extract information from a .git directory</li>
+        <li>TEST33: <a href="/inspector/test33/">/inspector/test33/</a> Stored Cross Site Scripting</li>
 	</ul><br/>
   </body>
 </html>""" ctx
@@ -158,165 +159,179 @@ module InspectorPages =
 </form>
 </body>
 </html>
-                """                
-            ]
+                """    
 
-            path "/inspector/test23/" >=> okContent "<a href='/inspector/test23/show.php?name=John'>Check this page</a>"
-            path "/inspector/test23/show.php" >=> fun (ctx: HttpContext) ->
-                let username = 
-                    match ctx.request.queryParam "name" with
-                    | Choice1Of2 v -> v
-                    | _ -> String.Empty
+                path "/inspector/test23/" >=> okContent "<a href='/inspector/test23/show.php?name=John'>Check this page</a>"
+                path "/inspector/test23/show.php" >=> fun (ctx: HttpContext) ->
+                    let username = 
+                        match ctx.request.queryParam "name" with
+                        | Choice1Of2 v -> v
+                        | _ -> String.Empty
                 
-                try
-                    let result = sql("select * from users where username='" + username + "'")
-                    if result.Count > 0 then
-                        OK "The user that you are searching for is very coool" ctx
-                    else
-                        OK "Sorry no username with the one specified" ctx
-                with :? SQLiteException as sqlEx ->
-                    INTERNAL_ERROR sqlEx.Message ctx
+                    try
+                        let result = sql("select * from users where username='" + username + "'")
+                        if result.Count > 0 then
+                            OK "The user that you are searching for is very coool" ctx
+                        else
+                            OK "Sorry no username with the one specified" ctx
+                    with :? SQLiteException as sqlEx ->
+                        INTERNAL_ERROR sqlEx.Message ctx
                                 
-            path "/inspector/test24/" >=> fun (ctx: HttpContext) -> 
-                let test24Token = Guid.NewGuid().ToString()
-                _test24Token.Add(test24Token)
-                OK(String.Format("""Welcome to the SQL Inject test via POST with AntiCSRF protection >:-)
-            <br>Please specify the username that you want to search for:
-<html>
-<body>
-<form action="/inspector/test24/show.php" method="POST">
-  <p>Name: <input type="text" name="name">
-  <input type="hidden" name="token" value="{0}"
-  <p><button type="submit">Submit</button>
-</form>
-</body>
-</html>""", test24Token)) ctx
+                path "/inspector/test24/" >=> fun (ctx: HttpContext) -> 
+                    let test24Token = Guid.NewGuid().ToString()
+                    _test24Token.Add(test24Token)
+                    OK(String.Format("""Welcome to the SQL Inject test via POST with AntiCSRF protection >:-)
+                <br>Please specify the username that you want to search for:
+    <html>
+    <body>
+    <form action="/inspector/test24/show.php" method="POST">
+      <p>Name: <input type="text" name="name">
+      <input type="hidden" name="token" value="{0}"
+      <p><button type="submit">Submit</button>
+    </form>
+    </body>
+    </html>""", test24Token)) ctx
 
-            path "/inspector/test25/" >=> fun (ctx: HttpContext) ->
-                let test25Token = Guid.NewGuid().ToString()
-                _test25Token.Add(test25Token)
-                OK(String.Format("""Welcome to the RXSS test via POST with AntiCSRF protection >:-)            
-<html>
-<body>
-<form action='/inspector/test25/vuln.php' method='POST'>
-  Username: <input type='text' name='username'><br/>
-  Password: <input type='password' name='password'><br/>
-  <input type="hidden" name="token" value="{0}"
-  <p><button type="submit">Submit</button>
-</form>
-</body>
-</html>""", test25Token)) ctx
+                path "/inspector/test25/" >=> fun (ctx: HttpContext) ->
+                    let test25Token = Guid.NewGuid().ToString()
+                    _test25Token.Add(test25Token)
+                    OK(String.Format("""Welcome to the RXSS test via POST with AntiCSRF protection >:-)            
+    <html>
+    <body>
+    <form action='/inspector/test25/vuln.php' method='POST'>
+      Username: <input type='text' name='username'><br/>
+      Password: <input type='password' name='password'><br/>
+      <input type="hidden" name="token" value="{0}"
+      <p><button type="submit">Submit</button>
+    </form>
+    </body>
+    </html>""", test25Token)) ctx
 
-            path "/inspector/test26/" >=> okContent """<html><body>
-<script>
-var f = document.createElement("form");
-f.setAttribute('method',"get");
-f.setAttribute('action',atob('L2luc3BlY3Rvci90ZXN0MjYvc3VibWl0LnBocA=='));
+                path "/inspector/test26/" >=> okContent """<html><body>
+    <script>
+    var f = document.createElement("form");
+    f.setAttribute('method',"get");
+    f.setAttribute('action',atob('L2luc3BlY3Rvci90ZXN0MjYvc3VibWl0LnBocA=='));
 
-var i = document.createElement("input");
-i.setAttribute('type',"text");
-i.setAttribute('name',"username");
+    var i = document.createElement("input");
+    i.setAttribute('type',"text");
+    i.setAttribute('name',"username");
 
-var s = document.createElement("input");
-s.setAttribute('type',"submit");
-s.setAttribute('value',"Submit");
+    var s = document.createElement("input");
+    s.setAttribute('type',"submit");
+    s.setAttribute('value',"Submit");
 
-f.appendChild(i);
-f.appendChild(s);
+    f.appendChild(i);
+    f.appendChild(s);
 
-document.getElementsByTagName('body')[0].appendChild(f);
-</script>
-</body></html>
-            """
-            path "/inspector/test26/submit.php" >=> fun (ctx: HttpContext) ->
-                match ctx.request.queryParam "username" with
-                | Choice1Of2 v -> OK ("Welcome back: " + v) ctx
-                | _ -> NOT_FOUND "Username not setted" ctx     
+    document.getElementsByTagName('body')[0].appendChild(f);
+    </script>
+    </body></html>
+                """
+                path "/inspector/test26/submit.php" >=> fun (ctx: HttpContext) ->
+                    match ctx.request.queryParam "username" with
+                    | Choice1Of2 v -> OK ("Welcome back: " + v) ctx
+                    | _ -> NOT_FOUND "Username not setted" ctx     
 
-            path "/inspector/test27/" >=> okContent """<html><body>
-<script>
-function encrypt()
-{
-    var x = btoa(document.forms["test"]["username"].value);
-    document.forms["test"]["username"].value = x;
-    return true;
-}
-</script>
+                path "/inspector/test27/" >=> okContent """<html><body>
+    <script>
+    function encrypt()
+    {
+        var x = btoa(document.forms["test"]["username"].value);
+        document.forms["test"]["username"].value = x;
+        return true;
+    }
+    </script>
 
-<form action='/inspector/test27/submit.php' method='POST' id='test' onsubmit='return encrypt();'>
-  Username: <input type='text' name='username'><br/>
-  <p><button type="submit">Submit</button>
-</form>
+    <form action='/inspector/test27/submit.php' method='POST' id='test' onsubmit='return encrypt();'>
+      Username: <input type='text' name='username'><br/>
+      <p><button type="submit">Submit</button>
+    </form>
 
-</body></html>
-            """       
+    </body></html>
+                """       
 
-            path "/inspector/test28/" >=> okContent "<a href='/inspector/test28/show.php?name=someusername'>Check this page vulnerable to Blind SQL Injection, you have to specify John as a valid username :)</a>"
-            path "/inspector/test28/show.php" >=> fun (ctx: HttpContext) ->
-                let username = 
-                    match ctx.request.queryParam "name" with
-                    | Choice1Of2 v -> v
-                    | _ -> String.Empty
+                path "/inspector/test28/" >=> okContent "<a href='/inspector/test28/show.php?name=someusername'>Check this page vulnerable to Blind SQL Injection, you have to specify John as a valid username :)</a>"
+                path "/inspector/test28/show.php" >=> fun (ctx: HttpContext) ->
+                    let username = 
+                        match ctx.request.queryParam "name" with
+                        | Choice1Of2 v -> v
+                        | _ -> String.Empty
                 
-                try
-                    let result = sql("select * from users where username='" + username + "'")
-                    if result.Count > 0 then
-                        OK "The user that you are searching for is very coool" ctx
-                    else
+                    try
+                        let result = sql("select * from users where username='" + username + "'")
+                        if result.Count > 0 then
+                            OK "The user that you are searching for is very coool" ctx
+                        else
+                            OK "Sorry no username with the one specified" ctx
+                    with :? SQLiteException as sqlEx ->
                         OK "Sorry no username with the one specified" ctx
-                with :? SQLiteException as sqlEx ->
-                    OK "Sorry no username with the one specified" ctx
 
-            path "/inspector/test29/" >=> fun (ctx: HttpContext) ->
-                let newCtx =
-                    ctx 
-                    |> setCookie {HttpCookie.mkKV "test29"  (Guid.NewGuid().ToString()) with httpOnly = false; secure = false}
-                    |> (Async.RunSynchronously >> Option.get)
+                path "/inspector/test29/" >=> fun (ctx: HttpContext) ->
+                    let newCtx =
+                        ctx 
+                        |> setCookie {HttpCookie.mkKV "test29"  (Guid.NewGuid().ToString()) with httpOnly = false; secure = false}
+                        |> (Async.RunSynchronously >> Option.get)
 
-                OK "Recevi this cookie without any secure/HttpOnly flags" newCtx
+                    OK "Recevi this cookie without any secure/HttpOnly flags" newCtx
 
-            path "/inspector/test30/" >=> okContent """
-                 Form with password in clear text
-                 <form action="/inspector/test30/go.php" method="GET">
-                    Username: <input type="text" name="username"><br>
-                    Password: <input type="password" name="password">
-                    <input type="submit" value="Send">
-                 </form>
-            """
-            path "/inspector/test30/go.php" >=> okContent "Thanks for login :)"
+                path "/inspector/test30/" >=> okContent """
+                     Form with password in clear text
+                     <form action="/inspector/test30/go.php" method="GET">
+                        Username: <input type="text" name="username"><br>
+                        Password: <input type="password" name="password">
+                        <input type="submit" value="Send">
+                     </form>
+                """
+                path "/inspector/test30/go.php" >=> okContent "Thanks for login :)"
 
-            path "/inspector/test31/" >=> okContent """
-                 Form with password with autocomplete to ON
-                 <form action="/inspector/test31/go.php" method="GET">
-                    Username: <input type="text" name="username"><br>
-                    Password: <input type="password" name="password" AUTOCOMPLETE="ON">
-                    <input type="submit" value="Send">
-                 </form>
-            """
-            path "/inspector/test31/go.php" >=> okContent "Thanks for login :)"
+                path "/inspector/test31/" >=> okContent """
+                     Form with password with autocomplete to ON
+                     <form action="/inspector/test31/go.php" method="GET">
+                        Username: <input type="text" name="username"><br>
+                        Password: <input type="password" name="password" AUTOCOMPLETE="ON">
+                        <input type="submit" value="Send">
+                     </form>
+                """
+                path "/inspector/test31/go.php" >=> okContent "Thanks for login :)"
 
-            path "/inspector/test32/" >=> okContent ".git Test. Navigate to <a href='.git/'>This .git directory</a> to start to crawling."
-            pathScan "/inspector/test32/.git/%s" (fun res ->                 
-                if String.IsNullOrWhiteSpace(res) then
-                    FORBIDDEN "Directory Listing Forbidden"
-                else                    
-                    let filePath = Path.Combine(_baseDir, ".git", res)
-                    if File.Exists(filePath) then                        
-                        fun (ctx: HttpContext) -> async {
-                            let newCtx = 
-                                {ctx with
-                                    response = 
-                                        {ctx.response with 
-                                            status = HttpCode.HTTP_200
-                                            content = HttpContent.Bytes(File.ReadAllBytes(filePath))
-                                            headers = ("Content-Type", "application/octet-stream")::ctx.response.headers
-                                        }
-                                }
-                            return Some newCtx 
-                        }
-                    else
-                        NOT_FOUND "file not found"
-            )
+                path "/inspector/test32/" >=> okContent ".git Test. Navigate to <a href='.git/'>This .git directory</a> to start to crawling."
+                pathScan "/inspector/test32/.git/%s" (fun res ->                 
+                    if String.IsNullOrWhiteSpace(res) then
+                        FORBIDDEN "Directory Listing Forbidden"
+                    else                    
+                        let filePath = Path.Combine(_baseDir, ".git", res)
+                        if File.Exists(filePath) then                        
+                            fun (ctx: HttpContext) -> async {
+                                let newCtx = 
+                                    {ctx with
+                                        response = 
+                                            {ctx.response with 
+                                                status = HttpCode.HTTP_200
+                                                content = HttpContent.Bytes(File.ReadAllBytes(filePath))
+                                                headers = ("Content-Type", "application/octet-stream")::ctx.response.headers
+                                            }
+                                    }
+                                return Some newCtx 
+                            }
+                        else
+                            NOT_FOUND "file not found"
+                )
+
+                path "/inspector/test33/" >=> fun (ctx: HttpContext) ->
+                    let allValues = String.Join("<br>", memDb.Values)
+                    let html1 = """
+                         <h1>Stored Cross Site Scripting test</h1>
+                         <form action="/inspector/test33/store.php" method="POST">
+                            Value to save: <input type="text" name="value"><br>
+                            <input type="submit" value="Send">
+                         </form>
+                         <hr>
+                         <h2>All stored values:</h2>
+                    """
+
+                    OK (html1 + allValues) ctx
+            ]
 
             POST >=> choose [
                 path "/inspector/test19/vuln.php" >=> okReplyData
@@ -369,6 +384,18 @@ function encrypt()
                             with _ -> 
                                 NOT_FOUND "Username not setted" ctx     
                     | _ -> NOT_FOUND "Username not setted" ctx     
+
+                path "/inspector/test33/store.php" >=> fun (ctx: HttpContext) ->
+                    let value = 
+                        match ctx.request.formData "value" with
+                        | Choice1Of2 v -> v
+                        | _ -> String.Empty
+
+                    if not <| String.IsNullOrWhiteSpace(value) then                        
+                        memDb.Add(Guid.NewGuid().ToString(), value)
+                        OK "Value inserted correctly! <a href='/inspector/test33/'>Go back</a>" ctx
+                    else
+                        OK "Sorry but the value is invalid, please specify a value! <a href='/inspector/test33/'>Go back</a>" ctx
             ]
         ]   
 

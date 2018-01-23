@@ -11,6 +11,10 @@ open ES.Taipan.Infrastructure.Network
 [<AutoOpen>]
 module MessageAdapters =
 
+    // page re-processed conversion functions
+    let convertPageReProcessedToTestRequest(message: PageReProcessedMessage) =
+        new TestRequest(message.Link.Request, message.WebResponse, ReCrawledPage, message.Link)
+
     // page processed conversion functions
     let convertPageProcessedToTestRequest(message: PageProcessedMessage) =
         new TestRequest(message.Link.Request, message.WebResponse, CrawledPage, message.Link)

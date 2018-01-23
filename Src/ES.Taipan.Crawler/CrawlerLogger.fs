@@ -70,7 +70,7 @@ type CrawlerLogger() =
     member this.GoIdle() =
         this.WriteLog(11, [||])
 
-    [<Log(2, Message = "[ReCrawled] {0} [Referer: {1}] {2}=> {3} - Length: {4}", Level = LogLevel.Verbose)>]
+    [<Log(12, Message = "[ReCrawled] {0} [Referer: {1}] {2}=> {3} - Length: {4}", Level = LogLevel.Verbose)>]
     member this.PageReProcessed(webLink: WebLink, response: HttpResponse) = 
         let modification =  if webLink.OriginalWebLink.IsSome then "[Mutation] " else String.Empty
         let referer = 

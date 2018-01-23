@@ -86,7 +86,6 @@ Target "Release" (fun _ ->
 Target "CreateAddOnData" (fun _ ->
     ensureDirectory (buildDir + "/Taipan/Data")  
     // write xss payload  
-    let rxssAddOn = new ES.Taipan.Inspector.AddOns.ReflectedCrossSiteScripting.ReflectedCrossSiteScriptingAddOn()
     let xssData = [
         // attack vector | list of payloads to search in the html        
         ("<SCRIPT>alert('XSS');</SCRIPT>", ["<SCRIPT>alert('XSS');</SCRIPT>"]);
@@ -99,7 +98,12 @@ Target "CreateAddOnData" (fun _ ->
         ("<IMG SRC=&#0000106&#0000097&#0000118&#0000097&#0000115&#0000099&#0000114&#0000105&#0000112&#0000116&#0000058&#0000097&#0000108&#0000101&#0000114&#0000116&#0000040&#0000039&#0000088&#0000083&#0000083&#0000039&#0000041>", ["javascript:alert('XSS')"]);
         ("%25%33%63%25%34%39%25%34%64%25%34%37%25%32%30%25%35%33%25%35%32%25%34%33%25%33%64%25%34%61%25%36%31%25%35%36%25%36%31%25%35%33%25%36%33%25%35%32%25%36%39%25%35%30%25%37%34%25%33%61%25%36%31%25%36%63%25%36%35%25%37%32%25%37%34%25%32%38%25%32%37%25%35%38%25%35%33%25%35%33%25%32%37%25%32%39%25%33%65", ["javascript:alert('XSS')"])                
     ]
-    writeAddOnData(rxssAddOn, xssData, "Payloads")
+
+    [
+        new ES.Taipan.Inspector.AddOns.ReflectedCrossSiteScripting.ReflectedCrossSiteScriptingAddOn() :> ES.Taipan.Inspector.AddOns.BaseStatelessAddOn
+        new ES.Taipan.Inspector.AddOns.StoredCrossSiteScripting.StoredCrossSiteScriptingAddOn() :> ES.Taipan.Inspector.AddOns.BaseStatelessAddOn
+    ] 
+    |> List.iter(fun addOnId -> writeAddOnData(addOnId, xssData, "Payloads"))    
 
     // write sql injection errors
     let sqliAddOn = new ES.Taipan.Inspector.AddOns.SqlInjection.SqlInjectionAddOn()

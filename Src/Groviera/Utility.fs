@@ -17,7 +17,8 @@ open System.Data.SQLite
 module Utility =
     let sqlite = new SQLiteConnection("Data Source=:memory:;Version=3;New=True;")
     let session = new Dictionary<String, Object>()
-
+    let memDb = new Dictionary<String, String>()
+    
     let connectDb() =
         // create db
         sqlite.Open()

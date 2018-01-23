@@ -81,6 +81,7 @@ let allTests : Expr<Uri -> unit> list = [
     <@ InspectorTests.``Check for Password sent over HTTP`` @>
     <@ InspectorTests.``Check for Password without Autocomplete to OFF`` @>
     <@ InspectorTests.``Exctract information from a .git folder`` @>
+    <@ InspectorTests.``Identify a Stored Croos Site Scripting`` @>
     
     // Composed tests
     <@ ComposedTests.``Identify an hidden directory and discover a know web application`` @>
@@ -117,6 +118,7 @@ let runTest (grovieraUri: Uri) (testExpr: Expr<Uri -> unit>) =
 [<EntryPoint>]
 let main argv = 
     let grovieraUri = Utility.runGrovieraServer()
-    allTests |> List.iter(runTest grovieraUri)
+    //allTests |> List.iter(runTest grovieraUri)
+    runTest grovieraUri <@ InspectorTests.``Identify a Stored Croos Site Scripting`` @>
     Utility.shutDownServer()  
     0
