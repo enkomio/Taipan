@@ -129,9 +129,9 @@ type Scan(scanContext: ScanContext, logProvider: ILogProvider) as this =
     let _newApplicationIdentified = new Event<NewWebApplicationIdentifiedMessage>()
     let _newResourceDiscovered = new Event<NewResourceDiscoveredMessage>()    
     
-    let serviceCompleted(service: IService) =
+    let serviceCompleted (inIdleState: Boolean) (service: IService) =
         lock _serviceCompletedLock (fun() ->
-            _scanWorkflow.ServiceCompleted(service)    
+            _scanWorkflow.ServiceCompleted(service, inIdleState)    
             if _scanWorkflow.AllServicesCompleted() && not _serviceCompletedFunctionCalled then  
                 _serviceCompletedFunctionCalled <- true
                 this.FinishedAt <- DateTime.UtcNow
@@ -287,15 +287,15 @@ type Scan(scanContext: ScanContext, logProvider: ILogProvider) as this =
         if scanContext.Template.RunVulnerabilityScanner then
             let vulnerabilityScanner = container.Resolve<IVulnerabilityScanner>()
             _scanWorkflow.AddExecutedService(vulnerabilityScanner, scanContext.Template)
-            vulnerabilityScanner.NoMoreTestRequestsToProcess.Add(serviceCompleted)
-            vulnerabilityScanner.ProcessCompleted.Add(serviceCompleted)
+            vulnerabilityScanner.NoMoreTestRequestsToProcess.Add(serviceCompleted true)
+            vulnerabilityScanner.ProcessCompleted.Add(serviceCompleted false)
 
         // launch web application fingerprinter
         if scanContext.Template.RunWebAppFingerprinter then
             let webAppFingerprinter = container.Resolve<IWebAppFingerprinter>()
             _scanWorkflow.AddExecutedService(webAppFingerprinter, scanContext.Template)
-            webAppFingerprinter.NoMoreWebRequestsToProcess.Add(serviceCompleted)
-            webAppFingerprinter.ProcessCompleted.Add(serviceCompleted)
+            webAppFingerprinter.NoMoreWebRequestsToProcess.Add(serviceCompleted true)
+            webAppFingerprinter.ProcessCompleted.Add(serviceCompleted false)
 
         // launch resource discoverer
         if scanContext.Template.RunResourceDiscoverer then
@@ -310,8 +310,8 @@ type Scan(scanContext: ScanContext, logProvider: ILogProvider) as this =
             // instantiate components
             let resourceDiscoverer = container.Resolve<IResourceDiscoverer>()
             _scanWorkflow.AddExecutedService(resourceDiscoverer, scanContext.Template)
-            resourceDiscoverer.NoMoreWebRequestsToProcess.Add(serviceCompleted)
-            resourceDiscoverer.ProcessCompleted.Add(serviceCompleted)
+            resourceDiscoverer.NoMoreWebRequestsToProcess.Add(serviceCompleted true)
+            resourceDiscoverer.ProcessCompleted.Add(serviceCompleted false)
 
         // launch crawler, this is a core service. Launch a different crawler for each authentication provided     
         let mutable crawlerRunned = true   
@@ -331,8 +331,8 @@ type Scan(scanContext: ScanContext, logProvider: ILogProvider) as this =
 
             // create the crawler                        
             let crawler = container.Resolve<ICrawler>()
-            crawler.ProcessCompleted.Add(serviceCompleted)
-            crawler.NoMoreWebRequestsToProcess.Add(serviceCompleted)                                
+            crawler.NoMoreWebRequestsToProcess.Add(serviceCompleted true)
+            crawler.ProcessCompleted.Add(serviceCompleted false)            
             _scanWorkflow.AddExecutedService(crawler, scanContext.Template)
 
             // start the crawler but not pages will be crawled due to the settings restriction
@@ -351,9 +351,9 @@ type Scan(scanContext: ScanContext, logProvider: ILogProvider) as this =
                 | authentication::t ->           
                     let crawler = container.Resolve<ICrawler>()
                     crawler.SetAuthentication(authentication)            
-                    crawler.ProcessCompleted.Add(serviceCompleted)
-                    crawler.NoMoreWebRequestsToProcess.Add(serviceCompleted)       
-                         
+                    crawler.NoMoreWebRequestsToProcess.Add(serviceCompleted true)
+                    crawler.ProcessCompleted.Add(serviceCompleted false)
+                                             
                     _scanWorkflow.AddExecutedService(crawler, scanContext.Template)
 
                     let scanRequestHost = scanContext.StartRequest.HttpRequest.Uri.Host
@@ -399,7 +399,7 @@ type Scan(scanContext: ScanContext, logProvider: ILogProvider) as this =
             hostReachable <- webResponse.PageExists || noNeededCrawler
         with e -> 
             _logger.HostNotReachable(scanContext.StartRequest.HttpRequest.Uri.Host)
-            
+                        
         // if the host is reachable start the scan around a generic try/catch to avoid to crash everything :\
         match ip with
         | Some ip when hostReachable ->    

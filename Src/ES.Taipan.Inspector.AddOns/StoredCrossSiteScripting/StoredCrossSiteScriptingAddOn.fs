@@ -15,20 +15,34 @@ open ES.Taipan.Crawler
 open ES.Fslog
 
 type StoredCrossSiteScriptingAddOn() as this =
-    inherit BaseStatelessAddOn("Stored Cross Site Scripting AddOn", "5B9F1F2F-4A91-48A9-8615-2EA25E73E5B3", 1)
+    inherit BaseStatelessAddOn("Stored Cross Site Scripting AddOn", "5B9F1F2F-4A91-48A9-8615-2EA25E73E5B3", 1)    
     let _analyzedParameters = new Dictionary<String, HashSet<String>>()
+    let _testRequests = new List<TestRequest>()
+    let _probes = new Dictionary<String, ProbeRequest * ProbeParameter>()
     let _forbiddenContentTypes = ["video/"; "audio/"; "image/"]
 
     // this parameter contains a list of: attack vector | list of string to search in HTML for success
     let mutable _payloads: (String * String list) list = []
+    let mutable _messageBroker: IMessageBroker option = None
 
     let _log = 
         log "StoredCrossSiteScriptingAddOn"
-        |> verbose "MaybeXss" "Precondition for XSS verified on path '{0}' parameter: {1}"
-        |> verbose "FoundXss" "Identified XSS on path '{0}' parameter: {1}"
+        |> verbose "MaybeXss" "Precondition for Sotred XSS verified on path '{0}' parameter: {1}, out page: {2}"
+        |> verbose "FoundXss" "Identified Stored XSS on path '{0}' parameter: {1}, input page: {2}"
         |> build
     
-    let reportSecurityIssue(uri: Uri, parameterName: String, attackString: String, entryPoint: EntryPoint, webRequest: WebRequest, webResponse: WebResponse, html: String) =
+    let reportSecurityIssue
+        (
+            uri: Uri, 
+            parameterName: String, 
+            attackString: String, 
+            entryPoint: EntryPoint, 
+            inWebRequest: WebRequest,             
+            inWebResponse: WebResponse, 
+            outWebRequest: WebRequest, 
+            outWebResponse: WebResponse
+        ) =
+
         let securityIssue = 
             new SecurityIssue(
                 this.Id, 
@@ -37,8 +51,8 @@ type StoredCrossSiteScriptingAddOn() as this =
                 EntryPoint = entryPoint,
                 Note = String.Format("Parameter = {0}", parameterName)
             )
-        securityIssue.Transactions.Add(webRequest, webResponse)
-        securityIssue.Details.Properties.Add("Html", html)
+        securityIssue.Transactions.Add(inWebRequest, inWebResponse)
+        securityIssue.Transactions.Add(outWebRequest, outWebResponse)
         securityIssue.Details.Properties.Add("Parameter", parameterName)
         securityIssue.Details.Properties.Add("Attack", attackString)
         this.Context.Value.AddSecurityIssue(securityIssue)
@@ -47,113 +61,41 @@ type StoredCrossSiteScriptingAddOn() as this =
         _forbiddenContentTypes
         |> List.exists(header.Value.Contains)
 
-    let testProbeRequest(parameter: ProbeParameter, inProbeRequest: ProbeRequest, rebuild: Boolean) =
-        let mutable probeRequest = inProbeRequest
-
-        if rebuild then
-            let rebuildedTestRequest = this.RebuildTestRequestFromReferer(probeRequest.TestRequest)
-            probeRequest <- new ProbeRequest(rebuildedTestRequest)
-            probeRequest.AddParameter(parameter)
-
+    let sendProbeRequest(parameter: ProbeParameter, inProbeRequest: ProbeRequest) =
+        let mutable probeRequest = inProbeRequest        
         let webRequest = new WebRequest(probeRequest.BuildHttpRequest(true))
-        let webResponse = this.WebRequestor.Value.RequestWebPage(webRequest)        
-        if box(webResponse.HttpResponse) <> null then
-            inProbeRequest.WebResponse <- Some webResponse
-            match HttpUtility.tryGetHeader("Content-Type", webResponse.HttpResponse.Headers) with
-            | Some header when not(hasForbiddenContentType(header)) -> 
-                // if one of the expected value is found, than the website is vulnerable
-                let html = webResponse.HttpResponse.Html
-                match parameter.ExpectedValues |> List.tryFind(fun expectedValue -> html.ToLower().Contains(expectedValue.ToLower())) with
-                | Some check -> 
-                    parameter.State <- Some(upcast(check, html))
-                    true
-                | None -> false
-            | _ -> false
-        else false
-
-    let verifyWithBogusParamValue(parameter: ProbeParameter, probeRequest: ProbeRequest, rebuild: Boolean) =
-        let newProbeRequest = new ProbeRequest(probeRequest.TestRequest)
-        let newParameter = getParameter(parameter, newProbeRequest)
-        newParameter.AlterValue(parameter.Value)
-
-        // for each parameter with empty value insert a bogus value
-        let bogusValue = Guid.NewGuid().ToString("N").Substring(0,6)
-        newProbeRequest.GetParameters()
-        |> Seq.filter(fun parameter -> String.IsNullOrEmpty(parameter.Value))
-        |> Seq.iter(fun parameter -> parameter.Value <- bogusValue)
-
-        testProbeRequest(newParameter, newProbeRequest, rebuild)    
-        
-    let verifyWithOriginalParamValue(parameter: ProbeParameter, probeRequest: ProbeRequest, rebuild: Boolean) =
-        testProbeRequest(parameter, probeRequest, rebuild)      
-    
-    let verify(parameter: ProbeParameter, probeRequest: ProbeRequest, rebuild: Boolean) =
-        [verifyWithOriginalParamValue; verifyWithBogusParamValue]
-        |> List.exists(fun f -> f(parameter, probeRequest, rebuild))
-        
+        this.WebRequestor.Value.RequestWebPage(webRequest)
+                        
     let isParameterSafeToTest(parameter: ProbeParameter) =
         if parameter.Type = HEADER then
             ["User"; "X-"] |> List.exists (fun headerPrefix -> parameter.Name.StartsWith(headerPrefix))
         else
             true
 
-    let specificTest(parameter: ProbeParameter, probeRequest: ProbeRequest, attackVector: String, checks: String list, rebuild: Boolean) =
-        // configure probe
-        parameter.AlterValue(attackVector)
-        parameter.ExpectedValues <- checks
+    let sendProbe(parameter: ProbeParameter, probeRequest: ProbeRequest, probeValue: String) =
+        // save values
+        let originalValue = parameter.AlterValue
+        let filename = parameter.Filename
 
-        // verify the vulnerability
-        if verify(parameter, probeRequest, rebuild) then
-            let (successCheck, html) = parameter.State.Value :?> (String * String)
-            Some(attackVector, successCheck, html)
-        else None
+        // send probe request
+        parameter.AlterValue(probeValue)
+        parameter.ExpectedValues <- [probeValue]
+        let webResponse = sendProbeRequest(parameter, probeRequest)
 
-    let verifyPrecondition(parameter: ProbeParameter, probeRequest: ProbeRequest, rebuild: Boolean) =
-        let preconditionValue = String.Join(String.Empty, (Guid.NewGuid().ToString("N")).ToCharArray().[0..5])
-        parameter.AlterValue(preconditionValue)
-        parameter.ExpectedValues <- [preconditionValue]
-        verify(parameter, probeRequest, rebuild)
+        // restore value
+        parameter.AlterValue <- originalValue
+        parameter.Filename <- filename
 
-    let test(parameter: ProbeParameter, probeRequest: ProbeRequest, rebuild: Boolean) =
-        let mutable isVulnerable = false
-        if isParameterSafeToTest(parameter) && verifyPrecondition(parameter, probeRequest, rebuild) then
-            _log?MaybeXss(probeRequest.TestRequest.WebRequest.HttpRequest.Uri.AbsolutePath, parameter)
-            // do a more deepth test to avoid FP and to identify a payload
-            for (vector, checks) in _payloads do
-                if not isVulnerable then
-                    match specificTest(parameter, probeRequest, vector, checks, rebuild) with
-                    | Some (foundVector, foundPaload, html) -> 
-                        _log?FoundXss(probeRequest.TestRequest.WebRequest.HttpRequest.Uri.AbsolutePath, parameter)
-
-                        let path = probeRequest.TestRequest.WebRequest.HttpRequest.Uri.AbsolutePath                        
-                        isVulnerable <- true
-
-                        let entryPoint =
-                            match parameter.Type with
-                            | QUERY -> EntryPoint.QueryString
-                            | DATA -> EntryPoint.DataString
-                            | HEADER -> EntryPoint.Header
-
-                        reportSecurityIssue(
-                            probeRequest.TestRequest.WebRequest.HttpRequest.Uri, 
-                            parameter.Name, 
-                            parameter.Value,
-                            entryPoint,
-                            new WebRequest(probeRequest.BuildHttpRequest()),
-                            probeRequest.WebResponse.Value,
-                            html
-                        )
-                    | None -> ()
-        isVulnerable
+        webResponse
         
-    let isRequestOkToAnalyze(parameter: ProbeParameter, probeRequest: ProbeRequest, rebuild: Boolean) =
+    let isRequestOkToAnalyze(parameter: ProbeParameter, probeRequest: ProbeRequest) =
         let path = probeRequest.TestRequest.WebRequest.HttpRequest.Uri.AbsolutePath
         let hasSource = probeRequest.TestRequest.WebRequest.HttpRequest.Source.IsSome
         if not <| _analyzedParameters.ContainsKey(path) then
             _analyzedParameters.Add(path, new HashSet<String>())
-        _analyzedParameters.[path].Add(String.Format("{0}_{1}_{2}_{3}", parameter.Type, parameter.Name, rebuild, hasSource))
+        _analyzedParameters.[path].Add(String.Format("{0}_{1}_{2}", parameter.Type, parameter.Name, hasSource))
 
-    let scan(testRequest: TestRequest, stateController: ServiceStateController, rebuild: Boolean) =
+    let probePage(testRequest: TestRequest, stateController: ServiceStateController) =
         let mutable testWithRebuild = false
         let mutable probeRequest = new ProbeRequest(testRequest)     
         let parameters = new List<ProbeParameter>()
@@ -161,53 +103,109 @@ type StoredCrossSiteScriptingAddOn() as this =
         // thread safe check on parameters
         lock _analyzedParameters (fun _ -> 
             for parameter in probeRequest.GetParameters() do
-                if isRequestOkToAnalyze(parameter, probeRequest, rebuild) then
+                if isRequestOkToAnalyze(parameter, probeRequest) then
                     parameters.Add(parameter)
         )
            
         // analyze all new parameters
-        for parameter in parameters do
-            let originalValue = parameter.Value
-            let mutable isTestVulnerable = test(parameter, probeRequest, rebuild)
-            parameter.Value <- originalValue
+        parameters
+        |> Seq.filter(isParameterSafeToTest)
+        |> Seq.iter(fun parameter ->
+            let probeId = (new String(Guid.NewGuid().ToString("N").ToCharArray().[0..5])).ToLower()
+            sendProbe(parameter, probeRequest, probeId) |> ignore           
+            _probes.Add(probeId, (probeRequest, parameter))
 
             // check for file parameter
             match parameter.Filename with
             | Some filename -> 
+                let probeId = (new String(Guid.NewGuid().ToString("N").ToCharArray().[0..5])).ToLower()
                 let originalValue = parameter.AlterValue
                 parameter.AlterValue <- (fun x -> parameter.Filename <- Some x)
-                isTestVulnerable <- test(parameter, probeRequest, rebuild)
+                sendProbe(parameter, probeRequest, filename) |> ignore
+                _probes.Add(probeId, (probeRequest, parameter))
                 parameter.AlterValue <- originalValue
                 parameter.Filename <- Some filename
             | _ -> ()
+        )
 
-            if isTestVulnerable then
-                // this code is necessary in order to update the list of analyzed parameters
-                lock _analyzedParameters (fun _ ->                     
-                    isRequestOkToAnalyze(parameter, probeRequest, not rebuild) |> ignore
-                )
+    let verifyProbePresence(testRequest: TestRequest) =
+        // re-send the request
+        let httpResponse = this.WebRequestor.Value.RequestWebPage(testRequest.WebRequest).HttpResponse
 
-            testWithRebuild <- testWithRebuild || (not isTestVulnerable && testRequest.WebRequest.HttpRequest.Method = HttpMethods.Post)
-        
-        testWithRebuild
+        // do verification
+        if box(httpResponse) <> null then
+            match HttpUtility.tryGetHeader("Content-Type", httpResponse.Headers) with
+            | Some header when not(hasForbiddenContentType(header)) -> 
+                // if one of the expected value is found, than the website could be vulnerable
+                let html = httpResponse.Html.ToLower()
+                _probes.Keys |> Seq.tryFind(fun expectedValue -> html.Contains(expectedValue))
+            | _ -> None
+        else None
+
+    let sendAttack(probeId: String, testRequest: TestRequest) =        
+        let probeRequest, parameter = _probes.[probeId]
+        let outRequest = testRequest.WebRequest
+        let mutable isVulnerable = false
+
+        _log?MaybeXss(probeRequest.TestRequest.WebRequest.HttpRequest.Uri.AbsolutePath, parameter.Name, outRequest.HttpRequest.Uri.AbsolutePath)
+        // do a more deepth test to avoid FP and to identify a payload
+        for (attackVector, checks) in _payloads do
+            if not isVulnerable then
+                // send input probe
+                parameter.AlterValue(attackVector)
+                let inWebRequest = new WebRequest(probeRequest.BuildHttpRequest())
+                let inWebResponse = sendProbe(parameter, probeRequest, attackVector)
+
+                // verify output probe
+                let outWebResponse = this.WebRequestor.Value.RequestWebPage(outRequest)
+                if box(outWebResponse.HttpResponse) <> null then
+                    let html = outWebResponse.HttpResponse.Html.ToLower()
+                    match checks |> List.tryFind(fun expectedValue -> html.Contains(expectedValue.ToLower())) with
+                    | Some check -> 
+                        _log?FoundXss(outRequest.HttpRequest.Uri.AbsolutePath, parameter, probeRequest.TestRequest.WebRequest.HttpRequest.Uri.AbsolutePath)
+                        parameter.State <- Some(upcast(check, outWebResponse.HttpResponse.Html))
+                        isVulnerable <- true
+
+                        // signal vulnerability
+                        let entryPoint =
+                            match parameter.Type with
+                            | QUERY -> EntryPoint.QueryString
+                            | DATA -> EntryPoint.DataString
+                            | HEADER -> EntryPoint.Header
+
+                        reportSecurityIssue(
+                            outRequest.HttpRequest.Uri,
+                            parameter.Name, 
+                            attackVector,
+                            entryPoint,
+                            inWebRequest, // in web request
+                            inWebResponse, // in web response
+                            outRequest, // out web request
+                            outWebResponse // out web response
+                        )
+                    | None -> ()
 
     default this.Initialize(context: Context, webRequestor: IWebPageRequestor, messageBroker: IMessageBroker, logProvider: ILogProvider) =
         base.Initialize(context, webRequestor, messageBroker, logProvider) |> ignore
         logProvider.AddLogSourceToLoggers(_log)
 
+        _messageBroker <- Some messageBroker
+
         match this.Context.Value.AddOnStorage.ReadProperty<(String * String list) list>("Payloads") with
         | Some payloads -> _payloads <- payloads
         | None -> ()
-
-
-        // test if re-crawling is active, otherwise is useless to send test
-
+        
         true
 
-    default this.Scan(testRequest: TestRequest, stateController: ServiceStateController) =
-        
+    override this.RunToCompletation() =
+        _testRequests
+        |> Seq.iter(fun testRequest ->
+            match verifyProbePresence(testRequest) with
+            | Some probeId -> sendAttack(probeId, testRequest)
+            | None -> ()
+        )
 
+    default this.Scan(testRequest: TestRequest, stateController: ServiceStateController) =
         if testRequest.RequestType = TestRequestType.CrawledPage then
-            if not <| scan(testRequest, stateController, false) then
-                // test with rebuild, since there are POST parameters that are not vulnerable, maybe they are not due to CSRF token?
-                scan(testRequest, stateController, true) |> ignore   
+            probePage(testRequest, stateController)
+            _testRequests.Add(testRequest)        

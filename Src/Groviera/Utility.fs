@@ -17,7 +17,26 @@ open System.Data.SQLite
 module Utility =
     let sqlite = new SQLiteConnection("Data Source=:memory:;Version=3;New=True;")
     let session = new Dictionary<String, Object>()
-    let memDb = new Dictionary<String, String>()
+    let private _memDb = new Dictionary<String, String>()
+
+    let addValueToMemDb(name: String, value: String) =
+        lock _memDb (fun _ ->
+            _memDb.[name] <- value
+            Console.WriteLine("Added {0} with value {1} to mem DB", name, value)
+        )
+
+    let getValueFromMemDb(name: String) =
+        lock _memDb (fun _ ->
+            if _memDb.ContainsKey(name) then
+                Some _memDb.[name]
+            else
+                None
+        )
+
+    let getAllMemDbValues() =
+        lock _memDb (fun _ ->
+            _memDb.Values |> Seq.readonly
+        )
     
     let connectDb() =
         // create db

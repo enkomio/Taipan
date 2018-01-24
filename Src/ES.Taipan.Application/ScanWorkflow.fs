@@ -141,20 +141,20 @@ type ScanWorkflow(logProvider: ILogProvider) =
         _scanInitializationCompleted <- true
                     
     // this is the most important function. it is in charge for the process workflow
-    member this.ServiceCompleted(service: IService) =
+    member this.ServiceCompleted(service: IService, inIdleState: Boolean) =
         verifyAllServiceCompletedTheInitialization()
         lock _serviceStatusChangeSyncRoot (fun () ->
             _serviceMetrics.LastCompletedProcess(service)
             _pendingServiceForCompletation.Remove(service.ServiceId) |> ignore
             
-            if _completedServices.ContainsKey(service) then
+            if inIdleState then
+                // the service just went to an idle state, it can be resumed 
+                // wether new work is requested
+                _logger.ServiceIdle(service)                
+            else
                 // the service really completed, not more work for it
                 _completedServices.[service] <- true
                 _logger.ServiceCompleted(service)
-            else
-                // the service just went to an idle state, it can be resumed 
-                // wether new work is requested
-                _logger.ServiceIdle(service)
 
             let allProducerServicesInIdleState = _producerServices |> Seq.forall(fun srv -> srv.Diagnostics.IsIdle)
             let noPendingServiceForCompletation = _pendingServiceForCompletation |> Seq.isEmpty
@@ -193,10 +193,7 @@ type ScanWorkflow(logProvider: ILogProvider) =
                     
     member this.AllServicesCompleted() =
         _scanCompleted
-
-    member this.GetNumberOfCompletedServices() =
-        _completedServices.Count
-
+        
     member this.Pause() =  
         _statusQueue.Enqueue("PAUSE")    
         _logger.ActionRequested("PAUSE")

@@ -158,17 +158,20 @@ type DefaultCrawler(settings: CrawlerSettings, webRequestor: IWebPageRequestor, 
                 _serviceMetrics.CurrentState("Completed")
 
     let doReCrawling() =
+        _logger.StartReCrawling()
         _serviceDiagnostics.Activate()
         _serviceMetrics.CurrentState("Re-Crawling")
         _crawlerState.GetAllProcessedPages()
         |> Seq.iter(fun webPage ->
             if not _stateController.IsStopped && not(_crawlerState.IsStopRequested()) then   
-                _stateController.WaitIfPauseRequested()                 
+                _stateController.WaitIfPauseRequested()
                 let webRequest = webPage.Request
                 let webResponse = webRequestor.RequestWebPage(webRequest)                
                 _logger.PageReProcessed(webPage, webResponse.HttpResponse)
                 messageBroker.Dispatch(this, new PageReProcessedMessage(webPage, webResponse, _crawlerId))
         )
+        _serviceMetrics.CurrentState("Idle")
+        _serviceDiagnostics.GoIdle()
 
     let doCrawling() =
         // code to get request done per second metric
@@ -198,10 +201,6 @@ type DefaultCrawler(settings: CrawlerSettings, webRequestor: IWebPageRequestor, 
             // run the crawler
             doCrawling()
 
-            // run the re-crawling if necessary
-            if settings.ReCrawlPages then
-                doReCrawling()
-           
             if _crawlerState.IsStopRequested() then
                 // wait until the run to completation is called
                 checkCrawlerState()
@@ -351,6 +350,12 @@ type DefaultCrawler(settings: CrawlerSettings, webRequestor: IWebPageRequestor, 
     member this.RunToCompletation() =
         _serviceMetrics.CurrentState("Run to completation")
         _logger.RunToCompletation()
+
+        // run the re-crawling if necessary. Actually no one use this feature,
+        // consider to remove it in the future if not necessary
+        if settings.ReCrawlPages then
+            doReCrawling()
+
         _crawlerState.CompleteAdding()
         _runToCompletationCalledLock.Set()
 

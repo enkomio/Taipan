@@ -319,7 +319,7 @@ module InspectorPages =
                 )
 
                 path "/inspector/test33/" >=> fun (ctx: HttpContext) ->
-                    let allValues = String.Join("<br>", memDb.Values)
+                    let allValues = String.Join("<br>", getAllMemDbValues())
                     let html1 = """
                          <h1>Stored Cross Site Scripting test</h1>
                          <form action="/inspector/test33/store.php" method="POST">
@@ -392,7 +392,7 @@ module InspectorPages =
                         | _ -> String.Empty
 
                     if not <| String.IsNullOrWhiteSpace(value) then                        
-                        memDb.Add(Guid.NewGuid().ToString(), value)
+                        addValueToMemDb(Guid.NewGuid().ToString(), value)
                         OK "Value inserted correctly! <a href='/inspector/test33/'>Go back</a>" ctx
                     else
                         OK "Sorry but the value is invalid, please specify a value! <a href='/inspector/test33/'>Go back</a>" ctx

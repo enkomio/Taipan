@@ -84,4 +84,8 @@ type CrawlerLogger() =
                 | Some hdr -> String.Format("{0} to {1}", response.StatusCode, hdr.Value)
                 | _ -> response.StatusCode.ToString()
             else response.StatusCode.ToString()
-        this.WriteLog(2, [|webLink; referer; modification; statusCode; response.Html.Length|])
+        this.WriteLog(12, [|webLink; referer; modification; statusCode; response.Html.Length|])
+
+    [<Log(13, Message = "Start re-crawling", Level = LogLevel.Informational)>]
+    member this.StartReCrawling() =
+        this.WriteLog(13, [||])

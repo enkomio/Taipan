@@ -213,9 +213,14 @@
     let ``500 Internal server error``(grovieraUrl: Uri) =  errorTests(grovieraUrl, "/inspector/test17/")
 
     let writeXssData(data: (String * String list) list) =
-        let addOn = new ES.Taipan.Inspector.AddOns.ReflectedCrossSiteScripting.ReflectedCrossSiteScriptingAddOn()
-        let context = new ES.Taipan.Inspector.Context(ES.Taipan.Inspector.FilesystemAddOnStorage(addOn), fun _ -> ())
-        context.AddOnStorage.SaveProperty<(String * String list) list>("Payloads", data)
+        [
+            new ES.Taipan.Inspector.AddOns.ReflectedCrossSiteScripting.ReflectedCrossSiteScriptingAddOn() :> IVulnerabilityScannerAddOn
+            new ES.Taipan.Inspector.AddOns.StoredCrossSiteScripting.StoredCrossSiteScriptingAddOn() :> IVulnerabilityScannerAddOn
+        ]
+        |> List.iter(fun addOn ->
+            let context = new ES.Taipan.Inspector.Context(ES.Taipan.Inspector.FilesystemAddOnStorage(addOn), fun _ -> ())
+            context.AddOnStorage.SaveProperty<(String * String list) list>("Payloads", data)
+        )        
 
     let writeSqliData(data: (String * String list) list) =
         let addOn = new ES.Taipan.Inspector.AddOns.SqlInjection.SqlInjectionAddOn()
@@ -528,11 +533,11 @@
                 Template = Templates.``Website inspector``()
             )
 
-        // enable re-crawling
-        scanContext.Template.CrawlerSettings.ReCrawlPages <- true
-                
         activatePlugin(scanContext, "5B9F1F2F-4A91-48A9-8615-2EA25E73E5B3")
-        
+        writeXssData([
+            ("<SCRIPT>alert('XSS');</SCRIPT>", ["<SCRIPT>alert('XSS');</SCRIPT>"; "<IMG SRC=\"javascript:alert('XSS');\">"])
+        ])
+
         // run the scan
         Utility.runScan(scanContext) 
         |> Utility.verifyInspector [("Stored Cross Site Scripting", "/inspector/test33/")]
