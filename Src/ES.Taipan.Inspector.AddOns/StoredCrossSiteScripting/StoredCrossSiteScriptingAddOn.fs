@@ -2,6 +2,7 @@
 
 open System
 open System.Threading
+open System.Linq
 open System.Collections.Generic
 open System.Collections.Concurrent
 open System.Text.RegularExpressions
@@ -96,8 +97,7 @@ type StoredCrossSiteScriptingAddOn() as this =
             _analyzedParameters.Add(path, new HashSet<String>())
         _analyzedParameters.[path].Add(String.Format("{0}_{1}_{2}", parameter.Type, parameter.Name, hasSource))
 
-    let probePage(testRequest: TestRequest, stateController: ServiceStateController) =
-        let mutable testWithRebuild = false
+    let probePage(testRequest: TestRequest, stateController: ServiceStateController) =        
         let mutable probeRequest = new ProbeRequest(testRequest)     
         let parameters = new List<ProbeParameter>()
         
@@ -107,6 +107,8 @@ type StoredCrossSiteScriptingAddOn() as this =
                 if isRequestOkToAnalyze(parameter, probeRequest) then
                     parameters.Add(parameter)
         )
+
+        let pageTested = parameters.Any()
            
         // analyze all new parameters
         parameters
@@ -128,6 +130,8 @@ type StoredCrossSiteScriptingAddOn() as this =
                 parameter.Filename <- Some filename
             | _ -> ()
         )
+
+        pageTested
 
     let verifyProbePresence(testRequest: TestRequest) =
         // re-send the request
@@ -208,5 +212,5 @@ type StoredCrossSiteScriptingAddOn() as this =
 
     default this.Scan(testRequest: TestRequest, stateController: ServiceStateController) =
         if testRequest.RequestType = TestRequestType.CrawledPage then
-            probePage(testRequest, stateController)
-            _testRequests.Add(testRequest)        
+            if probePage(testRequest, stateController) then
+                _testRequests.Add(testRequest)        
