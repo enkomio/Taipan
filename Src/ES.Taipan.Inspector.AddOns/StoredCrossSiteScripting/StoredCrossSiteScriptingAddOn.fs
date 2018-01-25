@@ -55,6 +55,7 @@ type StoredCrossSiteScriptingAddOn() as this =
         securityIssue.Transactions.Add(outWebRequest, outWebResponse)
         securityIssue.Details.Properties.Add("Parameter", parameterName)
         securityIssue.Details.Properties.Add("Attack", attackString)
+        securityIssue.Details.Properties.Add("Html", outWebResponse.HttpResponse.Html)
         this.Context.Value.AddSecurityIssue(securityIssue)
 
     let hasForbiddenContentType(header: HttpHeader) =
