@@ -534,9 +534,10 @@
             )
 
         activatePlugin(scanContext, "5B9F1F2F-4A91-48A9-8615-2EA25E73E5B3")
-        writeXssData([
-            ("<SCRIPT>alert('XSS');</SCRIPT>", ["<SCRIPT>alert('XSS');</SCRIPT>"; "<IMG SRC=\"javascript:alert('XSS');\">"])
-        ])
+        writeXssData
+            ([
+                ("<SCRIPT>alert('XSS');</SCRIPT>", ["<SCRIPT>alert('XSS');</SCRIPT>"; "<IMG SRC=\"javascript:alert('XSS');\">"])
+            ])
 
         // run the scan
         Utility.runScan(scanContext) 
