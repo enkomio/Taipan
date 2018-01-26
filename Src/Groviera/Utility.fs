@@ -119,7 +119,7 @@ module Utility =
 
             let newCtx =
                 ctx 
-                |> setCookie (HttpCookie.mkKV "Session" sessionId)
+                |> setCookie (HttpCookie.createKV "Session" sessionId)
                 |> (Async.RunSynchronously >> Option.get)
 
             OK contentOk newCtx

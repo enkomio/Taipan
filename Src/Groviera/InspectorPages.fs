@@ -270,7 +270,7 @@ module InspectorPages =
                 path "/inspector/test29/" >=> fun (ctx: HttpContext) ->
                     let newCtx =
                         ctx 
-                        |> setCookie {HttpCookie.mkKV "test29"  (Guid.NewGuid().ToString()) with httpOnly = false; secure = false}
+                        |> setCookie {HttpCookie.createKV "test29"  (Guid.NewGuid().ToString()) with httpOnly = false; secure = false}
                         |> (Async.RunSynchronously >> Option.get)
 
                     OK "Recevi this cookie without any secure/HttpOnly flags" newCtx
@@ -307,7 +307,7 @@ module InspectorPages =
                                     {ctx with
                                         response = 
                                             {ctx.response with 
-                                                status = HttpCode.HTTP_200
+                                                status = HttpCode.HTTP_200.status
                                                 content = HttpContent.Bytes(File.ReadAllBytes(filePath))
                                                 headers = ("Content-Type", "application/octet-stream")::ctx.response.headers
                                             }

@@ -94,7 +94,7 @@ module Program =
         
         let cfg = { 
             defaultConfig with
-                bindings = [HttpBinding.mk HTTP (IPAddress.Parse host) (uint16 port)]
+                bindings = [HttpBinding.create HTTP (IPAddress.Parse host) (uint16 port)]
                 cancellationToken = _shutdownToken.Token
         }
 
