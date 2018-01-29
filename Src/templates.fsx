@@ -134,8 +134,8 @@ let fingerprintWebApplication() =
     template
     
 let fullScan() =
-    let template = createTemplate("Full scan", "C5C97C6F-43F3-4D1C-84B3-ED0E4A83E017")
-    template.Description <- "Run a full scan with all the checks enabled and the Javascript engine (this option is still experimenting). This is an invasive scan and may cause availability problems to the scanned application."
+    let template = createTemplate("Javascript enabled full scan", "C5C97C6F-43F3-4D1C-84B3-ED0E4A83E017")
+    template.Description <- "Run a full scan with all the checks enabled and the Javascript engine (this feature is still experimental). This is an invasive scan and may cause availability problems to the scanned application."
 
     template.RunCrawler <- true
     template.RunResourceDiscoverer <- true
@@ -144,8 +144,8 @@ let fullScan() =
     template
 
 let fullScanNoJavascript() =
-    let template = createTemplate("Full no Javascript scan", "8D870861-978E-4852-BEE0-8DF218939452")
-    template.Description <- "This configuration is exactly the same as Full Scan but without the parsing of Javascript. This will speed up the scan process. If the tested web site doesn't create any dynamic link/form via Javascript, this profile is the suggested one for a full scan."
+    let template = createTemplate("Full scan no Javascript", "8D870861-978E-4852-BEE0-8DF218939452")
+    template.Description <- "Run a full scan with all the checks enabled but without the parsing of Javascript. This will speed up the scan process. If the tested web site doesn't create any dynamic link/form via Javascript, this profile is the suggested one for a full scan."
 
     template.RunCrawler <- true
     template.RunResourceDiscoverer <- true

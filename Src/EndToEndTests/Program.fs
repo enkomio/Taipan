@@ -118,6 +118,7 @@ let runTest (grovieraUri: Uri) (testExpr: Expr<Uri -> unit>) =
 [<EntryPoint>]
 let main argv = 
     let grovieraUri = Utility.runGrovieraServer()
-    allTests |> List.iter(runTest grovieraUri)
+    //allTests |> List.iter(runTest grovieraUri)
+    runTest grovieraUri <@ InspectorTests.``Identify a Stored Croos Site Scripting`` @>
     Utility.shutDownServer()  
     0

@@ -53,7 +53,9 @@ type StoredCrossSiteScriptingAddOn() as this =
                 Note = String.Format("Parameter = {0}", parameterName)
             )
         securityIssue.Transactions.Add(inWebRequest, inWebResponse)
+        securityIssue.Details.Properties.Add("InUrl", inWebRequest.HttpRequest.Uri.ToString())
         securityIssue.Transactions.Add(outWebRequest, outWebResponse)
+        securityIssue.Details.Properties.Add("OutUrl", outWebRequest.HttpRequest.Uri.ToString())
         securityIssue.Details.Properties.Add("Parameter", parameterName)
         securityIssue.Details.Properties.Add("Attack", attackString)
         securityIssue.Details.Properties.Add("Html", outWebResponse.HttpResponse.Html)
@@ -76,16 +78,15 @@ type StoredCrossSiteScriptingAddOn() as this =
 
     let sendProbe(parameter: ProbeParameter, probeRequest: ProbeRequest, probeValue: String) =
         // save values
-        let originalValue = parameter.AlterValue
+        let originalValue = parameter.Value
         let filename = parameter.Filename
 
         // send probe request
         parameter.AlterValue(probeValue)
-        parameter.ExpectedValues <- [probeValue]
         let webResponse = sendProbeRequest(parameter, probeRequest)
 
         // restore value
-        parameter.AlterValue <- originalValue
+        parameter.Value <- originalValue
         parameter.Filename <- filename
 
         webResponse
@@ -107,9 +108,7 @@ type StoredCrossSiteScriptingAddOn() as this =
                 if isRequestOkToAnalyze(parameter, probeRequest) then
                     parameters.Add(parameter)
         )
-
-        let pageTested = parameters.Any()
-           
+                   
         // analyze all new parameters
         parameters
         |> Seq.filter(isParameterSafeToTest)
@@ -131,7 +130,7 @@ type StoredCrossSiteScriptingAddOn() as this =
             | _ -> ()
         )
 
-        pageTested
+
 
     let verifyProbePresence(testRequest: TestRequest) =
         // re-send the request
@@ -212,5 +211,5 @@ type StoredCrossSiteScriptingAddOn() as this =
 
     default this.Scan(testRequest: TestRequest, stateController: ServiceStateController) =
         if testRequest.RequestType = TestRequestType.CrawledPage then
-            if probePage(testRequest, stateController) then
-                _testRequests.Add(testRequest)        
+            probePage(testRequest, stateController)
+            _testRequests.Add(testRequest)

@@ -88,6 +88,7 @@ Target "CreateAddOnData" (fun _ ->
     // write xss payload  
     let xssData = [
         // attack vector | list of payloads to search in the html        
+        ("<SCRIPT>document.write('<h1>-= TEXT XSS =-</h1>');</SCRIPT>", ["<h1>-= TEXT XSS =-</h1>"]);
         ("<SCRIPT>alert('XSS');</SCRIPT>", ["<SCRIPT>alert('XSS');</SCRIPT>"]);
         ("<IMG SRC=JaVaScRiPt:alert('XSS')>", ["<IMG SRC=JaVaScRiPt:alert('XSS')>"]);
         ("<IMG SRC=javascript:alert(&quot;XSS&quot;)>", ["<IMG SRC=javascript:alert('XSS')>"]);
