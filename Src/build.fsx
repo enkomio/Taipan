@@ -34,6 +34,22 @@ let authors = [ "Enkomio" ]
 // File system information
 let solutionFile  = "TaipanSln.sln"
 
+let appConfig = """
+<?xml version="1.0" encoding="utf-8"?>
+<configuration>
+  <startup>
+    <supportedRuntime version="v4.0" sku=".NETFramework,Version=v4.6.1" />
+  </startup>
+  <runtime>
+    <assemblyBinding xmlns="urn:schemas-microsoft-com:asm.v1">
+      <dependentAssembly>
+        <assemblyIdentity name="FSharp.Core" publicKeyToken="b03f5f7f11d50a3a" culture="neutral" />
+        <bindingRedirect oldVersion="0.0.0.0-4.4.0.0" newVersion="4.4.0.0" />
+      </dependentAssembly>
+    </assemblyBinding>
+  </runtime>
+</configuration>"""
+
 // Build dir
 let buildDir = "./build"
 
@@ -46,8 +62,11 @@ let releaseNotesData =
     File.ReadAllLines(changelogFile)
     |> parseAllReleaseNotes
 
-let releaseVersion = (List.head releaseNotesData)
-trace("Build release: " + releaseVersion.AssemblyVersion)
+let releaseNoteVersion = Version.Parse((List.head releaseNotesData).AssemblyVersion)
+let buildVersion = int32(DateTime.UtcNow.Subtract(new DateTime(1980,2,1,0,0,0)).TotalSeconds)
+let releaseVersionOfficial = new Version(releaseNoteVersion.Major, releaseNoteVersion.Minor, buildVersion)
+let releaseVersion = {List.head releaseNotesData with AssemblyVersion = releaseVersionOfficial.ToString()}
+trace("Version: " + releaseVersion.AssemblyVersion)
 
 let stable = 
     match releaseNotesData |> List.tryFind (fun r -> r.NugetVersion.Contains("-") |> not) with
@@ -106,7 +125,7 @@ Target "CreateAddOnData" (fun _ ->
     ] 
     |> List.iter(fun addOnId -> writeAddOnData(addOnId, xssData, "Payloads"))    
 
-    // write sql injection errors
+    // write sql injection errors, src: sqlmap project
     let sqliAddOn = new ES.Taipan.Inspector.AddOns.SqlInjection.SqlInjectionAddOn()
     let sqliErrors = [
         ("MySQL", [
