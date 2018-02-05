@@ -72,6 +72,7 @@ module InspectorPages =
         <li>TEST31: <a href="/inspector/test31/">/inspector/test31/</a> Password witha utocomplete enabled</li>
         <li>TEST32: <a href="/inspector/test32/">/inspector/test32/</a> Extract information from a .git directory</li>
         <li>TEST33: <a href="/inspector/test33/">/inspector/test33/</a> Stored Cross Site Scripting</li>
+        <li>TEST34: <a href="/inspector/test34/">/inspector/test34/</a> Web Application Session ID Passed In URL</li>
 	</ul><br/>
   </body>
 </html>""" ctx
@@ -331,6 +332,20 @@ module InspectorPages =
                     """
 
                     OK (html1 + allValues) ctx
+
+                path "/inspector/test34/" >=> fun (ctx: HttpContext) ->
+                    let html = """
+                         <h1>Web Application Session ID Passed In URL test</h1>
+                         <form action="/inspector/test34/store.php" method="GET">
+                            Value to save: <input type="text" name="value"><br>
+                            <input type="submit" value="Send">
+                         </form>
+                    """
+
+                    OK html ctx
+
+                path "/inspector/test34/store.php" >=> fun (ctx: HttpContext) ->   
+                    Redirection.redirect("/inspector/test34/?JSESSIONID=" + Guid.NewGuid().ToString("N")) ctx
             ]
 
             POST >=> choose [

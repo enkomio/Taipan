@@ -82,6 +82,7 @@ let allTests : Expr<Uri -> unit> list = [
     <@ InspectorTests.``Check for Password without Autocomplete to OFF`` @>
     <@ InspectorTests.``Exctract information from a .git folder`` @>
     <@ InspectorTests.``Identify a Stored Croos Site Scripting`` @>
+    <@ InspectorTests.``Identify a session token sent via GET`` @>
     
     // Composed tests
     <@ ComposedTests.``Identify an hidden directory and discover a know web application`` @>

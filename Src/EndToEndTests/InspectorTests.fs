@@ -542,3 +542,16 @@
         // run the scan
         Utility.runScan(scanContext) 
         |> Utility.verifyInspector [("Stored Cross Site Scripting", "/inspector/test33/")]
+
+    let ``Identify a session token sent via GET``(grovieraUrl: Uri) =
+        let scanContext = 
+            new ScanContext(
+                 StartRequest = new WebRequest(new Uri(grovieraUrl, "/inspector/test34/")),
+                Template = Templates.``Website inspector``()
+            )
+
+        activatePlugin(scanContext, "C76061B2-52AE-4C64-BD2E-71EA3AC41B93")
+
+        // run the scan
+        Utility.runScan(scanContext) 
+        |> Utility.verifyInspector [("Exposed Session Variables", "/inspector/test34/")]
