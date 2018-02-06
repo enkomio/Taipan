@@ -1,5 +1,8 @@
-### 1.2.5 - XX/XX/2018
+### 1.2.5 - 06/02/2018
 * Implemented Re-Crawling of identified web pages
+* Minor bug fixes
+* Added Stored Cross Site Scripting check
+* Added Exposed Session Variables check
 
 ### 1.2.4 - 21/12/2017
 * Added Blind SQL Injection check
