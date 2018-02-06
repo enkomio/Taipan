@@ -9,6 +9,7 @@ open Microsoft.FSharp.Quotations.DerivedPatterns
 open FSharp.Quotations.Evaluator
 
 let allTests : Expr<Uri -> unit> list = [
+
     // Discovere tests
     <@ DiscovererTests.``Non recursive discoverer of hidden resources`` @>
     <@ DiscovererTests.``Recursive discoverer of hidden resources`` @>
@@ -114,7 +115,6 @@ let runTest (grovieraUri: Uri) (testExpr: Expr<Uri -> unit>) =
             testMethod(grovieraUri) 
         | _ -> failwith "Wrong expression"
     | _ -> failwith "Wrong expression"    
-    
     
 [<EntryPoint>]
 let main argv = 

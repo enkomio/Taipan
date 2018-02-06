@@ -226,6 +226,7 @@ let notInvasive() =
     template.VulnerabilityScannerSettings.AddOnIdsToActivate.Add(Guid.Parse("85EF16CC-3682-4CDC-A2F5-A5FD889474FF")) // Missing Autocomplete to False
     template.VulnerabilityScannerSettings.AddOnIdsToActivate.Add(Guid.Parse("A719DE80-32BF-4E53-BCB2-D138BF953853")) // Missing Cookie HttpOnly
     template.VulnerabilityScannerSettings.AddOnIdsToActivate.Add(Guid.Parse("FDC3E54E-98F2-4C14-A620-9E4629CAEE0B")) // Missing Cookie Secure
+    template.VulnerabilityScannerSettings.AddOnIdsToActivate.Add(Guid.Parse("C76061B2-52AE-4C64-BD2E-71EA3AC41B93")) // Exposed Session Variables
         
     template
 

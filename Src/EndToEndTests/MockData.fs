@@ -222,10 +222,10 @@ module MockData
             context.AddOnStorage.SaveProperty("Joomla", ["V0001"; "V0002"])
             
             let vuln = {Id = Guid.NewGuid(); Application = "Joomla"; AffectedVersions = ["3.0.0 - 3.4.5"]; VulnerabilityName = "Joomla 3.4.4 RXSS"; Impact = "Low"; ExternalReferer = "CVE-1.2.3"}
-            context.AddOnStorage.SaveProperty("V0001", vuln)
+            context.AddOnStorage.SaveProperty("Joomla_V0001", vuln)
 
             let vuln = {Id = Guid.NewGuid(); Application = "Joomla"; AffectedVersions = ["3.4.3"]; VulnerabilityName = "Joomla 3.4.4 RCE"; Impact = "Medium"; ExternalReferer = "CVE-1.2.4"}
-            context.AddOnStorage.SaveProperty("V0002", vuln)
+            context.AddOnStorage.SaveProperty("Joomla_V0002", vuln)
                         
         let ``Website fingerprinting``() =
             let webAppFingerprinterProfile = new ES.Taipan.Application.TemplateProfile(Id = Guid.Parse("4E813E5A-8738-4A86-B9F2-BC6E5023A7A9"), Name = "Fingerprint web application")        

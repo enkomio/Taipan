@@ -112,6 +112,7 @@ type FingerprintWithSignatures
             serviceMetrics.WaitForTasksFingerprintCompletation(!counter)
 
         // add back the new web applications
+        webApplicationFound.Clear()
         webApplicationFound.AddRange(identifiedWebApplications)
     
     member this.Fingerprint(fingerprintRequest: FingerprintRequest, webApplicationFound: List<WebApplicationIdentified>) =
