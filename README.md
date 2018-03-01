@@ -10,7 +10,6 @@ _Taipan_ is a an automated web application scanner which allows to identify web 
 <div style="white-space:nowrap;"><img src="https://github.com/enkomio/Taipan/blob/master/Misc/Scan-wizard.png" width="200"></div>
 <div style="white-space:nowrap;"><img src="https://github.com/enkomio/Taipan/blob/master/Misc/Settings.png" width="200"></div>
 
-
 If you are interested in trying the full product, you can contact me at: aparata[AT]gmail.com
 
 ## Download
@@ -26,7 +25,7 @@ _Taipan_ allow to scan the given web site by specifil different kind of profiles
 ### Launch a scan
 To launch a new scan you have to provide the _url_ and the _profile_ which must be used. It is not necessary to specify the full profile name, a prefix is enough. Below an example of execution:
 
-
+<a href="https://asciinema.org/a/166362" target="_blank"><img src="https://asciinema.org/a/166362.png" /></a>
 
 
 ## License
