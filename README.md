@@ -31,7 +31,7 @@ _Taipan_ allow to scan the given web site by specifil different kind of profiles
 ### Launch a scan
 To launch a new scan you have to provide the _url_ and the _profile_ which must be used. It is not necessary to specify the full profile name, a prefix is enough. Below an example of execution:
 
-<script type="text/javascript" src="https://asciinema.org/a/166362.js" id="asciicast-166362" async="async"></script>
+<a href="https://asciinema.org/a/166362" target="_blank"><img src="https://asciinema.org/a/166362.png" /></a>
 
 ## License
 
