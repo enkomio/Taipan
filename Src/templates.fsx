@@ -36,7 +36,7 @@ let createTemplate(name: String, guid: String) =
     defaultProfile.ResourceDiscovererSettings.RecursiveDepth <- 3
     defaultProfile.ResourceDiscovererSettings.UseBlankExtension <- true
     [
-        403; 406
+        403; 404; 406
         500; 503; 504; 508; 509
     ]
     |> List.iter(fun c -> defaultProfile.ResourceDiscovererSettings.BlackListedStatusCodes.Add(c) |> ignore)
@@ -202,9 +202,6 @@ let notInvasive() =
     template.ResourceDiscovererSettings.BeRecursive <- false
     template.ResourceDiscovererSettings.Dictionaries.Clear()
     template.ResourceDiscovererSettings.Dictionaries.Add("8C2248F7-5D56-493F-B0BC-366904327B91") // Dirbuster dictionary
-    template.ResourceDiscovererSettings.BlackListedStatusCodes.Add(403) |> ignore
-    template.ResourceDiscovererSettings.BlackListedStatusCodes.Add(500) |> ignore
-    template.ResourceDiscovererSettings.BlackListedStatusCodes.Add(503) |> ignore
         
     // vulnerability scanner settings
     template.RunVulnerabilityScanner <- true
