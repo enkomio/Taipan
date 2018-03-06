@@ -1,6 +1,6 @@
 # Taipan - Web Application Security Scanner
 
-_Taipan_ is a an automated web application scanner which allows to identify web vulnerabilities in an automatic fashion. This project is the core engine of a broader project which include other components, like a web dashboard where you can manage your scan or download a PDF report and and scanner agent to run on specific host. Below are some screenshots of the _Taipan_ dashboard:
+_Taipan_ is a an automated web application scanner which allows to identify web vulnerabilities in an automatic fashion. This project is the core engine of a broader project which include other components, like a web dashboard where you can manage your scan or download a PDF report and a scanner agent to run on specific host. Below are some screenshots of the _Taipan_ dashboard:
 
 <table>
  <tr>
@@ -14,7 +14,6 @@ _Taipan_ is a an automated web application scanner which allows to identify web 
   <td><img src="https://github.com/enkomio/Taipan/blob/master/Misc/Settings.png" width="200"></td>
  </tr>
 </table>
-
 
 If you are interested in trying the full product, you can contact me at: aparata[AT]gmail.com
 
