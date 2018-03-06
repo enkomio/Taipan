@@ -22,7 +22,7 @@ If you are interested in trying the full product, you can contact me at: aparata
  - [Download binary][2]
 
 ## Using Taipan
-_Taipan_ can run on both Windows (natively) and Linux (with mono). To run it in Linux you have to install mono in version >= 4.8.0.
+_Taipan_ can run on both Windows (natively) and Linux (with mono). To run it in Linux you have to install mono in version >= 4.8.0. You can track the implementation of the new features in the related <a href="https://github.com/taipan-scanner/Taipan/projects/1">Kanban board</a>.
 
 ### Scan Profile
 _Taipan_ allow to scan the given web site by specifil different kind of profiles. Each profile enable or disable a specific scan feature, to show all the available profile just run _Taipan_ with the _--show-profiles_ option.
