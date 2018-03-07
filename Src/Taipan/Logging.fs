@@ -18,13 +18,17 @@ let logFile(domain: String, profileName: String) =
 type internal ProgramLogger() =
     inherit LogSource("Program")
     
-    [<Log(1, Message = "Scan result log file: {0}", Level = LogLevel.Informational)>]
+    [<Log(1, Message = "Scan log file: {0}", Level = LogLevel.Informational)>]
     member this.ScanCompleted(logFile: String) = 
         this.WriteLog(1, [|logFile|])
         
     [<Log(2, Message = "Commands: [P] Pause [S] Stop [R] Resume", Level = LogLevel.Informational)>]
     member this.ScanCommands() = 
         this.WriteLog(2, [||])
+
+    [<Log(3, Message = "Scan result report: {0}", Level = LogLevel.Informational)>]
+    member this.ReportSaved(report: String) = 
+        this.WriteLog(3, [|report|])
          
 type ConsoleLogFormatter() = 
     let getLevelStr(logLevel: LogLevel) =

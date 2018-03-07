@@ -5,8 +5,6 @@ open System.Collections.Generic
 open System.IO
 open System.Net
 open System.Threading.Tasks
-open Newtonsoft.Json
-open Newtonsoft.Json.Linq
 
 module internal HttpRequestorUtility =
     let addPostData(data: String, webRequest: HttpWebRequest) =

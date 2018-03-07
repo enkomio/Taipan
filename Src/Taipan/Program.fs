@@ -1,6 +1,7 @@
 ﻿namespace Taipan
 
 open System
+open System.Collections.Generic
 open System.Threading.Tasks
 open System.Threading
 open System.IO
@@ -8,6 +9,8 @@ open System.Collections.Concurrent
 open System.Linq
 open System.Reflection
 open System.Diagnostics
+open Newtonsoft.Json
+open Newtonsoft.Json.Serialization
 open Argu
 open Logging
 open ES.Fslog
@@ -21,7 +24,8 @@ module Cli =
 
     type CLIArguments =
         | [<AltCommandLine("-u")>] Uri of String     
-        | [<AltCommandLine("-p")>] Profile of String  
+        | [<AltCommandLine("-p")>] Profile of String
+        | [<AltCommandLine("-o")>] Output of String
         | Show_Profiles
         | Version 
         | Verbose
@@ -31,9 +35,15 @@ module Cli =
                 match s with
                 | Uri _ -> "the URI to scan."
                 | Profile _ -> "profile name (or part of initial name) to use for the scan." 
+                | Output _ -> "output report filename."
                 | Show_Profiles -> "show all the currently available profiles."
                 | Version -> "display Taipan version."
                 | Verbose -> "print verbose messages."
+
+    let private getOrDefault(key: String, defaultValue: String, d: Dictionary<String, String>) =
+        if d.ContainsKey(key) 
+        then d.[key]
+        else defaultValue
 
     let printColor(msg: String, color: ConsoleColor) =
         Console.ForegroundColor <- color
@@ -182,7 +192,11 @@ module Cli =
 
             profile
 
-    let printToConsoleResult(scanResult: ScanResult) =
+    let generateJsonReport(scanResult: ScanResult, reportFilename: String option) =                
+        let scanReport = new ScanReport(scanResult)
+        scanReport.Save(reportFilename)
+
+    let printResultToConsole(scanResult: ScanResult) =
         Console.WriteLine()
         
         // print server fingerprint
@@ -230,30 +244,27 @@ module Cli =
                 Console.WriteLine("\t{0} v{1} {2}", webApp.WebApplicationFingerprint.Name, versions, webApp.Request.Request.Uri.AbsolutePath)
             )
             Console.WriteLine()
-
+        
         // print security issues
         let issues = scanResult.GetSecurityIssues()
         if issues.Any() then
             printColor("-= Security Issues =-", ConsoleColor.DarkCyan)
             issues
             |> Seq.iter(fun issue ->
-                let paramName = 
-                    if issue.Details.Properties.ContainsKey("parameter")
-                    then issue.Details.Properties.["parameter"]
-                    else String.Empty
-                Console.WriteLine("\t{0} {1} {2}", issue.Name, issue.Uri.AbsoluteUri, paramName)
+                let paramName = getOrDefault("parameter", "N/A", issue.Details.Properties)
+                Console.WriteLine("\t{0} Uri:{1} Parameter:{2}", issue.Name, issue.Uri.AbsoluteUri, paramName)
             )
             Console.WriteLine()
 
     let runScanWithTemplateName(urlToScan: String, profileName: String, isVerbose: Boolean) =
         let profile = loadProfile(profileName)
         match Uri.IsWellFormedUriString(urlToScan, UriKind.Absolute) with
-        | false -> printError(String.Format("Url {0} is not valid", urlToScan)) |> ignore
+        | false -> 
+            printError(String.Format("Url {0} is not valid", urlToScan)) |> ignore
+            None
         | true ->             
             let (logProvider, logFile) = configureLoggers(urlToScan, profile.Name, isVerbose)
-            let scanResult = runScanWithTemplate(urlToScan, profile, logProvider)
-            printToConsoleResult(scanResult)
-            programLogger.ScanCompleted(logFile)
+            Some(runScanWithTemplate(urlToScan, profile, logProvider), logFile)
 
     [<EntryPoint>]
     let main argv = 
@@ -272,6 +283,7 @@ module Cli =
                 let showProfiles = results.Contains(<@ Show_Profiles @>)
                 let urlToScan = results.TryGetResult(<@ Uri @>)
                 let profileName = results.TryGetResult(<@ Profile @>)
+                let outputReport = results.TryGetResult(<@ Output @>)
                 
                 if showProfiles then
                     prettyPrintProfiles()
@@ -281,7 +293,14 @@ module Cli =
                     match (urlToScan, profileName) with
                     | (Some urlToScan, Some profileName) ->
                         replLoop()
-                        runScanWithTemplateName(urlToScan, profileName, isVerbose)
+                        match runScanWithTemplateName(urlToScan, profileName, isVerbose) with
+                        | Some (scanResult, logFile) ->
+                            printResultToConsole(scanResult)                            
+                            let reportFile = generateJsonReport(scanResult, outputReport)
+                            programLogger.ReportSaved(reportFile)
+                            programLogger.ScanCompleted(logFile)
+                        | None -> ()
+
                     | _ -> printUsage(parser.PrintUsage())   
                 0
         with 

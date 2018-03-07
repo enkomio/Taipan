@@ -31,7 +31,7 @@ module CrawlerPages =
         <li>TEST10: <a href="/crawler/test10/">/crawler/test10/</a></li>
         <li>TEST11: <a href="/crawler/test11/">/crawler/test11/</a></li>
         <li>TEST12: <a href="/crawler/test12/">/crawler/test12/</a></li>
-        <li>TEST13: <a href="/crawler/test13/">/crawler/test13/</a></li>
+        <li>TEST13: go to: /crawler/test13/ this page will create an unfinite number of pages</li>
         <li>TEST14: <a href="/crawler/test14/">/crawler/test14/</a></li>
         <li>TEST15: <a href="/crawler/test15/">/crawler/test15/</a></li>
         <li>TEST16: <a href="/crawler/test16/">/crawler/test16/</a></li>

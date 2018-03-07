@@ -8,7 +8,6 @@ open System.Collections.Concurrent
 open System.Collections.Generic
 open System.ComponentModel.Composition
 open System.ComponentModel.Composition.Hosting
-open Newtonsoft.Json
 open ES.Taipan.Crawler
 open ES.Taipan.Infrastructure.Network
 open ES.Taipan.Infrastructure.Common

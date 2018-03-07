@@ -7,7 +7,7 @@ open System.Linq
 open ES.Taipan.Infrastructure.Validation
 
 type ResourceDiscovererSettings() = 
-    static let x str = XName.Get str
+    let x(str) = XName.Get str
 
     /// If true execute the discovery process on every directory found
     member val BeRecursive = true with get, set 

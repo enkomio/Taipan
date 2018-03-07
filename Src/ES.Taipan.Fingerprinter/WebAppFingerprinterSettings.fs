@@ -7,7 +7,7 @@ open System.Linq
 open ES.Taipan.Infrastructure.Validation
 
 type WebAppFingerprinterSettings() = 
-    static let x str = XName.Get str
+    let x(str) = XName.Get str
 
     /// If true the first web application identified will break the process. This is the common case 
     /// since it is odd that more than one application is installed on the same directory. This setting consider only 

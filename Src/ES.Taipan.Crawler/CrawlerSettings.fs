@@ -14,7 +14,7 @@ type DefaultParameter = {
 }
 
 type CrawlerSettings() = 
-    static let x str = XName.Get str
+    let x(str) = XName.Get str
 
     /// If true activate all loaded addOns
     member val ActivateAllAddOns = true with get, set

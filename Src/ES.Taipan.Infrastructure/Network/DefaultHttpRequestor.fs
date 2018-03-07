@@ -14,8 +14,6 @@ open ES.Taipan.Infrastructure.Common
 open ES.Taipan.Infrastructure.Threading
 open ES.Taipan.Infrastructure.Text
 open ES.Fslog
-open Newtonsoft.Json
-open Newtonsoft.Json.Linq
 
 type DefaultHttpRequestor(defaultSettings: HttpRequestorSettings, requestNotificationCallback: HttpRequest * Boolean -> unit, logProvider: ILogProvider) =   
     let _seleniumDriver = new SeleniumDriver(logProvider)        
