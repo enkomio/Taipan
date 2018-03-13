@@ -27,6 +27,15 @@ _Taipan_ can run on both Windows (natively) and Linux (with mono). To run it in 
 ### Scan Profile
 _Taipan_ allow to scan the given web site by specifil different kind of profiles. Each profile enable or disable a specific scan feature, to show all the available profile just run _Taipan_ with the _--show-profiles_ option.
 
+### Scan/Stop/Pause a scan
+During a scan you can interact with it by set the scan in Pause or Stop it if necessary. In order to do so you have to press:
+
+- P: pause the scan
+- S: stop the scan
+- R: resume a paused scan
+
+The state change is not immediate and you have to wait until all threads have reached the desider state.
+
 ### Launch a scan
 To launch a new scan you have to provide the _url_ and the _profile_ which must be used. It is not necessary to specify the full profile name, a prefix is enough. Below an example of execution:
 
