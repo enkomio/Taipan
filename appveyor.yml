@@ -15,5 +15,5 @@ test: off
 environment:
   PAKET_BOOTSTRAPPER_TRACE: true  
   
- artifacts:
+artifacts:
   - path: release
