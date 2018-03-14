@@ -2,7 +2,7 @@
 cls
 
 @rem paket.exe install
-paket.exe install
+..\paket.exe install
 if errorlevel 1 (
   exit /b %errorlevel%
 )
