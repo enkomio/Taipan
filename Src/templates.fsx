@@ -1,20 +1,24 @@
 // --------------------------------------------------------------------------------------
-// Script that contains the official Taipan template used in production
+// Script that contains the official Taipan templates used in production
 // --------------------------------------------------------------------------------------
 
 // load the Debug version of the Assemblies
 #r "packages/FSharpLog/lib/ES.Fslog.dll"
-#r "ES.Taipan.Infrastructure/bin/Debug/ES.Taipan.Infrastructure.dll"
-#r "ES.Taipan.Crawler/bin/Debug/ES.Taipan.Crawler.dll"
-#r "ES.Taipan.Crawler.WebScrapers/bin/Debug/ES.Taipan.Crawler.WebScrapers.dll"
-#r "ES.Taipan.Discoverer/bin/Debug/ES.Taipan.Discoverer.dll"
-#r "ES.Taipan.Fingerprinter/bin/Debug/ES.Taipan.Fingerprinter.dll"
-#r "ES.Taipan.Inspector/bin/Debug/ES.Taipan.Inspector.dll"
-#r "ES.Taipan.Application/bin/Debug/ES.Taipan.Application.dll"
 
 open System
 open System.Reflection
 open System.IO
+
+let args = Environment.GetCommandLineArgs()
+
+#r "ES.Taipan.Infrastructure/bin/Release/ES.Taipan.Infrastructure.dll"
+#r "ES.Taipan.Crawler/bin/Release/ES.Taipan.Crawler.dll"
+#r "ES.Taipan.Crawler.WebScrapers/bin/Release/ES.Taipan.Crawler.WebScrapers.dll"
+#r "ES.Taipan.Discoverer/bin/Release/ES.Taipan.Discoverer.dll"
+#r "ES.Taipan.Fingerprinter/bin/Release/ES.Taipan.Fingerprinter.dll"
+#r "ES.Taipan.Inspector/bin/Release/ES.Taipan.Inspector.dll"
+#r "ES.Taipan.Application/bin/Release/ES.Taipan.Application.dll"
+
 open ES.Taipan.Application
 open ES.Taipan.Crawler
 open ES.Taipan.Crawler.WebScrapers
