@@ -1,0 +1,20 @@
+image: Visual Studio 2015
+
+install:
+  - cinst fake -pre
+
+  build_script:
+# See https://stackoverflow.com/a/12866669/1269722
+# Problem is that colors are lost
+# Don't blame me but powershell is the bigest crap on earth
+  - cmd: fake.exe -v run Src\build.fsx
+
+#  - ps: .\build.cmd
+on_failure:
+  - appveyor PushArtifact taipan.svclog
+test: off
+environment:
+  PAKET_BOOTSTRAPPER_TRACE: true  
+  
+ artifacts:
+  - path: release
