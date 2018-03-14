@@ -7,7 +7,7 @@ build_script:
 # See https://stackoverflow.com/a/12866669/1269722
 # Problem is that colors are lost
 # Don't blame me but powershell is the bigest crap on earth
-  - cmd: fake.exe -v run Src\build.fsx
+  - cmd: fake.exe Src\build.fsx PrintColors -pd
 
 on_failure:
   - appveyor PushArtifact taipan.svclog
