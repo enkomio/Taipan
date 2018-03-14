@@ -56,6 +56,9 @@ let buildDir = "./build"
 // Package dir
 let deployDir = "./deploy"
 
+// set the script dir as current
+Directory.SetCurrentDirectory(__SOURCE_DIRECTORY__)
+
 // Read additional information from the release notes document
 let releaseNotesData = 
     let changelogFile = Path.Combine("..", "RELEASE_NOTES.md")

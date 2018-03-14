@@ -2,9 +2,9 @@
 cls
 
 @rem paket.exe install
-..\paket.exe install
+paket.exe install
 if errorlevel 1 (
   exit /b %errorlevel%
 )
 
-"packages\FAKE\tools\Fake.exe" build.fsx %*
+"Src\packages\FAKE\tools\Fake.exe" Src\build.fsx %*
