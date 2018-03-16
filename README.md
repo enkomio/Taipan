@@ -27,7 +27,7 @@ If you are interested in trying the full product, you can contact me at: aparata
 | -------- | -------------- |
 | Windows  | [![Build status](https://ci.appveyor.com/api/projects/status/j0t1m1wm46yrgvdr?svg=true)](https://ci.appveyor.com/project/enkomio/taipan) |
 
-If you want to try the dev version of Taipan without to wait to an official release, you can download the build version. This version is built every time that a commit is done and the build process is not broken. You can download it from the [Artifacts Directory](https://ci.appveyor.com/project/enkomio/taipan/build/artifacts).
+If you want to try the dev version of Taipan without to wait for an official release, you can download the build version. This version is built every time that a commit is done and the build process is not broken. You can download it from the [Artifacts Directory](https://ci.appveyor.com/project/enkomio/taipan/build/artifacts).
 
 ## Using Taipan
 _Taipan_ can run on both Windows (natively) and Linux (with mono). To run it in Linux you have to install mono in version >= 4.8.0. You can track the implementation of the new features in the related <a href="https://github.com/taipan-scanner/Taipan/projects/1">Kanban board</a>.
