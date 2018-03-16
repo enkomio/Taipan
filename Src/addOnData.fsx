@@ -3,9 +3,9 @@
 // --------------------------------------------------------------------------------------
 #r @"packages/FAKE/tools/FakeLib.dll"
 #r @"packages/FSharpLog/lib/ES.FsLog.dll"
-#r @"ES.Taipan.Infrastructure/bin/Release/ES.Taipan.Infrastructure.dll"
-#r @"ES.Taipan.Inspector/bin/Release/ES.Taipan.Inspector.dll"
-#r @"ES.Taipan.Inspector.AddOns/bin/Release/ES.Taipan.Inspector.AddOns.dll"
+#r @"build/Taipan/ES.Taipan.Infrastructure.dll"
+#r @"build/Taipan/ES.Taipan.Inspector.dll"
+#r @"build/Taipan/ES.Taipan.Inspector.AddOns.dll"
 
 open System
 open System.IO

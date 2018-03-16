@@ -11,13 +11,13 @@ open System.IO
 
 let args = Environment.GetCommandLineArgs()
 
-#r "ES.Taipan.Infrastructure/bin/Release/ES.Taipan.Infrastructure.dll"
-#r "ES.Taipan.Crawler/bin/Release/ES.Taipan.Crawler.dll"
-#r "ES.Taipan.Crawler.WebScrapers/bin/Release/ES.Taipan.Crawler.WebScrapers.dll"
-#r "ES.Taipan.Discoverer/bin/Release/ES.Taipan.Discoverer.dll"
-#r "ES.Taipan.Fingerprinter/bin/Release/ES.Taipan.Fingerprinter.dll"
-#r "ES.Taipan.Inspector/bin/Release/ES.Taipan.Inspector.dll"
-#r "ES.Taipan.Application/bin/Release/ES.Taipan.Application.dll"
+#r "build/Taipan/ES.Taipan.Infrastructure.dll"
+#r "build/Taipan/ES.Taipan.Crawler.dll"
+#r "build/Taipan/ES.Taipan.Crawler.WebScrapers.dll"
+#r "build/Taipan/ES.Taipan.Discoverer.dll"
+#r "build/Taipan/ES.Taipan.Fingerprinter.dll"
+#r "build/Taipan/ES.Taipan.Inspector.dll"
+#r "build/Taipan/ES.Taipan.Application.dll"
 
 open ES.Taipan.Application
 open ES.Taipan.Crawler
