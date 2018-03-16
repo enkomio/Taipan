@@ -53,7 +53,7 @@
         Utility.runScan(scanContext) 
         |> Utility.verifyInspector [("Information Leakage", "/inspector/test3/")]
 
-    let ``Identify info leak due to an email in an HTML content``(grovieraUrl: Uri) =   
+    let ``Identify info leak due to an email in an HTML comments``(grovieraUrl: Uri) =   
         let scanContext = 
             new ScanContext(
                 StartRequest = new WebRequest(new Uri(grovieraUrl, "/inspector/test4/")),

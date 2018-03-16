@@ -53,7 +53,7 @@ let allTests : Expr<Uri -> unit> list = [
     <@ InspectorTests.``Identify a directory listing`` @>
     <@ InspectorTests.``Identify an outdated web application`` @>
     <@ InspectorTests.``Identify internal IP info leak`` @>
-    <@ InspectorTests.``Identify info leak due to an email in an HTML content`` @>
+    <@ InspectorTests.``Identify info leak due to an email in an HTML comments`` @>
     <@ InspectorTests.``Identify info leak due to an hyperlink in an HTML content`` @>
     <@ InspectorTests.``Identify missing security headers`` @>
     <@ InspectorTests.``Identify Strinc Transport Layer with a too low maxage value`` @>

@@ -89,7 +89,7 @@ module InspectorPages =
 
                 path "/inspector/test3/" >=> okContent "This is my internal network IP: 10.68.66.92"
 
-                path "/inspector/test4/" >=> okContent "This is an email in comment <!-- This is a leaked email: my-email@enkomio.com -->"
+                path "/inspector/test4/" >=> okContent "This is an email in comment <!-- This is a leaked email: my-email@enkomio.com and this is a test for invalid TLD: login-banner@2x.png -->"
 
                 path "/inspector/test5/" >=> okContent "This is an hidden link in comment <!-- This is a link to an hidden resources: <a href='/inspector/test5/hidden'>Link</a> -->"
                 path "/inspector/test5/hidden" >=> ok

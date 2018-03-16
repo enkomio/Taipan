@@ -35,7 +35,9 @@ type InformationLeakageAddOn() as this =
                 let mutable m = Regex.Match(comment.ToUpperInvariant(), "[A-Z0-9._%-]+@[A-Z0-9.-]+\.[A-Z]{2,4}", RegexOptions.Singleline)
                 while m.Success do
                     let email = comment.Substring(m.Index, m.Length).Trim()
-                    yield email
+                    let isValidTld = TldList.tdlList |> Array.exists(fun validTld -> email.EndsWith("." + validTld, StringComparison.OrdinalIgnoreCase))
+                    if isValidTld then 
+                        yield email
                     m <- m.NextMatch()
         }
 
