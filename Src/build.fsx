@@ -170,21 +170,24 @@ Target "GenerateAddOnData" (fun _ ->
 )
 
 Target "CopyBrowserBinaries" (fun _ ->
-    // copy chrome
-    ensureDirectory (buildDir + "/Taipan/ChromeBins/Windows")    
-    Unzip  (buildDir + "/Taipan/ChromeBins/Windows") ("../Bins/chrome-win32.zip")
+    ["Taipan"; "EndToEndTests"]
+    |> List.iter(fun directoryName ->
+         // copy chrome
+        ensureDirectory (buildDir + "/" + directoryName + "/ChromeBins/Windows")    
+        Unzip  (buildDir + "/" + directoryName + "/ChromeBins/Windows") ("../Bins/chrome-win32.zip")
         
-    ensureDirectory (buildDir + "/Taipan/ChromeBins/Unix32")
-    Unzip  (buildDir + "/Taipan/ChromeBins/Unix32") ("../Bins/chrome-linux32.zip")
+        ensureDirectory (buildDir + "/" + directoryName + "/ChromeBins/Unix32")
+        Unzip  (buildDir + "/" + directoryName + "/ChromeBins/Unix32") ("../Bins/chrome-linux32.zip")
 
-    ensureDirectory (buildDir + "/Taipan/ChromeBins/Unix64")
-    Unzip  (buildDir + "/Taipan/ChromeBins/Unix64") ("../Bins/chrome-linux64.zip")
+        ensureDirectory (buildDir + "/" + directoryName + "/ChromeBins/Unix64")
+        Unzip  (buildDir + "/" + directoryName + "/ChromeBins/Unix64") ("../Bins/chrome-linux64.zip")
 
-    // copy ChromeDriver and clean build
-    ensureDirectory (buildDir + "/Taipan/driver")
-    FileUtils.rm (buildDir + "/Taipan/chromedriver")
-    FileUtils.rm (buildDir + "/Taipan/chromedriver.exe")
-    FileUtils.cp_r "../Bins/driver/" (buildDir + "/Taipan/driver")    
+        // copy ChromeDriver and clean build
+        ensureDirectory (buildDir + "/" + directoryName + "/driver")
+        FileUtils.rm (buildDir + "/" + directoryName + "/chromedriver")
+        FileUtils.rm (buildDir + "/" + directoryName + "/chromedriver.exe")
+        FileUtils.cp_r "../Bins/driver/" (buildDir + "/" + directoryName + "/driver")    
+    )
 )
 
 // Generate assembly info files with the right version & up-to-date information
