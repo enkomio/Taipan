@@ -101,13 +101,21 @@ Target "AssemblyInfo" (fun _ ->
 )
 
 Target "Compile" (fun _ ->
-    // compile Taipan
-    let projectName = "Taipan"
-    let project = Path.Combine(projectName, projectName + ".fsproj")
-    let fileName = Path.GetFileNameWithoutExtension(projectName)
-    let buildAppDir = Path.Combine(buildDir, fileName)
-    ensureDirectory buildAppDir
-    MSBuildRelease buildAppDir "Build" [project] |> Log "Taipan Build Output: "
+    ["Taipan"; "EndToEndTests"]
+    |> List.iter(fun projectName ->
+        let project = Path.Combine(projectName, projectName + ".fsproj")
+        let fileName = Path.GetFileNameWithoutExtension(projectName)
+        let buildAppDir = Path.Combine(buildDir, fileName)
+        ensureDirectory buildAppDir
+        MSBuildRelease buildAppDir "Build" [project] |> Log "Build Output: "
+    )
+)
+
+Target "EndToEndTests" (fun _ ->
+    let endToEndBinary = Path.Combine(buildDir, "EndToEndTests", "EndToEndTests.exe")
+    let result = ExecProcess (fun info -> info.FileName <- endToEndBinary ) (TimeSpan.FromMinutes 5.0)
+    if result <> 0 then 
+        failwith "EndToEndTests returned with a non-zero exit code"
 )
 
 Target "GenerateTemplates" (fun _ ->
@@ -198,6 +206,7 @@ Target "All" DoNothing
 "Clean"  
   ==> "AssemblyInfo"
   ==> "Compile"  
+  ==> "EndToEndTests"
   ==> "GenerateTemplates"  
   ==> "GenerateAddOnData"
   ==> "CopyBrowserBinaries"
