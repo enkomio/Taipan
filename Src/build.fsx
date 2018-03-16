@@ -112,6 +112,7 @@ Target "Compile" (fun _ ->
 )
 
 Target "EndToEndTests" (fun _ ->
+    Console.WriteLine("[!] Start End To End tests")
     let endToEndBinary = Path.Combine(buildDir, "EndToEndTests", "EndToEndTests.exe")
     let result = ExecProcess (fun info -> info.FileName <- endToEndBinary ) (TimeSpan.FromMinutes 5.0)
     if result <> 0 then 
