@@ -17,7 +17,7 @@ _Taipan_ is a an automated web application scanner which allows to identify web 
 
 If you are interested in trying the full product, you can contact me at: aparata[AT]gmail.com
 
-## Download
+## Release Download
  - [Source code][1]
  - [Download binary][2]
  
@@ -26,6 +26,8 @@ If you are interested in trying the full product, you can contact me at: aparata
 | Platform | Status         |
 | -------- | -------------- |
 | Windows  | [![Build status](https://ci.appveyor.com/api/projects/status/32r7s2skrgm9ubva/branch/master?svg=true)](https://ci.appveyor.com/project/enkomio/taipan/branch/master) |
+
+If you want to try the dev version of Taipan without to wait to an official release, you can download the build version. This version is build every time that a commit is done and the build process is not broken. You can download it from the [Artifacts Directory](https://ci.appveyor.com/project/enkomio/taipan/build/artifacts).
 
 ## Using Taipan
 _Taipan_ can run on both Windows (natively) and Linux (with mono). To run it in Linux you have to install mono in version >= 4.8.0. You can track the implementation of the new features in the related <a href="https://github.com/taipan-scanner/Taipan/projects/1">Kanban board</a>.
