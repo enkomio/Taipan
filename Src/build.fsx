@@ -206,11 +206,11 @@ Target "All" DoNothing
 
 "Clean"  
   ==> "AssemblyInfo"
-  ==> "Compile"  
-  ==> "EndToEndTests"
+  ==> "Compile"    
   ==> "GenerateTemplates"  
   ==> "GenerateAddOnData"
   ==> "CopyBrowserBinaries"
+  ==> "EndToEndTests"
   ==> "Release"
   ==> "All"
 

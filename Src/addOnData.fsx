@@ -160,9 +160,15 @@ let createAddOnData(buildDir: String) =
     writeAddOnData(sqliAddOn, sqliErrors, "Errors", buildDir)
 
 let deployToDirectory(buildDir: String) =
-    // copy all add On Data
+    createAddOnData(buildDir)
+
+    // copy all AddOn Data
     ensureDirectory (buildDir + "/Taipan/Data")    
     FileUtils.cp_r ("../Data")  (buildDir + "/Taipan/Data")
 
     // copy lua script    
     FileUtils.cp_r "ES.Taipan.Fingerprinter/Lua" (buildDir + "/Taipan/Data/Scripts")
+
+    // replicate the Data directory in EndToEndTests
+    ensureDirectory (buildDir + "/EndToEndTests/Data")    
+    FileUtils.cp_r (buildDir + "/Taipan/Data") (buildDir + "/EndToEndTests/Data")
