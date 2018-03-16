@@ -139,7 +139,7 @@ let runGrovieraServer() =
     Task.Factory.StartNew(fun () -> 
         ES.Groviera.Program.main([|host; port|])
     ) |> ignore
-    Thread.Sleep(4000)
+    Thread.Sleep(6000)
     new Uri("http://" + host + ":" + port)
 
 
