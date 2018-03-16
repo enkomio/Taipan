@@ -213,7 +213,7 @@ Target "All" DoNothing
   ==> "GenerateTemplates"  
   ==> "GenerateAddOnData"
   ==> "CopyBrowserBinaries"
-  ==> "EndToEndTests"
+  //==> "EndToEndTests"
   ==> "Release"
   ==> "All"
 
