@@ -4,10 +4,14 @@
 
 #r @"packages/FAKE/tools/FakeLib.dll"
 #r @"packages/FSharpLog/lib/ES.FsLog.dll"
+#r @"packages/FSharp.Compiler.Service/lib/net45/FSharp.Compiler.Service.dll"
 
 open System
 open System.Collections.Generic
+open System.Text
 open System.IO
+open Microsoft.FSharp.Compiler.Interactive.Shell
+
 
 open Fake
 open Fake.AssemblyInfoFile
@@ -106,7 +110,57 @@ Target "Compile" (fun _ ->
     MSBuildRelease buildAppDir "Build" [project] |> Log "Taipan Build Output: "
 )
 
-Target "CopyBinaries" (fun _ ->
+Target "GenerateTemplates" (fun _ ->
+    let sbOut = StringBuilder()
+    let sbErr = StringBuilder()
+    ensureDirectory (String.Format("{0}/Taipan/Profiles/", buildDir))
+
+    try
+        let fsi =
+            let inStream = new StringReader("")
+            let outStream = new StringWriter(sbOut)
+            let errStream = new StringWriter(sbErr)
+            let fsiConfig = FsiEvaluationSession.GetDefaultConfiguration()        
+            let argv = [|"fsi.exe"|]
+            FsiEvaluationSession.Create(fsiConfig, argv, inStream, outStream, errStream)    
+
+        fsi.EvalInteraction (File.ReadAllText("templates.fsx"))
+        match fsi.EvalExpression("getTemplateContents()") with
+        | Some fsiValue ->            
+            fsiValue.ReflectionValue :?> (String * String) list
+            |> List.iter(fun (name, xmlProfile) ->
+                let filename = String.Format("{0}/Taipan/Profiles/{1}.xml", buildDir, name)
+                File.WriteAllText(filename, xmlProfile) 
+            )
+        | None -> failwith "Template content not retrieved"
+        Console.WriteLine(sbOut)
+    with _ ->
+        Console.Error.WriteLine("[!] ERROR: " + sbErr.ToString())
+        reraise()
+)
+
+Target "GenerateAddOnData" (fun _ ->
+    let sbOut = StringBuilder()
+    let sbErr = StringBuilder()
+
+    try
+        let fsi =
+            let inStream = new StringReader("")
+            let outStream = new StringWriter(sbOut)
+            let errStream = new StringWriter(sbErr)
+            let fsiConfig = FsiEvaluationSession.GetDefaultConfiguration()        
+            let argv = [|"fsi.exe"|]
+            FsiEvaluationSession.Create(fsiConfig, argv, inStream, outStream, errStream)    
+
+        fsi.EvalInteraction (File.ReadAllText("addOnData.fsx"))
+        fsi.EvalExpression("deployToDirectory(\"" + buildDir + "\")") |> ignore
+        Console.WriteLine(sbOut)
+    with _ ->
+        Console.Error.WriteLine("[!] ERROR: " + sbErr.ToString())
+        reraise()
+)
+
+Target "CopyBrowserBinaries" (fun _ ->
     // copy chrome
     ensureDirectory (buildDir + "/Taipan/ChromeBins/Windows")    
     Unzip  (buildDir + "/Taipan/ChromeBins/Windows") ("../Bins/chrome-win32.zip")
@@ -141,11 +195,13 @@ Target "Release" (fun _ ->
 
 Target "All" DoNothing
 
-"Clean"
+"Clean"  
   ==> "AssemblyInfo"
-  ==> "Compile"
-  //==> "CopyBinaries"
-  //==> "Release"
+  ==> "Compile"  
+  ==> "GenerateTemplates"  
+  ==> "GenerateAddOnData"
+  ==> "CopyBrowserBinaries"
+  ==> "Release"
   ==> "All"
 
 RunTargetOrDefault "All"

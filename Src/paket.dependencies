@@ -26,3 +26,4 @@ nuget Selenium.WebDriver.ChromeDriver
 nuget difflib
 nuget LiteDB
 nuget Argu
+nuget FSharp.Compiler.Service

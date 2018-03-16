@@ -244,6 +244,11 @@ let dumpTemplate(template: TemplateProfile) =
     File.WriteAllText(filename, template.ToXml())
     Console.WriteLine("Written template to file: " + filename)
 
+let getTemplateContents() =
+    templates
+    |> List.map(fun t -> (t.Name, t.ToXml()))
+
+
 // dump all templates if passed the -d or --dump switch
 if Environment.GetCommandLineArgs() |> Array.exists(fun arg -> arg = "--dump" || arg = "-d") then
     templates

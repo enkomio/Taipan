@@ -2,9 +2,10 @@
 // Script used to create vulnerability AddOns data
 // --------------------------------------------------------------------------------------
 #r @"packages/FAKE/tools/FakeLib.dll"
+#r @"packages/FSharpLog/lib/ES.FsLog.dll"
 #r @"ES.Taipan.Infrastructure/bin/Release/ES.Taipan.Infrastructure.dll"
-#r @"ES.Taipan.Inspector.AddOns/bin/Release/ES.Taipan.Inspector.AddOns.dll"
 #r @"ES.Taipan.Inspector/bin/Release/ES.Taipan.Inspector.dll"
+#r @"ES.Taipan.Inspector.AddOns/bin/Release/ES.Taipan.Inspector.AddOns.dll"
 
 open System
 open System.IO
@@ -12,17 +13,11 @@ open Fake
 open ES.Taipan.Inspector
 open ES.Taipan.Inspector.AddOns
 
-// Build dir
-let buildDir = 
-    if Environment.GetCommandLineArgs().Length > 0
-    then Environment.GetCommandLineArgs().[0]
-    else "./build"
-
-let writeAddOnData(addOn: IVulnerabilityScannerAddOn, data, propertyName: String) =
+let writeAddOnData(addOn: IVulnerabilityScannerAddOn, data, propertyName: String, buildDir: String) =
     let context = new Context(new FilesystemAddOnStorage(addOn, Path.Combine(buildDir, "Taipan")), fun _ -> ())
     context.AddOnStorage.SaveProperty<(String * String list) list>(propertyName, data)
 
-let createAddOnData() =
+let createAddOnData(buildDir: String) =
     ensureDirectory (buildDir + "/Taipan/Data")  
     // write xss payload  
     let xssData = [
@@ -43,7 +38,7 @@ let createAddOnData() =
         new ES.Taipan.Inspector.AddOns.ReflectedCrossSiteScripting.ReflectedCrossSiteScriptingAddOn() :> ES.Taipan.Inspector.AddOns.BaseStatelessAddOn
         new ES.Taipan.Inspector.AddOns.StoredCrossSiteScripting.StoredCrossSiteScriptingAddOn() :> ES.Taipan.Inspector.AddOns.BaseStatelessAddOn
     ] 
-    |> List.iter(fun addOnId -> writeAddOnData(addOnId, xssData, "Payloads"))    
+    |> List.iter(fun addOnId -> writeAddOnData(addOnId, xssData, "Payloads", buildDir))    
 
     // write sql injection errors, src: sqlmap project
     let sqliAddOn = new ES.Taipan.Inspector.AddOns.SqlInjection.SqlInjectionAddOn()
@@ -162,20 +157,12 @@ let createAddOnData() =
             @"Unexpected token.*in statement \[";
         ]);
     ]
-    writeAddOnData(sqliAddOn, sqliErrors, "Errors")
+    writeAddOnData(sqliAddOn, sqliErrors, "Errors", buildDir)
 
-    (*
-let copyData() =
-    ensureDirectory (buildDir + "/Taipan/Data")
-    ensureDirectory (buildDir + "/Taipan/Profiles")
+let deployToDirectory(buildDir: String) =
+    // copy all add On Data
+    ensureDirectory (buildDir + "/Taipan/Data")    
     FileUtils.cp_r ("../Data")  (buildDir + "/Taipan/Data")
 
     // copy lua script    
     FileUtils.cp_r "ES.Taipan.Fingerprinter/Lua" (buildDir + "/Taipan/Data/Scripts")
-
-    // copy templates
-    for profile in Templates.templates do
-        let xmlProfile = profile.ToXml()
-        let filename = String.Format("{0}/Taipan/Profiles/{1}.xml", buildDir, profile.Name)
-        File.WriteAllText(filename, xmlProfile) 
-        *)
