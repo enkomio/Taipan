@@ -111,14 +111,6 @@ Target "Compile" (fun _ ->
     )
 )
 
-Target "EndToEndTests" (fun _ ->
-    Console.WriteLine("[!] Start End To End tests")
-    let endToEndBinary = Path.Combine(buildDir, "EndToEndTests", "EndToEndTests.exe")
-    let result = ExecProcess (fun info -> info.FileName <- endToEndBinary ) (TimeSpan.FromMinutes 5.0)
-    if result <> 0 then 
-        failwith "EndToEndTests returned with a non-zero exit code"
-)
-
 Target "GenerateTemplates" (fun _ ->
     let sbOut = StringBuilder()
     let sbErr = StringBuilder()
@@ -188,6 +180,14 @@ Target "CopyBrowserBinaries" (fun _ ->
         FileUtils.rm (buildDir + "/" + directoryName + "/chromedriver.exe")
         FileUtils.cp_r "../Bins/driver/" (buildDir + "/" + directoryName + "/driver")    
     )
+)
+
+Target "EndToEndTests" (fun _ ->
+    Console.WriteLine("[!] Start End To End tests")
+    let endToEndBinary = Path.Combine(buildDir, "EndToEndTests", "EndToEndTests.exe")
+    let result = ExecProcess (fun info -> info.FileName <- endToEndBinary ) (TimeSpan.MaxValue)
+    if result <> 0 then 
+        failwith "EndToEndTests returned with a non-zero exit code"
 )
 
 // Generate assembly info files with the right version & up-to-date information
