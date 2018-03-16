@@ -168,7 +168,3 @@ let deployToDirectory(buildDir: String) =
 
     // copy lua script    
     FileUtils.cp_r "ES.Taipan.Fingerprinter/Lua" (buildDir + "/Taipan/Data/Scripts")
-
-    // replicate the Data directory in EndToEndTests
-    ensureDirectory (buildDir + "/EndToEndTests/Data")    
-    FileUtils.cp_r (buildDir + "/Taipan/Data") (buildDir + "/EndToEndTests/Data")

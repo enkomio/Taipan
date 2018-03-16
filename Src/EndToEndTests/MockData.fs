@@ -17,7 +17,8 @@ module MockData
         
     [<AutoOpen>]
     module Templates =
-        let private _phpSignatureDir = Path.Combine("Data", "Signatures", "Php")
+        let _dataDirectory = Path.Combine(Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location), "Data")
+        let private _phpSignatureDir = Path.Combine(_dataDirectory, "Signatures", "Php")
 
         let private createAppWithDependency(appName: String, dependantWebApp: String) =
             let filename = Path.Combine(_phpSignatureDir, appName, "Configuration", appName + ".xml")
@@ -213,7 +214,7 @@ module MockData
 
         let createWebApplicationVulnerabilities() =
             // cleaning
-            let storageDir = Path.Combine("Data", "AddOnStorage")
+            let storageDir = Path.Combine(_dataDirectory, "AddOnStorage")
             if Directory.Exists(storageDir) then
                 Directory.Delete(storageDir, true)
             
@@ -234,7 +235,7 @@ module MockData
             
         let createResources(resources: String list) =
             // create a fake dictionary file
-            let dir = Path.Combine("Data", "Dictionaries")
+            let dir = Path.Combine(_dataDirectory, "Dictionaries")
             Directory.CreateDirectory(dir) |> ignore
             File.WriteAllText(Path.Combine(dir, "test.xml"), """ 
                 <?xml version="1.0" encoding="UTF-8"?>
