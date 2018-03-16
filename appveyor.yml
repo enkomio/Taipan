@@ -10,7 +10,7 @@ build_script:
   - cmd: build.bat
 
 test_script:
-    - cmd: Src\build\EndToEndTests\EndToEndTests.exe
+  - cmd: Src\build\EndToEndTests\EndToEndTests.exe
   
 artifacts:
   - path: Src\deploy
