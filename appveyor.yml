@@ -9,8 +9,7 @@ install:
 build_script:
   - cmd: build.bat
 
-test_script:
-  - command: Src\build\EndToEndTests\EndToEndTests.exe
+test: off
   
 artifacts:
   - path: Src\deploy
