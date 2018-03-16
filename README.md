@@ -25,7 +25,7 @@ If you are interested in trying the full product, you can contact me at: aparata
 
 | Platform | Status         |
 | -------- | -------------- |
-| Windows  | [![Build status](https://ci.appveyor.com/api/projects/status/32r7s2skrgm9ubva/branch/master?svg=true)](https://ci.appveyor.com/project/enkomio/taipan/branch/master) |
+| Windows  | [![Build status](https://ci.appveyor.com/api/projects/status/j0t1m1wm46yrgvdr?svg=true)](https://ci.appveyor.com/project/enkomio/taipan) |
 
 If you want to try the dev version of Taipan without to wait to an official release, you can download the build version. This version is built every time that a commit is done and the build process is not broken. You can download it from the [Artifacts Directory](https://ci.appveyor.com/project/enkomio/taipan/build/artifacts).
 
