@@ -121,4 +121,5 @@ let main argv =
     let grovieraUri = Utility.runGrovieraServer()
     allTests |> List.iter(runTest grovieraUri)
     Utility.shutDownServer()  
+    Environment.Exit(0)
     0
