@@ -12,4 +12,4 @@ build_script:
 test: off
   
 artifacts:
-  - path: Src\build
+  - path: Src\deploy
