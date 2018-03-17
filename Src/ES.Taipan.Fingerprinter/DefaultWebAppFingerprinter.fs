@@ -219,6 +219,14 @@ type DefaultWebAppFingerprinter(settings: WebAppFingerprinterSettings, webApplic
         // run the main loop
         webAppFingerprinterLoop()
 
+    interface IDisposable with
+        member this.Dispose() =
+            // dispose web requestor, this is importance, since if we use the Javascript
+            // Engine the dispose will tear down the browser
+            match webRequestor with
+            | :? IDisposable as disposable -> disposable.Dispose()
+            | _ -> ()
+
     interface IWebAppFingerprinter with       
 
         member this.ServiceId

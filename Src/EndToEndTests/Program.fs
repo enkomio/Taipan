@@ -66,7 +66,7 @@ let allTests : Expr<Uri -> unit> list = [
     <@ InspectorTests.``PHP fopen error`` @>
     <@ InspectorTests.``Ruby On Rails error`` @>
     <@ InspectorTests.``ASP.NET error`` @>
-    <@ InspectorTests.``500 Internal server error`` @>
+    <@ InspectorTests.``500 Internal server error`` @> 
     <@ InspectorTests.``RXSS in query parameter`` @>
     <@ InspectorTests.``RXSS on data parameter`` @>
     <@ InspectorTests.``RXSS in User-Agent`` @>
@@ -97,6 +97,7 @@ let allTests : Expr<Uri -> unit> list = [
     <@ ComposedTests.``Discover an hidden resource, crawl a link and discover a vulnerability via link mutation`` @>
     <@ ComposedTests.``Crawl to a link discover an hidden resource and found a vulnerability via link mutation and fingerprint application`` @>    
     <@ ComposedTests.``Navigate by using a Journey Scan and identify an RXSS on the final page`` @>
+    
 ]
 
 let runTest (grovieraUri: Uri) (testExpr: Expr<Uri -> unit>) =    
@@ -120,6 +121,5 @@ let runTest (grovieraUri: Uri) (testExpr: Expr<Uri -> unit>) =
 let main argv = 
     let grovieraUri = Utility.runGrovieraServer()
     allTests |> List.iter(runTest grovieraUri)
-    Utility.shutDownServer()  
-    Environment.Exit(0)
+    Utility.shutDownServer()
     0

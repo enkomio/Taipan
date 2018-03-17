@@ -15,18 +15,17 @@ open ES.Taipan.Infrastructure.Threading
 open ES.Taipan.Infrastructure.Text
 open ES.Fslog
 
-type DefaultHttpRequestor(defaultSettings: HttpRequestorSettings, requestNotificationCallback: HttpRequest * Boolean -> unit, logProvider: ILogProvider) =   
-    let _seleniumDriver = new SeleniumDriver(logProvider)        
+type DefaultHttpRequestor(defaultSettings: HttpRequestorSettings, requestNotificationCallback: HttpRequest * Boolean -> unit, logProvider: ILogProvider) =
     let _requestGateTimeout = 1000 * 60 * 60 * 10 // 10 minutes
     let _maxParallelism = 100
     let _requestGate = new RequestGate(_maxParallelism)
     let _certificationValidate = new Event<CertificationValidateEventArgs>()
     let _logger = new HttpRequestorLogger()
+    let _seleniumDriverSyncRoot = new Object()
     let mutable _authentication = AuthenticationType.NoAuthentication
     let mutable _authenticationString : String option = None
     let mutable _skipAuthenticationProcess = false
-    let mutable _isSeleniumInitialized = false
-    
+    let mutable _seleniumDriver: SeleniumDriver option = None
 
     // do this trick to have a depth copy of the settings in order to be modified in a safe way for each instance
     let _settings = new HttpRequestorSettings()
@@ -113,11 +112,13 @@ type DefaultHttpRequestor(defaultSettings: HttpRequestorSettings, requestNotific
         else false
 
     let initializeSelenium() =
-        lock _seleniumDriver (fun () ->
-            if not _isSeleniumInitialized then
-                _seleniumDriver.ProxyUrl <- _settings.ProxyUrl
-                _seleniumDriver.Initialize()
-                _isSeleniumInitialized <- true
+        lock _seleniumDriverSyncRoot (fun () ->
+            match _seleniumDriver with
+            | Some _ -> ()
+            | None ->
+                _seleniumDriver <- Some(new SeleniumDriver(logProvider))
+                _seleniumDriver.Value.ProxyUrl <- _settings.ProxyUrl
+                _seleniumDriver.Value.Initialize()
         )
             
     do
@@ -202,7 +203,7 @@ type DefaultHttpRequestor(defaultSettings: HttpRequestorSettings, requestNotific
                             ("data", httpRequest.Data)
                         ] |> dict |> System.Collections.Generic.Dictionary
                     
-                    match _seleniumDriver.ExecuteScript(httpRequest, jsSrc, jsArgs) with
+                    match _seleniumDriver.Value.ExecuteScript(httpRequest, jsSrc, jsArgs) with
                     | Some result when result.ContainsKey("html") -> 
                         let html = result.["html"].ToString()
                         httpResponseResult := Some <| new HttpResponse(Html = html, StatusCode = HttpStatusCode.OK)
@@ -293,8 +294,8 @@ type DefaultHttpRequestor(defaultSettings: HttpRequestorSettings, requestNotific
             httpResponse
 
     member this.Dispose() =
-        if _isSeleniumInitialized then
-            _seleniumDriver.Dispose()
+        if _seleniumDriver.IsSome then
+            _seleniumDriver.Value.Dispose()
 
     interface IHttpRequestor with
 

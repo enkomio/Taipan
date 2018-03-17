@@ -20,7 +20,6 @@ type JavascriptScraper() as this =
     let _messages = new ConcurrentDictionary<Guid, WebLinksExtractedMessage>()
     let _seleniumInitializationLock = new Object()
     let mutable _seleniumDriver : SeleniumDriver option = None
-    let mutable _isInitialized = false            
 
     let handleWebLinksExtractedMessage (waitLock: ManualResetEventSlim) (id: Guid) (sender: Object, message: Envelope<WebLinksExtractedMessage>) =
         _messages.[id] <- message.Item
@@ -28,15 +27,15 @@ type JavascriptScraper() as this =
 
     let initialize(messageBroker: IMessageBroker, logProvider: ILogProvider) =
         lock _seleniumInitializationLock (fun () ->
-            if not _isInitialized then
+            match _seleniumDriver with
+            | Some _ -> ()
+            | None ->
                 let getSettings = new GetSettingsMessage(Guid.NewGuid())
                 messageBroker.Dispatch(this, getSettings)
 
                 _seleniumDriver <- Some <| new SeleniumDriver(logProvider)
                 _seleniumDriver.Value.ProxyUrl <- getSettings.HttpRequestorSettings.Value.ProxyUrl
-
                 _seleniumDriver.Value.Initialize()
-                _isInitialized <- true
         )        
 
     member this.Name = "Javascript scraper AddOn"
@@ -112,7 +111,7 @@ type JavascriptScraper() as this =
         identifiedLinks
 
     member this.Dispose() =
-        if _isInitialized then
+        if _seleniumDriver.IsSome then
             _seleniumDriver.Value.Dispose()
 
     interface ICrawlerAddOn with

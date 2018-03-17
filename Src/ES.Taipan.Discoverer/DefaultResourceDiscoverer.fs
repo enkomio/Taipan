@@ -453,6 +453,14 @@ type DefaultResourceDiscoverer(settings: ResourceDiscovererSettings, webRequesto
 
     member val Diagnostics = _serviceDiagnostics with get
     member val Metrics = _serviceMetrics with get
+
+    interface IDisposable with
+        member this.Dispose() =
+            // dispose web requestor, this is importance, since if we use the Javascript
+            // Engine the dispose will tear down the browser
+            match webRequestor with
+            | :? IDisposable as disposable -> disposable.Dispose()
+            | _ -> ()
                     
     interface IResourceDiscoverer with       
 

@@ -1,6 +1,6 @@
 ﻿namespace ES.Taipan.Infrastructure.Network
 
-type IWebPageRequestor = 
+type IWebPageRequestor =    
     interface
         abstract RequestWebPage : WebRequest -> WebResponse
         abstract RequestInitialWebPage : WebRequest -> WebResponse

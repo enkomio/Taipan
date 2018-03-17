@@ -395,6 +395,12 @@ type Scan(scanContext: ScanContext, logProvider: ILogProvider) as this =
             ip <- Some(Dns.GetHostAddresses(uri.Host) |> Seq.head)
             let webRequestor = _container.Value.Resolve<IWebPageRequestor>()
             let webResponse = webRequestor.RequestInitialWebPage(new WebRequest(uri))
+
+            // this is necessary to avoid leak from the ChromeDriver
+            match webRequestor with
+            | :? IDisposable as d -> d.Dispose()
+            | _ -> ()
+
             let noNeededCrawler = scanContext.Template.RunResourceDiscoverer || scanContext.Template.RunWebAppFingerprinter
             hostReachable <- webResponse.PageExists || noNeededCrawler
         with e -> 

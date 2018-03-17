@@ -160,7 +160,6 @@ type SeleniumDriver(logProvider: ILogProvider) =
 
     member this.Dispose() =
         //cleanUpExtension(_extensionDir)
-
         if _driver.IsSome then
             _driver.Value.Quit()
 
