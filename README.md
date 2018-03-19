@@ -1,4 +1,9 @@
 # Taipan - Web Application Security Scanner
+ 
+ <p align="center">
+    <a href="https://github.com/taipan-scanner/Taipan/releases/latest"><img alt="Release" src="https://img.shields.io/github/release/taipan-scanner/Taipan.svg?style=flat-square"></a>
+    <a href="https://ci.appveyor.com/project/enkomio/taipan"><img alt="Release" src="https://ci.appveyor.com/api/projects/status/j0t1m1wm46yrgvdr"></a>
+  </p>
 
 _Taipan_ is a an automated web application scanner which allows to identify web vulnerabilities in an automatic fashion. This project is the core engine of a broader project which include other components, like a web dashboard where you can manage your scan or download a PDF report and a scanner agent to run on specific host. Below are some screenshots of the _Taipan_ dashboard:
 
@@ -21,19 +26,16 @@ If you are interested in trying the full product, you can contact me at: aparata
  - [Source code][1]
  - [Download binary][2]
  
-## Build Status
+## Download Build Release
+If you want to try the dev version of Taipan without to wait for an official release, you can download the build version. This version is built every time that a commit is done and the build process is not broken. 
 
-| Platform | Status         |
-| -------- | -------------- |
-| Windows  | [![Build status](https://ci.appveyor.com/api/projects/status/j0t1m1wm46yrgvdr?svg=true)](https://ci.appveyor.com/project/enkomio/taipan) |
-
-If you want to try the dev version of Taipan without to wait for an official release, you can download the build version. This version is built every time that a commit is done and the build process is not broken. You can download it from the [Artifacts Directory](https://ci.appveyor.com/project/enkomio/taipan/build/artifacts).
+You can download it from the [Artifacts Directory](https://ci.appveyor.com/project/enkomio/taipan/build/artifacts).
 
 ## Using Taipan
-_Taipan_ can run on both Windows (natively) and Linux (with mono). To run it in Linux you have to install mono in version >= 4.8.0. You can track the implementation of the new features in the related <a href="https://github.com/taipan-scanner/Taipan/projects/1">Kanban board</a>.
+_Taipan_ can run on both Windows (natively) and Linux (with mono). To run it in Linux you have to install **mono in version >= 4.8.0**. You can track the implementation of the new features in the related <a href="https://github.com/taipan-scanner/Taipan/projects/1">Kanban board</a>.
 
 ### Scan Profile
-_Taipan_ allow to scan the given web site by specify different kind of profiles. Each profile enable or disable a specific scan feature, to show all the available profile just run _Taipan_ with the _--show-profiles_ option.
+_Taipan_ allow to scan the given web site by specify different kind of profiles. Each profile enable or disable a specific scan feature, to show all the available profile just run _Taipan_ with the `--show-profiles_` option.
 
 ### Scan/Stop/Pause a scan
 During a scan you can interact with it by set the scan in Pause or Stop it if necessary. In order to do so you have to press:
@@ -45,7 +47,11 @@ During a scan you can interact with it by set the scan in Pause or Stop it if ne
 The state change is not immediate and you have to wait until all threads have reached the desider state.
 
 ### Launch a scan
-To launch a new scan you have to provide the _url_ and the _profile_ which must be used. It is not necessary to specify the full profile name, a prefix is enough. Below an example of execution:
+To launch a new scan you have to provide the _url_ and the _profile_ which must be used. It is not necessary to specify the full profile name, a prefix is enough. 
+
+    Taipan.exe -p Full -u http://127.0.0.1/
+
+Below an example of execution:
 
 <a href="https://asciinema.org/a/166362" target="_blank"><img src="https://asciinema.org/a/166362.png" /></a>
 
