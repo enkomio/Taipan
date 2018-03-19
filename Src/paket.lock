@@ -86,7 +86,7 @@ NUGET
       System.Threading.ThreadPool (>= 4.0.10) - restriction: && (< net45) (>= netstandard1.6)
       System.Threading.Timer (>= 4.0.1) - restriction: && (< net45) (>= netstandard1.6)
     FSharp.Quotations.Evaluator (1.0.7)
-    FSharpLog (2.0)
+    FSharpLog (2.1)
     FSharpx (1.2.1.110910)
     FSharpx.Async (1.13.2)
       FSharp.Control.AsyncSeq

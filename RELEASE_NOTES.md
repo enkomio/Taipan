@@ -1,3 +1,7 @@
+### 1.2.6 - XX/XX/2018
+* Resolved resource leak in ChromeDriver usage
+* Fixed some bugs (FPs, Mem leak, ...)
+
 ### 1.2.5 - 06/02/2018
 * Implemented Re-Crawling of identified web pages
 * Minor bug fixes
