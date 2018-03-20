@@ -45,11 +45,7 @@ type internal ScanLogger() =
     [<Log(6, Message = "Completed scan of: {0} in {1} seconds", Level = LogLevel.Informational)>]
     member this.ScanCompleted(scanContext: ScanContext, seconds: Int32) =
         this.WriteLog(6, [|scanContext.StartRequest.HttpRequest.Uri; seconds|])
-
-    [<Log(7, Message = "Unable to resolve host: {0}. Scan aborted.", Level = LogLevel.Error)>]
-    member this.HostNotReachable(host: String) =
-        this.WriteLog(7, [|host|])
-        
+                
     [<Log(8, Message = "{0}", Level = LogLevel.Critical)>]
     member this.FatalScanError(e: Exception) =
         let exceptionError = new StringBuilder()
@@ -402,9 +398,9 @@ type Scan(scanContext: ScanContext, logProvider: ILogProvider) as this =
             | _ -> ()
 
             let noNeededCrawler = scanContext.Template.RunResourceDiscoverer || scanContext.Template.RunWebAppFingerprinter
-            hostReachable <- webResponse.PageExists || noNeededCrawler
+            hostReachable <- (webResponse.PageExists || noNeededCrawler) && webResponse.HttpResponse <> HttpResponse.Error
         with e -> 
-            _logger.HostNotReachable(scanContext.StartRequest.HttpRequest.Uri.Host)
+            ()
                         
         // if the host is reachable start the scan around a generic try/catch to avoid to crash everything :\
         match ip with

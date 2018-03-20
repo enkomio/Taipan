@@ -48,6 +48,7 @@ type HttpResponse() =
         String.Format("{0} Len={1} Html={2}", this.StatusCode, this.Html.Length, this.Html)
 
     static member val Empty = new HttpResponse() with get
+    static member val Error = new HttpResponse() with get
 
     member this.ToPlainText() =
         let content = new StringBuilder()

@@ -97,6 +97,10 @@ let allTests : Expr<Uri -> unit> list = [
     <@ ComposedTests.``Discover an hidden resource, crawl a link and discover a vulnerability via link mutation`` @>
     <@ ComposedTests.``Crawl to a link discover an hidden resource and found a vulnerability via link mutation and fingerprint application`` @>    
     <@ ComposedTests.``Navigate by using a Journey Scan and identify an RXSS on the final page`` @>
+
+    // Miscelaneous tests
+    <@ MiscTests.``Ensure that a closed port doesn't return any vulnerabilities`` @>
+    <@ MiscTests.``Ensure that a not existent domain doesn't return any vulnerabilities`` @>
     
 ]
 

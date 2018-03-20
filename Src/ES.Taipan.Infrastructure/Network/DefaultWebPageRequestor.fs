@@ -19,16 +19,14 @@ type DefaultWebPageRequestor(httpRequestor: IHttpRequestor) =
         }
 
     let requestSinglePage(webRequest: WebRequest) =
-        let response = httpRequestor.SendRequest(webRequest.HttpRequest)
-        let webResponse =
-            if response.IsSome then
-                new WebResponse(response.Value)
-            else
-                new WebResponse(HttpResponse.Empty)
+        match httpRequestor.SendRequest(webRequest.HttpRequest) with
+        | Some response ->
+            let webResponse = new WebResponse(response)
+            webResponse.PageExists <- _pageNotFoundIdentifier.PageExists(webRequest.HttpRequest, Some response)        
+            webResponse
+        | None ->
+            new WebResponse(HttpResponse.Error)
 
-        webResponse.PageExists <- _pageNotFoundIdentifier.PageExists(webRequest.HttpRequest, response)        
-        webResponse
-        
     let rec sendTransaction (path: JourneyPath) (transaction: JourneyTransaction) : HttpResponse option =
         let httpRequest = transaction.BuildBaseHttpRequest()
 

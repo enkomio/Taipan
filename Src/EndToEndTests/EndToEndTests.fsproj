@@ -57,6 +57,7 @@
     <Compile Include="DiscovererTests.fs" />
     <Compile Include="FingerprinterTests.fs" />
     <Compile Include="ComposedTests.fs" />
+    <Compile Include="MiscTests.fs" />
     <Compile Include="Program.fs" />
   </ItemGroup>
   <ItemGroup>
