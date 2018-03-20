@@ -11,8 +11,6 @@ open System.Collections.Generic
 open System.Text
 open System.IO
 open Microsoft.FSharp.Compiler.Interactive.Shell
-
-
 open Fake
 open Fake.AssemblyInfoFile
 open Fake.ReleaseNotesHelper
@@ -32,6 +30,9 @@ let authors = [ "Enkomio" ]
 // File system information
 let solutionFile  = "TaipanSln.sln"
 
+// Specify if it is a local build. In local environment some tasks are skipped
+let isLocal = String.IsNullOrWhiteSpace(Environment.GetEnvironmentVariable("CI"))
+    
 let appConfig = """
 <?xml version="1.0" encoding="utf-8"?>
 <configuration>
@@ -96,8 +97,9 @@ Target "Clean" (fun _ ->
 )
 
 Target "AssemblyInfo" (fun _ ->
-  let fsProjs =  !! "*/**/*.fsproj"
-  fsProjs |> Seq.iter genFSAssemblyInfo
+    if not isLocal then
+        let fsProjs =  !! "*/**/*.fsproj"
+        fsProjs |> Seq.iter genFSAssemblyInfo
 )
 
 Target "Compile" (fun _ ->
@@ -183,11 +185,12 @@ Target "CopyBrowserBinaries" (fun _ ->
 )
 
 Target "EndToEndTests" (fun _ ->
-    Console.WriteLine("[!] Start End To End tests")
-    let endToEndBinary = Path.Combine(buildDir, "EndToEndTests", "EndToEndTests.exe")
-    let result = ExecProcess (fun info -> info.FileName <- endToEndBinary ) (TimeSpan.MaxValue)
-    if result <> 0 then 
-        failwith "EndToEndTests returned with a non-zero exit code"
+    if not isLocal then
+        Console.WriteLine("[!] Start End To End tests")
+        let endToEndBinary = Path.Combine(buildDir, "EndToEndTests", "EndToEndTests.exe")
+        let result = ExecProcess (fun info -> info.FileName <- endToEndBinary ) (TimeSpan.MaxValue)
+        if result <> 0 then 
+            failwith "EndToEndTests returned with a non-zero exit code"
 )
 
 // Generate assembly info files with the right version & up-to-date information
