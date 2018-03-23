@@ -31,6 +31,7 @@ module ComposedPages =
         <li>TEST9: <a href="/composed/test9/">/composed/test9/</a></li>
         <li>TEST10: <a href="/composed/test10/">/composed/test10/</a></li>
         <li>TEST11: <a href="/composed/test11/">/composed/test11/</a></li>
+        <li>TEST12: <a href="/composed/test12/">/composed/test12/</a> RXSS in an post auithenticated web page</li>
 	</ul><br/>
   </body>
 </html>""" ctx
@@ -121,6 +122,24 @@ module ComposedPages =
                         OK ("You reached the final point. I'll reply everithing that you send me via query string ;)</br>Query: " + query) ctx
                     else
                         OK "Sorry but you have to follow all the Journey again before to accept your data! <a href='/composed/test11/'>Click here to start</a>" ctx
+
+                path "/composed/test12/" >=> okContent """
+                    In order to access to the internal pages please authenticate with: admin:qwerty
+                    <form method="POST" action="/composed/test12/login">
+                        <table>
+                            <tr><td>Username:</td><td><input type="text" name="username"></td></tr>
+                            <tr><td>Password</td><td><input type="password" name="password"></td></tr>
+                            <tr><td></td><td><input type="submit"></td></tr>
+                        </table>
+                    </form>
+                """
+
+                path "/composed/test12/dashboard" >=> fun (ctx: HttpContext) -> 
+                    match getValueFromMemDb("/composed/test12/") with
+                    | Some v when v.Equals("OK") ->
+                        // TODO create a link to a vulnerable web page
+                        Redirection.redirect "/composed/test12/" ctx
+                    | _ -> Redirection.redirect "/composed/test12/" ctx
             ]
 
             POST >=> choose [
@@ -132,5 +151,22 @@ module ComposedPages =
                     | Choice1Of2 code -> OK ("Sorry code '" + code + "' is not correct, <a href='javascript:history.back();'>try again</a>") ctx
                     | _ -> OK ("Sorry no code received, <a href='javascript:history.back();'>try again</a>") ctx
             ]
+
+            path "/composed/test12/login" >=>fun (ctx: HttpContext) ->
+                let username = 
+                    match ctx.request.formData "username" with
+                    | Choice1Of2 v -> v
+                    | _ -> String.Empty
+
+                let password = 
+                    match ctx.request.formData "password" with
+                    | Choice1Of2 v -> v
+                    | _ -> String.Empty
+
+                if username.Equals("admin") && password.Equals("qwerty") then                        
+                    addValueToMemDb("/composed/test12/", "OK")
+                    Redirection.redirect "/composed/test12/dashboard" ctx
+                else
+                    Redirection.redirect "/composed/test12/" ctx
         ]   
 

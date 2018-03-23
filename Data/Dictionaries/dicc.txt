@@ -4242,6 +4242,7 @@ popup.htm
 popup.html
 popup_songs.%EXT%
 portal
+portale
 portal2
 portal30
 portal30_sso
