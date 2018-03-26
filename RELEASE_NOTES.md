@@ -1,6 +1,7 @@
-### 1.2.6 - XX/XX/2018
+### 1.3.0 - XX/XX/2018
 * Resolved resource leak in ChromeDriver usage
 * Fixed some bugs (FPs, Mem leak, ...)
+* Improved Reflected XSS AddOn
 
 ### 1.2.5 - 06/02/2018
 * Implemented Re-Crawling of identified web pages

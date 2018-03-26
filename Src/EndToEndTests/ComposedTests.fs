@@ -279,3 +279,44 @@
             ("Reflected Cross Site Scripting", "/composed/test11/final");
             ("Reflected Cross Site Scripting", "/composed/test11/validate")
         ]
+
+    let ``Authenticate via Web form and found an RXSS in the autheticated part``(grovieraUrl: Uri) =   
+        let scanContext = 
+            new ScanContext(
+                 StartRequest = new WebRequest(new Uri(grovieraUrl, "/composed/test12/")),
+                Template = Templates.``Full template``()
+            )
+
+        let template = scanContext.Template
+        template.RunWebAppFingerprinter <- false
+        template.RunResourceDiscoverer <- false
+       
+        activatePlugin(scanContext, "B2D7CBCF-B458-4C33-B3EE-44606E06E949")
+        InspectorTests.writeXssData([
+            ("<SCRIPT>alert('XSS');</SCRIPT>", ["<SCRIPT>alert('XSS');</SCRIPT>"])
+        ])
+
+        // set authentication details
+        
+
+        // define the autherntication Journey path
+        let journey = scanContext.Template.HttpRequestorSettings.Journey        
+        let path = journey.CreatePath()
+
+        let transaction1 = path.CreateTransaction()
+        transaction1.Index <- 0
+        transaction1.TemplateRequest.Method <- "GET"
+        transaction1.TemplateRequest.Uri <- (new Uri(grovieraUrl, "/composed/test11/start")).AbsoluteUri
+
+        let transaction2 = path.CreateTransaction()
+        transaction2.Index <- 1
+        transaction2.AddParameter("code", "31337", "Data", true)
+        transaction2.TemplateRequest.Method <- "POST"
+        transaction2.TemplateRequest.Data <- "code=31337"
+        transaction2.TemplateRequest.Uri <- (new Uri(grovieraUrl, "/composed/test11/validate")).AbsoluteUri
+        
+        // run the scan
+        Utility.runScan(scanContext) 
+        |> Utility.verifyInspector [
+            ("Reflected Cross Site Scripting", "/composed/test12/Dashboard")
+        ]

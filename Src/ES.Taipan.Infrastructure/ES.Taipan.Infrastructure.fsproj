@@ -143,11 +143,12 @@
     <Compile Include="Network\HttpUtility.fs" />
     <Compile Include="Network\CertificationValidateEventArgs.fs" />
     <Compile Include="Network\Journey.fs" />
+    <Compile Include="Network\AuthenticationType.fs" />
+    <Compile Include="Network\AuthenticationInfo.fs" />
     <Compile Include="Network\HttpRequestorSettings.fs" />
     <Compile Include="Network\HttpRequestorUtility.fs" />
     <Compile Include="Network\SessionStateManager.fs" />
     <Compile Include="Network\WebFormAuthenticationDescriptor.fs" />
-    <Compile Include="Network\AuthenticationType.fs" />
     <Compile Include="Network\IHttpRequestor.fs" />
     <Compile Include="Network\HttpRequestorLogger.fs" />
     <Compile Include="Network\HttpDigestAuthenticationUtility.fs" />

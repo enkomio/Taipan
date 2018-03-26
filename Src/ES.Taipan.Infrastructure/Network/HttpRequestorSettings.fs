@@ -29,6 +29,9 @@ type HttpRequestorSettings() =
     /// Specify the optional Journey to follow before to send the requests
     member val Journey: Journey = new Journey() with get, set
 
+    /// Specify if the authentication is enabled and its details
+    member val Authentication = new AuthenticationInfo() with get, set
+
     /// This property specify which extension should identify static resources. A static resource is not requested via PhantomJS for performance reason
     member val StaticExtensions = new List<String>() with get, set
 
@@ -57,7 +60,8 @@ type HttpRequestorSettings() =
               new XElement(x"StaticExtensions", String.Join(",", this.StaticExtensions)),
               additionalHttpHeaders,
               additionalCookies,
-              this.Journey.ToXElement()
+              this.Journey.ToXElement(),
+              this.Authentication.ToXElement()
             )            
           )
           
@@ -99,3 +103,6 @@ type HttpRequestorSettings() =
 
         let journeyXElem = root.Element(x"Journey")
         this.Journey.AcquireSettingsFromXElement(journeyXElem)
+
+        let authInfoXElem = root.Element(x"AuthenticationInfo")
+        this.Authentication.AcquireSettingsFromXElement(authInfoXElem)

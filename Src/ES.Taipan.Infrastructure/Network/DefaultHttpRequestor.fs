@@ -8,9 +8,7 @@ open System.Security.Cryptography.X509Certificates
 open System.IO
 open System.Net
 open System.Net.Security
-open System.Threading.Tasks
 open Microsoft.FSharp.Control.WebExtensions
-open ES.Taipan.Infrastructure.Common
 open ES.Taipan.Infrastructure.Threading
 open ES.Taipan.Infrastructure.Text
 open ES.Fslog
@@ -22,9 +20,7 @@ type DefaultHttpRequestor(defaultSettings: HttpRequestorSettings, requestNotific
     let _certificationValidate = new Event<CertificationValidateEventArgs>()
     let _logger = new HttpRequestorLogger()
     let _seleniumDriverSyncRoot = new Object()
-    let mutable _authentication = AuthenticationType.NoAuthentication
-    let mutable _authenticationString : String option = None
-    let mutable _skipAuthenticationProcess = false
+    let mutable _httpAuthenticationToken: String option = None
     let mutable _seleniumDriver: SeleniumDriver option = None
 
     // do this trick to have a depth copy of the settings in order to be modified in a safe way for each instance
@@ -61,30 +57,31 @@ type DefaultHttpRequestor(defaultSettings: HttpRequestorSettings, requestNotific
                 |> List.exists (fun ck -> ck.Name.Equals(cookieName, StringComparison.Ordinal))
             if not cookieAlredyPresent then
                 httpRequest.Cookies.Add(new Cookie(cookieName, cookieValue, "/", httpRequest.Uri.Host))
-                
+                    
     let applyAuthenticationInfoToRequestIfNeeded(httpRequest: HttpRequest) =
-        match _authentication with
-        | HttpBasic nc -> 
-            if _authenticationString.IsNone then
-                // can pre-create the auth header
-                let token = String.Format("{0}:{1}", nc.UserName, nc.Password)
-                let authenticationHeader = String.Format("Basic {0}", toAsciiBase64(token))
-                _authenticationString <- Some authenticationHeader
-            httpRequest.Headers.Add(new HttpHeader(Name="Authorization", Value=_authenticationString.Value))
+        match _settings.Authentication.Type with
+        | HttpBasic -> 
+            // can pre-create the auth header
+            match _httpAuthenticationToken with
+            | None ->
+                let token = String.Format("{0}:{1}", _settings.Authentication.Username, _settings.Authentication.Password)
+                _httpAuthenticationToken <- Some <| String.Format("Basic {0}", toAsciiBase64(token))
+            | _ -> ()
+            httpRequest.Headers.Add(new HttpHeader(Name="Authorization", Value=_httpAuthenticationToken.Value))
 
-        | HttpDigest nc ->
-            if _authenticationString.IsSome then
-                // Http Digest Auth need server information. Must first be done at least one request to retrieve the info
-                httpRequest.Headers.Add(new HttpHeader(Name="Authorization", Value=_authenticationString.Value))
+        | HttpDigest ->
+            // if it is None, then a request to the server must be done in order to retrieve the needed information
+            if _httpAuthenticationToken.IsSome then
+                httpRequest.Headers.Add(new HttpHeader(Name="Authorization", Value=_httpAuthenticationToken.Value))
         
-        | WebForm _ ->
-            // no authentication needed, the session cookie should alredy provide authentication
-            ()
+        | Bearer ->
+            // add the given token
+            let token = String.Format("Bearer {0}", _settings.Authentication.Token)
+            httpRequest.Headers.Add(new HttpHeader(Name="Authorization", Value=token))
 
-        | CookiesBased cookies ->
-            // add all authentication cookies
-            cookies
-            |> List.iter httpRequest.Cookies.Add
+        | WebForm ->
+            // this kind of authentication is handled after that the request was done            
+            ()
         
         | NoAuthentication ->
             // no authentication header needs to be created
@@ -129,10 +126,7 @@ type DefaultHttpRequestor(defaultSettings: HttpRequestorSettings, requestNotific
         logProvider.AddLogSourceToLoggers(_logger)
 
     new(defaultSettings: HttpRequestorSettings, logProvider: ILogProvider) = new DefaultHttpRequestor(defaultSettings, (fun _ -> ()), logProvider)
-
-    member this.SetAuthentication(authentication: AuthenticationType) =
-        _authentication <- authentication
-
+    
     member this.CertificationValidate = _certificationValidate.Publish
     member val SessionState : SessionStateManager option = None with get, set
     member this.Settings = _settings
@@ -164,13 +158,7 @@ type DefaultHttpRequestor(defaultSettings: HttpRequestorSettings, requestNotific
             _logger.RequestError(httpRequest.Uri.ToString(), e.Message)
             Array.empty<Byte>
 
-    member this.SendRequest(httpRequest: HttpRequest) =        
-        try
-            this.SendRequestAsync(httpRequest)
-            |> Async.RunSynchronously
-        with _ -> None
-
-    member this.SendRequestAsync(httpRequest: HttpRequest) =         
+    member private this.SendRequestAsync(httpRequest: HttpRequest) =         
         async {
             requestNotificationCallback(httpRequest, false)
 
@@ -261,7 +249,15 @@ type DefaultHttpRequestor(defaultSettings: HttpRequestorSettings, requestNotific
             return !httpResponseResult
         }
 
+    member this.SendRequest(httpRequest: HttpRequest) =        
+        try
+            this.SendRequestAsync(httpRequest)
+            |> Async.RunSynchronously
+        with _ -> None
+
     member private this.VerifyIfIsNeededToAuthenticate(httpRequest: HttpRequest, httpResponse: HttpResponse option) =
+        httpResponse
+        (*
         if not _skipAuthenticationProcess then
             let savedValue = _skipAuthenticationProcess
             _skipAuthenticationProcess <- true
@@ -292,6 +288,7 @@ type DefaultHttpRequestor(defaultSettings: HttpRequestorSettings, requestNotific
         
         else
             httpResponse
+            *)
 
     member this.Dispose() =
         if _seleniumDriver.IsSome then
@@ -302,9 +299,6 @@ type DefaultHttpRequestor(defaultSettings: HttpRequestorSettings, requestNotific
         member this.SendRequest(httpRequest: HttpRequest) =
             this.SendRequest(httpRequest)
 
-        member this.SendRequestAsync(httpRequest: HttpRequest) =
-            this.SendRequestAsync(httpRequest)
-
         member this.CertificationValidate
             with get() = this.CertificationValidate
 
@@ -314,9 +308,6 @@ type DefaultHttpRequestor(defaultSettings: HttpRequestorSettings, requestNotific
 
         member this.Settings 
             with get() = this.Settings
-
-        member this.SetAuthentication(authentication: AuthenticationType) =
-            this.SetAuthentication(authentication)
 
         member this.DownloadData(httpRequest: HttpRequest) =
             this.DownloadData(httpRequest)

@@ -31,7 +31,7 @@ module ComposedPages =
         <li>TEST9: <a href="/composed/test9/">/composed/test9/</a></li>
         <li>TEST10: <a href="/composed/test10/">/composed/test10/</a></li>
         <li>TEST11: <a href="/composed/test11/">/composed/test11/</a></li>
-        <li>TEST12: <a href="/composed/test12/">/composed/test12/</a> RXSS in an post auithenticated web page</li>
+        <li>TEST12: <a href="/composed/test12/">/composed/test12/</a> RXSS in an post authenticated web page</li>
 	</ul><br/>
   </body>
 </html>""" ctx
@@ -137,15 +137,18 @@ module ComposedPages =
                 path "/composed/test12/dashboard" >=> fun (ctx: HttpContext) -> 
                     match getValueFromMemDb("/composed/test12/") with
                     | Some v when v.Equals("OK") ->
-                        let html =                        
+                        let logoutHtml = "<a href='/composed/test12/logout'>Logout</a>"
+                        let hiHtml = 
                             match getValueFromMemDb("/composed/test12/name") with
                             | Some v -> 
                                 removeValueFromMemDb("/composed/test12/name")
-                                String.Format("<h1>Hello {0}!!</h1><br>Refresh the page to insert another name!", v)
-                            | None ->
+                                String.Format("<h1>Hello {0}!!</h1>", v)
+                            | None -> String.Empty
+
+                        let panelHtml =
                                 """
                                 <h1>Welcome user! </h1>
-                                <form method="POST" action="/composed/test12/showname">
+                                <form method="POST" action="/composed/test12/setname">
                                 <table>
                                     <tr><td>What's your name:</td><td><input type="text" name="name"></td></tr>
                                     <tr><td><input type="submit"></td><td></td></tr>
@@ -153,8 +156,13 @@ module ComposedPages =
                                 </form>
                                 """
 
+                        let html = String.Format("<html><body>{0} {1} {2}</body></html>", logoutHtml, hiHtml, panelHtml)
                         OK html ctx
                     | _ -> Redirection.redirect "/composed/test12/" ctx
+                                     
+                path "/composed/test12/logout" >=> fun (ctx: HttpContext) -> 
+                    removeValueFromMemDb("/composed/test12/")
+                    Redirection.redirect "/composed/test12/" ctx
             ]
 
             POST >=> choose [
@@ -183,7 +191,7 @@ module ComposedPages =
                     else
                         Redirection.redirect "/composed/test12/" ctx
 
-                path "/composed/test12/showname" >=>fun (ctx: HttpContext) ->
+                path "/composed/test12/setname" >=>fun (ctx: HttpContext) ->
                     match getValueFromMemDb("/composed/test12/") with
                     | Some v when v.Equals("OK") ->
                         let name = 

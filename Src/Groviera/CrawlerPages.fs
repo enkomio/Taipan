@@ -40,6 +40,7 @@ module CrawlerPages =
         <li>TEST19: <a href="/crawler/test19/">/crawler/test19/</a></li>
         <li>TEST20: <a href="/crawler/test20/">/crawler/test20/</a> Dynamic a tag</li>
         <li>TEST21: <a href="/crawler/test21/">/crawler/test21/</a> Dynamic form</li>        
+        <li>TEST22: <a href="/crawler/test22/">/crawler/test22/</a>HTTP Basuc authentication</li>
 	</ul><br/>
   </body>
 </html>""" ctx
@@ -219,6 +220,10 @@ function validateForm() {
     }
 }"""
                 path "/crawler/test21/dashboard.php" >=> ok
+
+                // Test 22
+                Authentication.authenticateBasic (fun (user,pwd) -> user = "admin" && pwd = "admin")  (path "/crawler/test22/" >=> okContent "<a href='/crawler/test22/authok'>New link</a>")
+                Authentication.authenticateBasic (fun (user,pwd) -> user = "admin" && pwd = "admin")  (path "/crawler/test22/authok" >=> ok)
             ]
 
             POST >=> choose [

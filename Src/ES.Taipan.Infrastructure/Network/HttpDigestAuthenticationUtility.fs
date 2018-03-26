@@ -7,7 +7,7 @@ open System.Text
 open System.Net
 open System.Security.Cryptography
 
-type private AuthenticationInfo =
+type private DigestAuthenticationInfo =
     {
         Opaque              : String
         Qop                 : String

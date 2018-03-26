@@ -48,6 +48,7 @@ let allTests : Expr<Uri -> unit> list = [
     <@ CrawlerTests.``Ensure that session is honored after login`` @>
     <@ CrawlerTests.``Parse a link created via Javascript`` @>
     <@ CrawlerTests.``Parse a form created via Javascript with pre-processing`` @>
+    <@ CrawlerTests.``Crawl a Basic HTTP Authenticated page`` @>
      
     // Inspector tests
     <@ InspectorTests.``Identify a directory listing`` @>
@@ -99,6 +100,7 @@ let allTests : Expr<Uri -> unit> list = [
     <@ ComposedTests.``Discover an hidden resource, crawl a link and discover a vulnerability via link mutation`` @>
     <@ ComposedTests.``Crawl to a link discover an hidden resource and found a vulnerability via link mutation and fingerprint application`` @>    
     <@ ComposedTests.``Navigate by using a Journey Scan and identify an RXSS on the final page`` @>
+    <@ ComposedTests.``Authenticate via Web form and found an RXSS in the autheticated part`` @>
 
     // Miscelaneous tests
     <@ MiscTests.``Ensure that a closed port doesn't return any vulnerabilities`` @>
@@ -127,6 +129,8 @@ let runTest (grovieraUri: Uri) (testExpr: Expr<Uri -> unit>) =
 let main argv = 
     let grovieraUri = Utility.runGrovieraServer()
     let run = runTest grovieraUri
-    allTests |> List.iter(run)    
+    //allTests |> List.iter(run)    
+    // <@ ComposedTests.``Authenticate via Web form and found an RXSS in the autheticated part`` @>
+    run <@ CrawlerTests.``Crawl a Basic HTTP Authenticated page`` @>
     Utility.shutDownServer()
     0

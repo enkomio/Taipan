@@ -12,6 +12,6 @@ type ICrawler =
         abstract NoMoreWebRequestsToProcess : IEvent<ICrawler> with get
         abstract LinkMutator : WebLinkMutator option with get, set
         abstract Run : HttpRequest -> Boolean
-        abstract SetAuthentication : AuthenticationType -> unit
+        abstract SetAuthentication : AuthenticationInfo -> unit
         abstract TriggerIdleState: unit -> unit
     end

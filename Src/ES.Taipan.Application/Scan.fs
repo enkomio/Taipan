@@ -342,7 +342,7 @@ type Scan(scanContext: ScanContext, logProvider: ILogProvider) as this =
                 // send initial page to fingerprint
                 _messageBroker.Value.Dispatch(this, new FingerprintRequest(scanContext.StartRequest.HttpRequest))
         else
-            let rec instantiateCrawlers(authentications: AuthenticationType list)  =
+            let rec instantiateCrawlers(authentications: AuthenticationInfo list)  =
                 match authentications with
                 | authentication::t ->           
                     let crawler = container.Resolve<ICrawler>()
@@ -366,8 +366,13 @@ type Scan(scanContext: ScanContext, logProvider: ILogProvider) as this =
                     crawlerRunned <- crawler.Run(scanContext.StartRequest.HttpRequest)
                     instantiateCrawlers t
                 | [] -> ()
-                            
-            instantiateCrawlers(if scanContext.Authentications |> Seq.isEmpty then [AuthenticationType.NoAuthentication] else scanContext.Authentications |> Seq.toList)
+                
+            // Creates more than one crawler if I have authentication, in this way the not authenticated part and the authenticated
+            // part will have two different crawlers. This will allow to identify possilbe EoP.            
+            if scanContext.Template.HttpRequestorSettings.Authentication.Type <> AuthenticationType.NoAuthentication then
+                instantiateCrawlers([new AuthenticationInfo(); scanContext.Template.HttpRequestorSettings.Authentication])
+            else
+                instantiateCrawlers([new AuthenticationInfo()])
 
         // the scan initialization can be considered done
         _scanWorkflow.InitializationCompleted()

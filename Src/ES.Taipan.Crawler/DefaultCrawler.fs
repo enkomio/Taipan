@@ -295,8 +295,8 @@ type DefaultCrawler(settings: CrawlerSettings, webRequestor: IWebPageRequestor, 
             if settings.MutateWebLinks then
                 _linkMutator <- v
 
-    member this.SetAuthentication(authentication: AuthenticationType) =
-        webRequestor.HttpRequestor.SetAuthentication(authentication)
+    member this.SetAuthentication(authentication: AuthenticationInfo) =
+        webRequestor.HttpRequestor.Settings.Authentication <- authentication
 
     member this.State
         with get() = _crawlerState
@@ -423,7 +423,7 @@ type DefaultCrawler(settings: CrawlerSettings, webRequestor: IWebPageRequestor, 
         member this.Run(httpRequest: HttpRequest) =
             this.Run(httpRequest)
 
-        member this.SetAuthentication(authentication: AuthenticationType) =
+        member this.SetAuthentication(authentication: AuthenticationInfo) =
             this.SetAuthentication(authentication)
 
         member this.TriggerIdleState() =

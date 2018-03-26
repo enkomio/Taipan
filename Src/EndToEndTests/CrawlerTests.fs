@@ -286,3 +286,22 @@
         // run the scan
         Utility.runScan(scanContext)
         |> Utility.verifyCrawler [("/crawler/test21/dashboard.php", String.Empty)]
+
+    let ``Crawl a Basic HTTP Authenticated page``(grovieraUrl: Uri) =   
+        let scanContext = 
+            new ScanContext(
+                StartRequest = new WebRequest(new Uri(grovieraUrl, "/crawler/test22/")),
+                Template = Templates.``Website crawling``()
+            )
+
+        // set authentication
+        scanContext.Template.HttpRequestorSettings.Authentication <- 
+            new AuthenticationInfo(
+                Type = AuthenticationType.HttpBasic,
+                Username = "admin",
+                Password = "admin"
+            )
+
+        // run the scan
+        Utility.runScan(scanContext)
+        |> Utility.verifyCrawler [get("/crawler/test22/authok")]
