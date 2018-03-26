@@ -20,6 +20,9 @@ open ES.Groviera.Utility
 open System.Data.SQLite
 
 module InspectorPages =
+    open System.Text
+    open System.Text
+
     let mutable private _test24Token = new List<String>()
     let mutable private _test25Token = new List<String>()
     let _baseDir = Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location)  
@@ -73,6 +76,8 @@ module InspectorPages =
         <li>TEST32: <a href="/inspector/test32/">/inspector/test32/</a> Extract information from a .git directory</li>
         <li>TEST33: <a href="/inspector/test33/">/inspector/test33/</a> Stored Cross Site Scripting</li>
         <li>TEST34: <a href="/inspector/test34/">/inspector/test34/</a> Web Application Session ID Passed In URL</li>
+        <li>TEST35: <a href="/inspector/test35/">/inspector/test35/</a> RXSS on data parameter after redirect</li>
+        <li>TEST36: <a href="/inspector/test36/">/inspector/test36/</a> RXSS on redirect html content</li>
 	</ul><br/>
   </body>
 </html>""" ctx
@@ -346,8 +351,55 @@ module InspectorPages =
 
                 path "/inspector/test34/store.php" >=> fun (ctx: HttpContext) ->   
                     Redirection.redirect("/inspector/test34/?JSESSIONID=" + Guid.NewGuid().ToString("N")) ctx
-            ]
 
+                path "/inspector/test35/" >=> fun (ctx: HttpContext) -> 
+                    let html =                        
+                        match getValueFromMemDb("/inspector/test35/name") with
+                        | Some v -> 
+                            removeValueFromMemDb("/inspector/test35/name")
+                            String.Format("<h1>Hello {0}!!</h1><br>Refresh the page to insert another name!", v)
+                        | None ->
+                            """
+                            <h1>Welcome user! </h1>
+                            <form method="POST" action="/inspector/test35/setname">
+                            <table>
+                                <tr><td>What's your name:</td><td><input type="text" name="name"></td></tr>
+                                <tr><td><input type="submit"></td><td></td></tr>
+                            </table>
+                            </form>
+                            """
+
+                    OK html ctx
+
+                path "/inspector/test36/" >=> fun (ctx: HttpContext) -> 
+                    OK """
+                    <h1>Welcome user! </h1>
+                    <form method="GET" action="/inspector/test36/setname">
+                    <table>
+                        <tr><td>What's your name:</td><td><input type="text" name="name"></td></tr>
+                        <tr><td><input type="submit"></td><td></td></tr>
+                    </table>
+                    </form>
+                    """ ctx
+
+                path "/inspector/test36/setname" >=> fun (ctx: HttpContext) ->
+                    let name = 
+                        match ctx.request.queryParam "name" with
+                        | Choice1Of2 v -> v
+                        | _ -> String.Empty
+
+                    let html = Encoding.UTF8.GetBytes(String.Format("Hey {0}, you will be redirected to the dashboard!", name))
+                    let redirectWithCustomContent =                         
+                        Writers.setHeader "Location" "/inspector/test36/"
+                        >=> Writers.addHeader "Content-Type" "text/html; charset=utf-8"
+                        >=> Response.response HTTP_302 html
+                    
+                    redirectWithCustomContent ctx
+            ]
+        
+            // *************************
+            // *** -= POST routes =- ***
+            // *************************
             POST >=> choose [
                 path "/inspector/test19/vuln.php" >=> okReplyData
                 path "/inspector/test22/upload.php" >=> okReplyData 
@@ -411,6 +463,15 @@ module InspectorPages =
                         OK "Value inserted correctly! <a href='/inspector/test33/'>Go back</a>" ctx
                     else
                         OK "Sorry but the value is invalid, please specify a value! <a href='/inspector/test33/'>Go back</a>" ctx
+
+                path "/inspector/test35/setname" >=>fun (ctx: HttpContext) ->
+                    let name = 
+                        match ctx.request.formData "name" with
+                        | Choice1Of2 v -> v
+                        | _ -> String.Empty
+
+                    addValueToMemDb("/inspector/test35/name", name)
+                    Redirection.redirect "/inspector/test35/" ctx
             ]
         ]   
 

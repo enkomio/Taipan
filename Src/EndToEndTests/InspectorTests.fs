@@ -555,3 +555,35 @@
         // run the scan
         Utility.runScan(scanContext) 
         |> Utility.verifyInspector [("Exposed Session Variables", "/inspector/test34/")]
+
+    let ``RXSS on data parameter after redirect``(grovieraUrl: Uri) =
+        let scanContext = 
+            new ScanContext(
+                 StartRequest = new WebRequest(new Uri(grovieraUrl, "/inspector/test35/")),
+                Template = Templates.``Website inspector``()
+            )
+        
+        activatePlugin(scanContext, "B2D7CBCF-B458-4C33-B3EE-44606E06E949")
+        writeXssData([
+            ("<SCRIPT>alert('XSS');</SCRIPT>", ["<SCRIPT>alert('XSS');</SCRIPT>"; "<IMG SRC=\"javascript:alert('XSS');\">"])
+        ])
+
+        // run the scan
+        Utility.runScan(scanContext) 
+        |> Utility.verifyInspector [("Reflected Cross Site Scripting", "/inspector/test35/setname")]
+
+    let ``RXSS on query parameter in redirect page``(grovieraUrl: Uri) =
+        let scanContext = 
+            new ScanContext(
+                 StartRequest = new WebRequest(new Uri(grovieraUrl, "/inspector/test36/")),
+                Template = Templates.``Website inspector``()
+            )
+        
+        activatePlugin(scanContext, "B2D7CBCF-B458-4C33-B3EE-44606E06E949")
+        writeXssData([
+            ("<SCRIPT>alert('XSS');</SCRIPT>", ["<SCRIPT>alert('XSS');</SCRIPT>"; "<IMG SRC=\"javascript:alert('XSS');\">"])
+        ])
+
+        // run the scan
+        Utility.runScan(scanContext) 
+        |> Utility.verifyInspector [("Reflected Cross Site Scripting", "/inspector/test36/setname")]

@@ -15,7 +15,11 @@ type DefaultWebPageRequestor(httpRequestor: IHttpRequestor) =
                         false
                     else
                         httpResponse.Value <> HttpResponse.Empty &&
-                        httpResponse.Value.StatusCode = System.Net.HttpStatusCode.OK      
+                        ([
+                            System.Net.HttpStatusCode.OK; 
+                            System.Net.HttpStatusCode.Found; 
+                            System.Net.HttpStatusCode.Redirect
+                        ] |> List.contains httpResponse.Value.StatusCode)
         }
 
     let requestSinglePage(webRequest: WebRequest) =

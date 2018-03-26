@@ -18,15 +18,19 @@ open ES.Fslog
 type SqlInjectionAddOn() as this =
     inherit BaseStatelessAddOn("SQL Injection (Blind and Error based) AddOn Wrapper", Guid.Empty.ToString(), 1)       
     let _analyzedParameters = new Dictionary<String, HashSet<String>>()    
+    let _vulnerableParameters = new Dictionary<String, List<String>>()
     let _forbiddenContentTypes = ["video/"; "audio/"; "image/"]    
     let mutable _checkers : ISqliChecker list = List.empty
 
     let isRequestOkToAnalyze(parameter: ProbeParameter, probeRequest: ProbeRequest, rebuild: Boolean) =
         let path = probeRequest.TestRequest.WebRequest.HttpRequest.Uri.AbsolutePath
-        let hasSource = probeRequest.TestRequest.WebRequest.HttpRequest.Source.IsSome
-        if not <| _analyzedParameters.ContainsKey(path) then
-            _analyzedParameters.Add(path, new HashSet<String>())
-        _analyzedParameters.[path].Add(String.Format("{0}_{1}_{2}_{3}", parameter.Type, parameter.Name, rebuild, hasSource))
+        if _vulnerableParameters.ContainsKey(path) && _vulnerableParameters.[path].Contains(parameter.Name)
+        then false
+        else
+            let hasSource = probeRequest.TestRequest.WebRequest.HttpRequest.Source.IsSome
+            if not <| _analyzedParameters.ContainsKey(path) then
+                _analyzedParameters.Add(path, new HashSet<String>())
+            _analyzedParameters.[path].Add(String.Format("{0}_{1}_{2}_{3}", parameter.Type, parameter.Name, rebuild, hasSource))
 
     let isParameterSafeToTest(parameter: ProbeParameter) =
         if parameter.Type = HEADER then
@@ -64,6 +68,14 @@ type SqlInjectionAddOn() as this =
                     let result = checker.Test(parameter, probeRequest)
                     if result.Success then
                         isVulnerable <- true
+
+                        // set this parameter as vulnerable to avoid further tests
+                        lock _analyzedParameters (fun _ ->
+                            let path = probeRequest.TestRequest.WebRequest.HttpRequest.Uri.AbsolutePath
+                            if not <| _vulnerableParameters.ContainsKey(path) then
+                                _vulnerableParameters.Add(path, new List<String>())
+                            _vulnerableParameters.[path].Add(parameter.Name)
+                        )
 
                         let entryPoint =
                             match parameter.Type with

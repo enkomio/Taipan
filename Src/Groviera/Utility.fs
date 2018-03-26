@@ -25,6 +25,12 @@ module Utility =
             Console.WriteLine("Added {0} with value {1} to mem DB", name, value)
         )
 
+    let removeValueFromMemDb(key: String) =
+        lock _memDb (fun _ ->
+            if _memDb.ContainsKey(key) then
+                _memDb.Remove(key) |> ignore
+        )
+
     let getValueFromMemDb(name: String) =
         lock _memDb (fun _ ->
             if _memDb.ContainsKey(name) then

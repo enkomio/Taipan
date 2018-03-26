@@ -137,8 +137,23 @@ module ComposedPages =
                 path "/composed/test12/dashboard" >=> fun (ctx: HttpContext) -> 
                     match getValueFromMemDb("/composed/test12/") with
                     | Some v when v.Equals("OK") ->
-                        // TODO create a link to a vulnerable web page
-                        Redirection.redirect "/composed/test12/" ctx
+                        let html =                        
+                            match getValueFromMemDb("/composed/test12/name") with
+                            | Some v -> 
+                                removeValueFromMemDb("/composed/test12/name")
+                                String.Format("<h1>Hello {0}!!</h1><br>Refresh the page to insert another name!", v)
+                            | None ->
+                                """
+                                <h1>Welcome user! </h1>
+                                <form method="POST" action="/composed/test12/showname">
+                                <table>
+                                    <tr><td>What's your name:</td><td><input type="text" name="name"></td></tr>
+                                    <tr><td><input type="submit"></td><td></td></tr>
+                                </table>
+                                </form>
+                                """
+
+                        OK html ctx
                     | _ -> Redirection.redirect "/composed/test12/" ctx
             ]
 
@@ -150,23 +165,35 @@ module ComposedPages =
                         OK "Gr8 you are a very 31337 hacker. <a href='/composed/test11/final?txt=Hello Hacker'>Go on to a vulnerable page</a>" ctx
                     | Choice1Of2 code -> OK ("Sorry code '" + code + "' is not correct, <a href='javascript:history.back();'>try again</a>") ctx
                     | _ -> OK ("Sorry no code received, <a href='javascript:history.back();'>try again</a>") ctx
+
+                path "/composed/test12/login" >=>fun (ctx: HttpContext) ->
+                    let username = 
+                        match ctx.request.formData "username" with
+                        | Choice1Of2 v -> v
+                        | _ -> String.Empty
+
+                    let password = 
+                        match ctx.request.formData "password" with
+                        | Choice1Of2 v -> v
+                        | _ -> String.Empty
+
+                    if username.Equals("admin") && password.Equals("qwerty") then                        
+                        addValueToMemDb("/composed/test12/", "OK")
+                        Redirection.redirect "/composed/test12/dashboard" ctx
+                    else
+                        Redirection.redirect "/composed/test12/" ctx
+
+                path "/composed/test12/showname" >=>fun (ctx: HttpContext) ->
+                    match getValueFromMemDb("/composed/test12/") with
+                    | Some v when v.Equals("OK") ->
+                        let name = 
+                            match ctx.request.formData "name" with
+                            | Choice1Of2 v -> v
+                            | _ -> String.Empty
+
+                        addValueToMemDb("/composed/test12/name", name)
+                        Redirection.redirect "/composed/test12/dashboard" ctx
+                    | _ -> Redirection.redirect "/composed/test12/" ctx
             ]
-
-            path "/composed/test12/login" >=>fun (ctx: HttpContext) ->
-                let username = 
-                    match ctx.request.formData "username" with
-                    | Choice1Of2 v -> v
-                    | _ -> String.Empty
-
-                let password = 
-                    match ctx.request.formData "password" with
-                    | Choice1Of2 v -> v
-                    | _ -> String.Empty
-
-                if username.Equals("admin") && password.Equals("qwerty") then                        
-                    addValueToMemDb("/composed/test12/", "OK")
-                    Redirection.redirect "/composed/test12/dashboard" ctx
-                else
-                    Redirection.redirect "/composed/test12/" ctx
         ]   
 

@@ -48,7 +48,7 @@ let allTests : Expr<Uri -> unit> list = [
     <@ CrawlerTests.``Ensure that session is honored after login`` @>
     <@ CrawlerTests.``Parse a link created via Javascript`` @>
     <@ CrawlerTests.``Parse a form created via Javascript with pre-processing`` @>
-    
+     
     // Inspector tests
     <@ InspectorTests.``Identify a directory listing`` @>
     <@ InspectorTests.``Identify an outdated web application`` @>
@@ -84,6 +84,8 @@ let allTests : Expr<Uri -> unit> list = [
     <@ InspectorTests.``Exctract information from a .git folder`` @>
     <@ InspectorTests.``Identify a Stored Croos Site Scripting`` @>
     <@ InspectorTests.``Identify a session token sent via GET`` @>
+    <@ InspectorTests.``RXSS on data parameter after redirect`` @>
+    <@ InspectorTests.``RXSS on query parameter in redirect page`` @>
     
     // Composed tests
     <@ ComposedTests.``Identify an hidden directory and discover a know web application`` @>
@@ -124,6 +126,7 @@ let runTest (grovieraUri: Uri) (testExpr: Expr<Uri -> unit>) =
 [<EntryPoint>]
 let main argv = 
     let grovieraUri = Utility.runGrovieraServer()
-    allTests |> List.iter(runTest grovieraUri)
+    let run = runTest grovieraUri
+    allTests |> List.iter(run)    
     Utility.shutDownServer()
     0

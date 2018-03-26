@@ -17,6 +17,7 @@ open ES.Fslog
 type ReflectedCrossSiteScriptingAddOn() as this =
     inherit BaseStatelessAddOn("Reflected Cross Site Scripting AddOn", "B2D7CBCF-B458-4C33-B3EE-44606E06E949", 1)
     let _analyzedParameters = new Dictionary<String, HashSet<String>>()
+    let _vulnerableParameters = new Dictionary<String, List<String>>()
     let _forbiddenContentTypes = ["video/"; "audio/"; "image/"]
 
     // this parameter contains a list of: attack vector | list of string to search in HTML for success
@@ -47,7 +48,7 @@ type ReflectedCrossSiteScriptingAddOn() as this =
         _forbiddenContentTypes
         |> List.exists(header.Value.Contains)
 
-    let testProbeRequest(parameter: ProbeParameter, inProbeRequest: ProbeRequest, rebuild: Boolean) =
+    let rec testProbeRequestWithRedirect(parameter: ProbeParameter, inProbeRequest: ProbeRequest, rebuild: Boolean, allowRedirect: Boolean) =
         let mutable probeRequest = inProbeRequest
 
         if rebuild then
@@ -55,7 +56,8 @@ type ReflectedCrossSiteScriptingAddOn() as this =
             probeRequest <- new ProbeRequest(rebuildedTestRequest)
             probeRequest.AddParameter(parameter)
 
-        let webRequest = new WebRequest(probeRequest.BuildHttpRequest(true))
+        let webRequest = new WebRequest(probeRequest.BuildHttpRequest(true))        
+        webRequest.HttpRequest.AllowAutoRedirect <- Some allowRedirect
         let webResponse = this.WebRequestor.Value.RequestWebPage(webRequest)        
         if box(webResponse.HttpResponse) <> null then
             inProbeRequest.WebResponse <- Some webResponse
@@ -67,9 +69,16 @@ type ReflectedCrossSiteScriptingAddOn() as this =
                 | Some check -> 
                     parameter.State <- Some(upcast(check, html))
                     true
-                | None -> false
+                | None -> 
+                    // if redirect, test redirect page
+                    if not allowRedirect && HttpUtility.isRedirect(webResponse.HttpResponse.StatusCode)
+                    then testProbeRequestWithRedirect(parameter, inProbeRequest, rebuild, true)
+                    else false
             | _ -> false
         else false
+
+    let testProbeRequest(parameter: ProbeParameter, inProbeRequest: ProbeRequest, rebuild: Boolean) =
+        testProbeRequestWithRedirect(parameter, inProbeRequest, rebuild, false)
 
     let verifyWithBogusParamValue(parameter: ProbeParameter, probeRequest: ProbeRequest, rebuild: Boolean) =
         let newProbeRequest = new ProbeRequest(probeRequest.TestRequest)
@@ -85,7 +94,7 @@ type ReflectedCrossSiteScriptingAddOn() as this =
         testProbeRequest(newParameter, newProbeRequest, rebuild)    
         
     let verifyWithOriginalParamValue(parameter: ProbeParameter, probeRequest: ProbeRequest, rebuild: Boolean) =
-        testProbeRequest(parameter, probeRequest, rebuild)      
+        testProbeRequest(parameter, probeRequest, rebuild)
     
     let verify(parameter: ProbeParameter, probeRequest: ProbeRequest, rebuild: Boolean) =
         [verifyWithOriginalParamValue; verifyWithBogusParamValue]
@@ -127,6 +136,14 @@ type ReflectedCrossSiteScriptingAddOn() as this =
 
                         let path = probeRequest.TestRequest.WebRequest.HttpRequest.Uri.AbsolutePath                        
                         isVulnerable <- true
+                        
+                        // set this parameter as vulnerable to avoid further tests
+                        lock _analyzedParameters (fun _ ->
+                            let path = probeRequest.TestRequest.WebRequest.HttpRequest.Uri.AbsolutePath
+                            if not <| _vulnerableParameters.ContainsKey(path) then
+                                _vulnerableParameters.Add(path, new List<String>())
+                            _vulnerableParameters.[path].Add(parameter.Name)
+                        )
 
                         let entryPoint =
                             match parameter.Type with
@@ -148,10 +165,13 @@ type ReflectedCrossSiteScriptingAddOn() as this =
         
     let isRequestOkToAnalyze(parameter: ProbeParameter, probeRequest: ProbeRequest, rebuild: Boolean) =
         let path = probeRequest.TestRequest.WebRequest.HttpRequest.Uri.AbsolutePath
-        let hasSource = probeRequest.TestRequest.WebRequest.HttpRequest.Source.IsSome
-        if not <| _analyzedParameters.ContainsKey(path) then
-            _analyzedParameters.Add(path, new HashSet<String>())
-        _analyzedParameters.[path].Add(String.Format("{0}_{1}_{2}_{3}", parameter.Type, parameter.Name, rebuild, hasSource))
+        if _vulnerableParameters.ContainsKey(path) && _vulnerableParameters.[path].Contains(parameter.Name)
+        then false
+        else
+            let hasSource = probeRequest.TestRequest.WebRequest.HttpRequest.Source.IsSome
+            if not <| _analyzedParameters.ContainsKey(path) then
+                _analyzedParameters.Add(path, new HashSet<String>())
+            _analyzedParameters.[path].Add(String.Format("{0}_{1}_{2}_{3}", parameter.Type, parameter.Name, rebuild, hasSource))
 
     let scan(testRequest: TestRequest, stateController: ServiceStateController, rebuild: Boolean) =    
         let mutable testWithRebuild = false
@@ -193,7 +213,7 @@ type ReflectedCrossSiteScriptingAddOn() as this =
 
     default this.Initialize(context: Context, webRequestor: IWebPageRequestor, messageBroker: IMessageBroker, logProvider: ILogProvider) =
         base.Initialize(context, webRequestor, messageBroker, logProvider) |> ignore
-        logProvider.AddLogSourceToLoggers(_log)
+        logProvider.AddLogSourceToLoggers(_log)        
 
         match this.Context.Value.AddOnStorage.ReadProperty<(String * String list) list>("Payloads") with
         | Some payloads -> _payloads <- payloads
