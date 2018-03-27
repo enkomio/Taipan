@@ -91,7 +91,11 @@ let verifyDiscoverer(resToCheck: String list) (scanResult: ScanResult) =
 
 let verifyCrawlerWithCallback(pagesToCheck: (String * String) list) (callback: WebLink * WebResponse -> Boolean) (scanResult: ScanResult) =
     let pagesFound = scanResult.GetWebPages()
-    if pagesFound.Count < pagesToCheck.Length then failwith "Unexpected number of pages"        
+    if pagesFound.Count < pagesToCheck.Length then failwith "Unexpected number of pages"   
+    
+    let isAllowedResponseCode(webResponse: WebResponse) =
+        [System.Net.HttpStatusCode.OK; System.Net.HttpStatusCode.Redirect] 
+        |> List.contains webResponse.HttpResponse.StatusCode
     
     if
         pagesToCheck 
@@ -100,9 +104,9 @@ let verifyCrawlerWithCallback(pagesToCheck: (String * String) list) (callback: W
             |> Seq.exists(fun (webLink, webResponse) -> 
                 let result = 
                     if String.IsNullOrEmpty(data) then
-                        webLink.Request.HttpRequest.Uri.PathAndQuery.Equals(url, StringComparison.Ordinal)
+                        isAllowedResponseCode(webResponse) && webLink.Request.HttpRequest.Uri.PathAndQuery.Equals(url, StringComparison.Ordinal)
                     else
-                        webLink.Request.HttpRequest.Uri.PathAndQuery.Equals(url, StringComparison.Ordinal) && (data.Equals(webLink.Request.HttpRequest.Data) || (data + "=").Equals(webLink.Request.HttpRequest.Data))
+                        isAllowedResponseCode(webResponse) && webLink.Request.HttpRequest.Uri.PathAndQuery.Equals(url, StringComparison.Ordinal) && (data.Equals(webLink.Request.HttpRequest.Data) || (data + "=").Equals(webLink.Request.HttpRequest.Data))
 
                 if result then
                     callback(webLink, webResponse)

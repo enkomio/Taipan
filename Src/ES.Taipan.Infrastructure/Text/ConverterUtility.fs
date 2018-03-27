@@ -24,4 +24,4 @@ module ConverterUtility =
     let toCleanTextMd5(text: String) =        
         text.ToCharArray()
         |> Array.filter(Char.IsControl >> not)
-        |> fun chars -> toMd5(new String(chars))
+        |> fun chars -> toMd5(new String(chars)).ToLower()

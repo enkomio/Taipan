@@ -305,3 +305,22 @@
         // run the scan
         Utility.runScan(scanContext)
         |> Utility.verifyCrawler [get("/crawler/test22/authok")]
+
+    let ``Crawl a Digest HTTP Authenticated page``(grovieraUrl: Uri) =   
+        let scanContext = 
+            new ScanContext(
+                StartRequest = new WebRequest(new Uri(grovieraUrl, "/crawler/test23/")),
+                Template = Templates.``Website crawling``()
+            )
+
+        // set authentication
+        scanContext.Template.HttpRequestorSettings.Authentication <- 
+            new AuthenticationInfo(
+                Type = AuthenticationType.HttpDigest,
+                Username = "admin",
+                Password = "qwerty"
+            )
+
+        // run the scan
+        Utility.runScan(scanContext)
+        |> Utility.verifyCrawler [get("/crawler/test23/authok")]

@@ -10,6 +10,55 @@ open Suave.Operators
 open Suave.RequestErrors
 open Suave.Authentication
 open ES.Groviera.Utility
+open ES.Taipan.Infrastructure.Text
+
+module internal AuthHelper =
+    let username = "admin"
+    let password = "qwerty"
+    let realm = "admin@localhost.local"
+    let qop = "auth,auth-int"
+    let nonce = "dcd98b7102dd2f0e8b11d0f600bfb0c093"
+    let opaque = "5ccc069c403ebaf9f0171e9517f40e41"
+
+    let private createChallenge() =
+        String.Format(
+            "Digest realm=\"{0}\",qop=\"{1}\",nonce=\"{2}\",opaque=\"{3}\"",
+            realm,
+            qop,
+            nonce,
+            opaque
+        )
+
+    let private verifyClientRequest(token: String, ctx: HttpContext) =
+        let indexOfSpace = token.IndexOf(' ')
+        let (encType, enc) = (token.Substring(0, indexOfSpace).Trim(), token.Substring(indexOfSpace+1).Trim())
+        if encType.Equals("Digest", StringComparison.OrdinalIgnoreCase) then
+            let items = 
+                enc.Split(',') 
+                |> Seq.map(fun v -> v.Split('='))
+                |> Seq.map(fun va -> (va.[0].Trim(), va.[1].Trim([|'"'|]).Trim()))                
+                |> Map.ofSeq
+
+            let ha1 = toCleanTextMd5(String.Format("{0}:{1}:{2}", username, realm, password))
+            let ha2 = toCleanTextMd5(String.Format("{0}:{1}", ctx.request.method.ToString(), ctx.request.url.AbsolutePath))
+            let response = toCleanTextMd5(String.Format("{0}:{1}:{2}:{3}:{4}:{5}", ha1, items.["nonce"], items.["nc"], items.["cnonce"], items.["qop"], ha2))
+
+            let clientResponse = items.["response"]
+            response.Equals(clientResponse, StringComparison.OrdinalIgnoreCase)
+        else
+            false
+
+    let authorizeDigest webpart (ctx: HttpContext) =   
+        match ctx.request.header "authorization" with
+        | Choice1Of2 token when verifyClientRequest(token, ctx) -> 
+            webpart ctx
+        | _ -> 
+            let challengeDigest =                         
+                Writers.addHeader "WWW-Authenticate" (createChallenge())
+                >=> Response.response HTTP_401 (Encoding.Default.GetBytes(HTTP_401.message))
+            
+            //challenge webpart
+            challengeDigest ctx
 
 module CrawlerPages =
     let index (ctx: HttpContext) =
@@ -40,7 +89,8 @@ module CrawlerPages =
         <li>TEST19: <a href="/crawler/test19/">/crawler/test19/</a></li>
         <li>TEST20: <a href="/crawler/test20/">/crawler/test20/</a> Dynamic a tag</li>
         <li>TEST21: <a href="/crawler/test21/">/crawler/test21/</a> Dynamic form</li>        
-        <li>TEST22: <a href="/crawler/test22/">/crawler/test22/</a>HTTP Basuc authentication</li>
+        <li>TEST22: <a href="/crawler/test22/">/crawler/test22/</a>HTTP Basic authentication</li>
+        <li>TEST23: <a href="/crawler/test23/">/crawler/test23/</a>HTTP Digest authentication</li>
 	</ul><br/>
   </body>
 </html>""" ctx
@@ -222,8 +272,12 @@ function validateForm() {
                 path "/crawler/test21/dashboard.php" >=> ok
 
                 // Test 22
-                Authentication.authenticateBasic (fun (user,pwd) -> user = "admin" && pwd = "admin")  (path "/crawler/test22/" >=> okContent "<a href='/crawler/test22/authok'>New link</a>")
-                Authentication.authenticateBasic (fun (user,pwd) -> user = "admin" && pwd = "admin")  (path "/crawler/test22/authok" >=> ok)
+                path "/crawler/test22/" >=> Authentication.authenticateBasic (fun (user,pwd) -> user = "admin" && pwd = "admin")  (okContent "<a href='/crawler/test22/authok'>New link</a>")
+                path "/crawler/test22/authok" >=> Authentication.authenticateBasic (fun (user,pwd) -> user = "admin" && pwd = "admin")  ok
+
+                // Test 23
+                path "/crawler/test23/" >=> AuthHelper.authorizeDigest (okContent "<a href='/crawler/test23/authok'>New link</a>")
+                path "/crawler/test23/authok" >=> AuthHelper.authorizeDigest ok
             ]
 
             POST >=> choose [

@@ -21,6 +21,8 @@ type DefaultHttpRequestor(defaultSettings: HttpRequestorSettings, requestNotific
     let _logger = new HttpRequestorLogger()
     let _seleniumDriverSyncRoot = new Object()
     let mutable _httpAuthenticationToken: String option = None
+    let mutable _httpDigestInfo: DigestAuthenticationInfo option = None
+    let mutable _skipAuthenticationProcess = false
     let mutable _seleniumDriver: SeleniumDriver option = None
 
     // do this trick to have a depth copy of the settings in order to be modified in a safe way for each instance
@@ -58,7 +60,7 @@ type DefaultHttpRequestor(defaultSettings: HttpRequestorSettings, requestNotific
             if not cookieAlredyPresent then
                 httpRequest.Cookies.Add(new Cookie(cookieName, cookieValue, "/", httpRequest.Uri.Host))
                     
-    let applyAuthenticationInfoToRequestIfNeeded(httpRequest: HttpRequest) =
+    let applyAuthenticationInfoToRequestIfNeeded(httpRequest: HttpRequest) =        
         match _settings.Authentication.Type with
         | HttpBasic -> 
             // can pre-create the auth header
@@ -71,8 +73,16 @@ type DefaultHttpRequestor(defaultSettings: HttpRequestorSettings, requestNotific
 
         | HttpDigest ->
             // if it is None, then a request to the server must be done in order to retrieve the needed information
-            if _httpAuthenticationToken.IsSome then
-                httpRequest.Headers.Add(new HttpHeader(Name="Authorization", Value=_httpAuthenticationToken.Value))
+            if _httpDigestInfo.IsSome then
+                let digestToken = 
+                    HttpDigestAuthenticationUtility.getHttpDigestAuthenticationString(
+                        httpRequest, 
+                        _httpDigestInfo.Value, 
+                        _settings.Authentication.Username, 
+                        _settings.Authentication.Password
+                    )
+
+                httpRequest.Headers.Add(new HttpHeader(Name="Authorization", Value=digestToken))
         
         | Bearer ->
             // add the given token
@@ -256,21 +266,21 @@ type DefaultHttpRequestor(defaultSettings: HttpRequestorSettings, requestNotific
         with _ -> None
 
     member private this.VerifyIfIsNeededToAuthenticate(httpRequest: HttpRequest, httpResponse: HttpResponse option) =
-        httpResponse
-        (*
         if not _skipAuthenticationProcess then
             let savedValue = _skipAuthenticationProcess
             _skipAuthenticationProcess <- true
 
             let httpResponseResult = ref httpResponse
                           
-            match _authentication with
-            | HttpDigest nc -> 
-                if httpResponse.IsSome && _authenticationString.IsNone && httpResponse.Value.StatusCode = HttpStatusCode.Unauthorized then                                        
-                    _authenticationString <- Some <| HttpDigestAuthenticationUtility.getHttpDigestAuthenticationString(httpRequest, httpResponse.Value, nc.UserName, nc.Password)
+            match _settings.Authentication.Type with
+            | HttpDigest -> 
+                if httpResponse.IsSome && _httpDigestInfo.IsNone && httpResponse.Value.StatusCode = HttpStatusCode.Unauthorized then
+                    // retrieve the Auth digest info and re-send the request with the correct token
+                    _httpDigestInfo <- HttpDigestAuthenticationUtility.retrieveAuthenticationInfo(httpResponse.Value)
                     httpResponseResult := this.SendRequest(httpRequest)
       
-            | WebForm webFormAuthDesc ->
+            | WebForm ->
+                (*
                 if httpResponse.IsSome then
                     if webFormAuthDesc.IsLoggedOut(httpResponse.Value) then
                         if not <| webFormAuthDesc.TryAuthenticate(this.SendRequest) then
@@ -278,7 +288,8 @@ type DefaultHttpRequestor(defaultSettings: HttpRequestorSettings, requestNotific
                         else
                             // repeat the request with the authentication cookie
                             httpResponseResult := this.SendRequest(httpRequest)
-
+                            *)
+                ()
             | _ -> 
                 // no authentication process needed
                 ()
@@ -288,7 +299,6 @@ type DefaultHttpRequestor(defaultSettings: HttpRequestorSettings, requestNotific
         
         else
             httpResponse
-            *)
 
     member this.Dispose() =
         if _seleniumDriver.IsSome then

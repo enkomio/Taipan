@@ -180,6 +180,13 @@
       <Paket>True</Paket>
     </Reference>
   </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\ES.Taipan.Infrastructure\ES.Taipan.Infrastructure.fsproj">
+      <Name>ES.Taipan.Infrastructure</Name>
+      <Project>{9e7f5a33-fe4f-4ade-b28f-e906df2c13f1}</Project>
+      <Private>True</Private>
+    </ProjectReference>
+  </ItemGroup>
   <Choose>
     <When Condition="$(TargetFrameworkIdentifier) == '.NETFramework' And $(TargetFrameworkVersion) == 'v4.6'">
       <ItemGroup>
