@@ -56,7 +56,7 @@ Below an example of execution:
 <a href="https://asciinema.org/a/166362" target="_blank"><img src="https://asciinema.org/a/166362.png" /></a>
 
 ### Build Taipan
-_Taipan_ is currently developed by using VisualStudio 2017 Community Edition and use _paket_ as packet manager. To build the source code you have to:
+_Taipan_ is currently developed with using VisualStudio 2017 Community Edition and uses _paket_ as packet manager. To build the source code you have to:
 * clone the repository
 * run ``paket.exe install``
 * open the solution in VisualStudio and compile it
