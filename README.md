@@ -26,7 +26,7 @@ If you are interested in trying the full product, you can contact me at: aparata
  - [Source code][1]
  - [Download binary][2]
  
-## Download Build Release
+## Build Release Download
 If you want to try the dev version of Taipan without to wait for an official release, you can download the build version. This version is built every time that a commit is done and the build process is not broken. 
 
 You can download it from the [Artifacts Directory](https://ci.appveyor.com/project/enkomio/taipan/build/artifacts).
@@ -55,12 +55,28 @@ Below an example of execution:
 
 <a href="https://asciinema.org/a/166362" target="_blank"><img src="https://asciinema.org/a/166362.png" /></a>
 
-## Taipan Components
+### Build Taipan
+_Taipan_ is currently developed with using VisualStudio 2017 Community Edition and uses _paket_ as packet manager. To build the source code you have to:
+* clone the repository
+* run ``paket.exe install``
+* open the solution in VisualStudio and compile it
+
+### Taipan Components
 _Taipan_ is composed of four main components: 
 - Web Application fingerprinter: it inspects the given application in order to identify if it is a COTS application. If so, it extracts the identified version.
 - Hidden Resource Discovery: this component scans the application in order to identify resources that are not directly navigable or that shouldn't be accessed, like secret pages or test pages.
 - Crawler: This component navigates the web site in order to provide to the other components a list of pages to analyze. It allows to mutate the request in order to find not so common pathes.
 - Vulnerability Scanner: this component probes the web application and tries to identify possible vulnerabilities. It is composed of various AddOn in order to easily expand its Knowledge Base.
+
+## Versioning
+
+We use [SemVer](http://semver.org/) for versioning. For the versions available, see the [tags on this repository](https://github.com/taipan-scanner/Taipan/tags). 
+
+## Authors
+
+* **Antonio Parata** - *Core Developer* - [s4tan](https://twitter.com/s4tan)
+
+See also the list of [contributors](https://github.com/taipan-scanner/Taipan/graphs/contributors) who participated in this project.
 
 ## License
 
