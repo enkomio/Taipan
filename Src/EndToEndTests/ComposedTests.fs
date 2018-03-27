@@ -280,7 +280,7 @@
             ("Reflected Cross Site Scripting", "/composed/test11/validate")
         ]
 
-    let ``Authenticate via Web form and found an RXSS in the autheticated part``(grovieraUrl: Uri) =   
+    let ``Authenticate via Web form and found an RXSS in the authenticated part``(grovieraUrl: Uri) =   
         let scanContext = 
             new ScanContext(
                  StartRequest = new WebRequest(new Uri(grovieraUrl, "/composed/test12/")),
@@ -318,5 +318,5 @@
         // run the scan
         Utility.runScan(scanContext) 
         |> Utility.verifyInspector [
-            ("Reflected Cross Site Scripting", "/composed/test12/dashboard")
+            ("Reflected Cross Site Scripting", "/composed/test12/setname")
         ]

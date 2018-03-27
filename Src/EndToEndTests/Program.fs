@@ -101,7 +101,7 @@ let allTests : Expr<Uri -> unit> list = [
     <@ ComposedTests.``Discover an hidden resource, crawl a link and discover a vulnerability via link mutation`` @>
     <@ ComposedTests.``Crawl to a link discover an hidden resource and found a vulnerability via link mutation and fingerprint application`` @>    
     <@ ComposedTests.``Navigate by using a Journey Scan and identify an RXSS on the final page`` @>
-    <@ ComposedTests.``Authenticate via Web form and found an RXSS in the autheticated part`` @>
+    <@ ComposedTests.``Authenticate via Web form and found an RXSS in the authenticated part`` @>
 
     // Miscelaneous tests
     <@ MiscTests.``Ensure that a closed port doesn't return any vulnerabilities`` @>
@@ -129,8 +129,7 @@ let runTest (grovieraUri: Uri) (testExpr: Expr<Uri -> unit>) =
 [<EntryPoint>]
 let main argv = 
     let grovieraUri = Utility.runGrovieraServer()
-    let run = runTest grovieraUri
-    run <@ ComposedTests.``Authenticate via Web form and found an RXSS in the autheticated part`` @>
+    let run = runTest grovieraUri    
     allTests |> List.iter(run)
     Utility.shutDownServer()
     0

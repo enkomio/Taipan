@@ -363,7 +363,7 @@ type Scan(scanContext: ScanContext, logProvider: ILogProvider) as this =
                         scanContext.Template.CrawlerSettings.AllowedHosts.Add(modifiedHost)
                     
                     // start the crawler
-                    crawlerRunned <- crawlerRunned || crawler.Run(scanContext.StartRequest.HttpRequest)
+                    crawlerRunned <- crawler.Run(scanContext.StartRequest.HttpRequest) || crawlerRunned
                 )
 
             crawlerRunned <- false
@@ -398,11 +398,7 @@ type Scan(scanContext: ScanContext, logProvider: ILogProvider) as this =
             // try to get the IP and verify if the host is reachable
             ip <- Some(Dns.GetHostAddresses(uri.Host) |> Seq.head)
             let webRequestor = _container.Value.Resolve<IWebPageRequestor>()
-
-            // remove authentication and journey
-            webRequestor.HttpRequestor.Settings.Journey.Paths.Clear()
-            webRequestor.HttpRequestor.Settings.Authentication.Enabled <- false
-
+            
             let webResponse = webRequestor.RequestInitialWebPage(new WebRequest(uri))
 
             // this is necessary to avoid leak from the ChromeDriver
