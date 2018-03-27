@@ -9,7 +9,6 @@ open Microsoft.FSharp.Quotations.DerivedPatterns
 open FSharp.Quotations.Evaluator
 
 let allTests : Expr<Uri -> unit> list = [
-
     // Discovere tests
     <@ DiscovererTests.``Non recursive discoverer of hidden resources`` @>
     <@ DiscovererTests.``Recursive discoverer of hidden resources`` @>
@@ -131,6 +130,7 @@ let runTest (grovieraUri: Uri) (testExpr: Expr<Uri -> unit>) =
 let main argv = 
     let grovieraUri = Utility.runGrovieraServer()
     let run = runTest grovieraUri
-    allTests |> List.iter(run)
+    //allTests |> List.iter(run)
+    run <@ ComposedTests.``Navigate by using a Journey Scan and identify an RXSS on the final page`` @>
     Utility.shutDownServer()
     0

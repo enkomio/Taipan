@@ -13,7 +13,7 @@ open ES.Taipan.Infrastructure.Threading
 open ES.Taipan.Infrastructure.Text
 open ES.Fslog
 
-type DefaultHttpRequestor(defaultSettings: HttpRequestorSettings, requestNotificationCallback: HttpRequest * Boolean -> unit, logProvider: ILogProvider) =
+type DefaultHttpRequestor(defaultSettings: HttpRequestorSettings, requestNotificationCallback: HttpRequest * Boolean -> unit, logProvider: ILogProvider) as this =
     let _requestGateTimeout = 1000 * 60 * 60 * 10 // 10 minutes
     let _maxParallelism = 100
     let _requestGate = new RequestGate(_maxParallelism)
@@ -127,6 +127,39 @@ type DefaultHttpRequestor(defaultSettings: HttpRequestorSettings, requestNotific
                 _seleniumDriver.Value.ProxyUrl <- _settings.ProxyUrl
                 _seleniumDriver.Value.Initialize()
         )
+
+    let rec sendTransaction (path: JourneyPath) (transaction: JourneyTransaction) : HttpResponse option =
+        let httpRequest = transaction.BuildBaseHttpRequest()
+
+        // manage parameters
+        let data = new StringBuilder()
+        let query = new StringBuilder()
+        transaction.Parameters
+        |> Seq.iter(fun parameter ->
+            let parameterValue =
+                if parameter.IsStatic || transaction.Index = 0 then parameter.Value
+                else
+                    // I have to request the template Uri request and retrieve the parameter value
+                    let previousTransaction = path.[transaction.Index - 1]
+                    match sendTransaction path previousTransaction with
+                    | Some httpResponse -> RegexUtility.getHtmlInputValue(httpResponse.Html, parameter.Name)
+                    | None -> parameter.Value
+                    
+            match parameter.Type with
+            | Query -> query.AppendFormat("&{0}={1}", parameter.Name, parameterValue) |> ignore
+            | Data -> data.AppendFormat("&{0}={1}", parameter.Name, parameterValue) |> ignore
+        )
+
+        if query.Length > 0 then    
+            let uriBuilder = new UriBuilder(httpRequest.Uri)
+            uriBuilder.Query <- query.ToString().Substring(1)
+            httpRequest.Uri <- uriBuilder.Uri
+
+        if data.Length > 0 then
+            httpRequest.Data <- data.ToString().Substring(1)
+
+        // send HttpRequest
+        this.SendRequestDirect(httpRequest)
             
     do
         ServicePointManager.DefaultConnectionLimit <- Int32.MaxValue
@@ -143,7 +176,6 @@ type DefaultHttpRequestor(defaultSettings: HttpRequestorSettings, requestNotific
 
     member this.DownloadData(httpRequest: HttpRequest) =
         requestNotificationCallback(httpRequest, false)
-        let httpResponseResult: HttpResponse option ref = ref(None)
 
         try                
             applySettingsToRequest(httpRequest)
@@ -259,10 +291,28 @@ type DefaultHttpRequestor(defaultSettings: HttpRequestorSettings, requestNotific
             return !httpResponseResult
         }
 
+    member this.SendRequestDirect(httpRequest: HttpRequest) =
+        this.SendRequestAsync(httpRequest)
+        |> Async.RunSynchronously
+
+    member this.FollowPathNavigation() =
+        if _settings.Journey.Paths |> Seq.isEmpty |> not && _settings.Authentication.Type <> AuthenticationType.WebForm then
+            // we have a Journey and no webform authentication, so we habe to follow al pathes before to make the real request
+            let headPath = _settings.Journey.Paths |> Seq.head
+                
+            // follow the navigation path
+            headPath.Transactions
+            |> Seq.toArray
+            |> Array.sortBy(fun transaction -> transaction.Index)
+            |> Array.map(sendTransaction headPath)
+            |> Array.last
+        else
+            None
+        
     member this.SendRequest(httpRequest: HttpRequest) =        
         try
-            this.SendRequestAsync(httpRequest)
-            |> Async.RunSynchronously
+            this.FollowPathNavigation() |> ignore
+            this.SendRequestDirect(httpRequest)
         with _ -> None
 
     member private this.VerifyIfIsNeededToAuthenticate(httpRequest: HttpRequest, httpResponse: HttpResponse option) =
@@ -277,17 +327,17 @@ type DefaultHttpRequestor(defaultSettings: HttpRequestorSettings, requestNotific
                 if httpResponse.IsSome && _httpDigestInfo.IsNone && httpResponse.Value.StatusCode = HttpStatusCode.Unauthorized then
                     // retrieve the Auth digest info and re-send the request with the correct token
                     _httpDigestInfo <- HttpDigestAuthenticationUtility.retrieveAuthenticationInfo(httpResponse.Value)
-                    httpResponseResult := this.SendRequest(httpRequest)
+                    httpResponseResult := this.SendRequestDirect(httpRequest)
       
             | WebForm ->
                 (*
                 if httpResponse.IsSome then
                     if webFormAuthDesc.IsLoggedOut(httpResponse.Value) then
-                        if not <| webFormAuthDesc.TryAuthenticate(this.SendRequest) then
+                        if not <| webFormAuthDesc.TryAuthenticate(this.SendRequestDirect) then
                             _logger.UnableToAuthenticate(httpRequest.Uri.ToString(), webFormAuthDesc)
                         else
                             // repeat the request with the authentication cookie
-                            httpResponseResult := this.SendRequest(httpRequest)
+                            httpResponseResult := this.SendRequestDirect(httpRequest)
                             *)
                 ()
             | _ -> 

@@ -21,74 +21,24 @@ type DefaultWebPageRequestor(httpRequestor: IHttpRequestor) =
                             System.Net.HttpStatusCode.Redirect
                         ] |> List.contains httpResponse.Value.StatusCode)
         }
-
-    let requestSinglePage(webRequest: WebRequest) =
+                    
+    member this.RequestWebPage(webRequest: WebRequest) =   
         match httpRequestor.SendRequest(webRequest.HttpRequest) with
         | Some response ->
             let webResponse = new WebResponse(response)
             webResponse.PageExists <- _pageNotFoundIdentifier.PageExists(webRequest.HttpRequest, Some response)        
             webResponse
-        | None ->
-            new WebResponse(HttpResponse.Error)
+        | None -> new WebResponse(HttpResponse.Error)
 
-    let rec sendTransaction (path: JourneyPath) (transaction: JourneyTransaction) : HttpResponse option =
-        let httpRequest = transaction.BuildBaseHttpRequest()
-
-        // manage parameters
-        let data = new StringBuilder()
-        let query = new StringBuilder()
-        transaction.Parameters
-        |> Seq.iter(fun parameter ->
-            let parameterValue =
-                if parameter.IsStatic || transaction.Index = 0 then parameter.Value
-                else
-                    // I have to request the template Uri request and retrieve the parameter value
-                    let previousTransaction = path.[transaction.Index - 1]
-                    match sendTransaction path previousTransaction with
-                    | Some httpResponse -> RegexUtility.getHtmlInputValue(httpResponse.Html, parameter.Name)
-                    | None -> parameter.Value
-                    
-            match parameter.Type with
-            | Query -> query.AppendFormat("&{0}={1}", parameter.Name, parameterValue) |> ignore
-            | Data -> data.AppendFormat("&{0}={1}", parameter.Name, parameterValue) |> ignore
-        )
-
-        if query.Length > 0 then    
-            let uriBuilder = new UriBuilder(httpRequest.Uri)
-            uriBuilder.Query <- query.ToString().Substring(1)
-            httpRequest.Uri <- uriBuilder.Uri
-
-        if data.Length > 0 then
-            httpRequest.Data <- data.ToString().Substring(1)
-
-        // send HttpRequest
-        httpRequestor.SendRequest(httpRequest)
-
-    let managePathNavigation(path: JourneyPath) =
-        path.Transactions
-        |> Seq.sortBy(fun transaction -> transaction.Index)
-        |> Seq.map(sendTransaction path)
-        |> Seq.toList
-        |> List.last        
-                    
-    member this.RequestWebPage(webRequest: WebRequest) =   
-        match _requestorSettings.Journey.Paths |> Seq.tryHead with
-        | Some path -> 
-            // follow the navigation path
-            managePathNavigation(path) |> ignore
-
-            // finally send the requested page
-            requestSinglePage(webRequest)
-        | _ -> requestSinglePage(webRequest)
-
-    member this.RequestInitialWebPage(webRequest: WebRequest) =   
-        match _requestorSettings.Journey.Paths |> Seq.tryHead with
-        | Some path -> 
-            // follow the navigation path
-            match managePathNavigation(path) with
+    member this.RequestInitialWebPage(webRequest: WebRequest) =
+        // the initial request is a bit special and needs to take into account if a journey path is defined
+        let defaultHttpRequestor = httpRequestor :?> DefaultHttpRequestor
+        match httpRequestor with
+        | :? DefaultHttpRequestor as defaultHttpRequestor -> 
+            match defaultHttpRequestor.FollowPathNavigation() with
             | Some httpResponse -> new WebResponse(httpResponse, PageExists = true)
             | None -> new WebResponse(HttpResponse.Empty)
-        | _ -> requestSinglePage(webRequest)
+        | _ -> this.RequestWebPage(webRequest)
 
     member val HttpRequestor = httpRequestor with get
 
