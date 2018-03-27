@@ -259,7 +259,6 @@ type DefaultCrawler(settings: CrawlerSettings, webRequestor: IWebPageRequestor, 
     do 
         // set requestor settings
         webRequestor.SetPageNotFoundIdentifier(new HeuristicPageNotFoundIdentifier(webRequestor.HttpRequestor))
-        webRequestor.HttpRequestor.SessionState <- Some <| new SessionStateManager()
 
         messageBroker.Subscribe<String>(handleNewMessage)
         messageBroker.Subscribe<CrawlRequest>(handleCrawlRequestMessage)

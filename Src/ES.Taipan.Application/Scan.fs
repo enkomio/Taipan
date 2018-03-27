@@ -342,14 +342,14 @@ type Scan(scanContext: ScanContext, logProvider: ILogProvider) as this =
                 // send initial page to fingerprint
                 _messageBroker.Value.Dispatch(this, new FingerprintRequest(scanContext.StartRequest.HttpRequest))
         else
-            let rec instantiateCrawlers(authentications: AuthenticationInfo list)  =
-                match authentications with
-                | authentication::t ->           
+            let instantiateCrawlers(authentications: AuthenticationInfo list) =
+                authentications
+                |> Seq.iter(fun authentication -> 
                     let crawler = container.Resolve<ICrawler>()
                     crawler.SetAuthentication(authentication)            
                     crawler.NoMoreWebRequestsToProcess.Add(serviceCompleted true)
                     crawler.ProcessCompleted.Add(serviceCompleted false)
-                                             
+                    
                     _scanWorkflow.AddExecutedService(crawler, scanContext.Template)
 
                     let scanRequestHost = scanContext.StartRequest.HttpRequest.Uri.Host
@@ -363,14 +363,17 @@ type Scan(scanContext: ScanContext, logProvider: ILogProvider) as this =
                         scanContext.Template.CrawlerSettings.AllowedHosts.Add(modifiedHost)
                     
                     // start the crawler
-                    crawlerRunned <- crawler.Run(scanContext.StartRequest.HttpRequest)
-                    instantiateCrawlers t
-                | [] -> ()
+                    crawlerRunned <- crawlerRunned || crawler.Run(scanContext.StartRequest.HttpRequest)
+                )
+
+            crawlerRunned <- false
                 
             // Creates more than one crawler if I have authentication, in this way the not authenticated part and the authenticated
             // part will have two different crawlers. This will allow to identify possilbe EoP.            
             if scanContext.Template.HttpRequestorSettings.Authentication.Type <> AuthenticationType.NoAuthentication then
-                instantiateCrawlers([new AuthenticationInfo(); scanContext.Template.HttpRequestorSettings.Authentication])
+                // this is a very dirty trick. By setting the authentication to Enabled and the type to NoAuthentication,
+                // I avoid to follow the Journey path for this specific case.
+                instantiateCrawlers([new AuthenticationInfo(Enabled = true); scanContext.Template.HttpRequestorSettings.Authentication])
             else
                 instantiateCrawlers([new AuthenticationInfo()])
 
@@ -395,6 +398,11 @@ type Scan(scanContext: ScanContext, logProvider: ILogProvider) as this =
             // try to get the IP and verify if the host is reachable
             ip <- Some(Dns.GetHostAddresses(uri.Host) |> Seq.head)
             let webRequestor = _container.Value.Resolve<IWebPageRequestor>()
+
+            // remove authentication and journey
+            webRequestor.HttpRequestor.Settings.Journey.Paths.Clear()
+            webRequestor.HttpRequestor.Settings.Authentication.Enabled <- false
+
             let webResponse = webRequestor.RequestInitialWebPage(new WebRequest(uri))
 
             // this is necessary to avoid leak from the ChromeDriver

@@ -6,6 +6,7 @@ open System.Xml.Linq
 
 type AuthenticationInfo() =
     static let x str = XName.Get str
+    member val Enabled = false with get, set
     member val Type = AuthenticationType.NoAuthentication with get, set
     member val Username = String.Empty with get, set
     member val Password = String.Empty with get, set
@@ -20,6 +21,7 @@ type AuthenticationInfo() =
         authInfo.Add(new XElement(x"Username", this.Username))
         authInfo.Add(new XElement(x"Password", this.Password))
         authInfo.Add(new XElement(x"Token", this.Token))
+        authInfo.Add(new XElement(x"Enabled", this.Enabled))
 
         let loginPattern = new XElement(x"LoginPattern")
         authInfo.Add(loginPattern)
@@ -38,6 +40,7 @@ type AuthenticationInfo() =
         this.Username <- root.Element(x"Username").Value
         this.Password <- root.Element(x"Password").Value
         this.Token <- root.Element(x"Token").Value
+        this.Enabled <- Boolean.Parse(root.Element(x"Enabled").Value)
 
         root.Element(x"LoginPattern").Elements(x"Pattern")
         |> Seq.iter(fun xPattern -> this.LoginPattern.Add(xPattern.Value))

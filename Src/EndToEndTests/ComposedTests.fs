@@ -296,27 +296,27 @@
             ("<SCRIPT>alert('XSS');</SCRIPT>", ["<SCRIPT>alert('XSS');</SCRIPT>"])
         ])
 
-        // set authentication details
-        
+        // set authentication login/logout patterns
+        let authInfo = new AuthenticationInfo(Enabled = true, Type = AuthenticationType.WebForm)
+        authInfo.LoginPattern.Add("Logout")
+        authInfo.LogoutPattern.Add("authenticate")
+        scanContext.Template.HttpRequestorSettings.Authentication <- authInfo
 
-        // define the autherntication Journey path
+        // define the authentication Journey path
         let journey = scanContext.Template.HttpRequestorSettings.Journey        
         let path = journey.CreatePath()
-
+        
         let transaction1 = path.CreateTransaction()
-        transaction1.Index <- 0
-        transaction1.TemplateRequest.Method <- "GET"
-        transaction1.TemplateRequest.Uri <- (new Uri(grovieraUrl, "/composed/test11/start")).AbsoluteUri
-
-        let transaction2 = path.CreateTransaction()
-        transaction2.Index <- 1
-        transaction2.AddParameter("code", "31337", "Data", true)
-        transaction2.TemplateRequest.Method <- "POST"
-        transaction2.TemplateRequest.Data <- "code=31337"
-        transaction2.TemplateRequest.Uri <- (new Uri(grovieraUrl, "/composed/test11/validate")).AbsoluteUri
+        transaction1.Index <- 1
+        transaction1.AddParameter("username", "admin", "Data", true)
+        transaction1.AddParameter("password", "qwerty", "Data", true)
+        transaction1.AddParameter("submit", String.Empty, "Data", true)
+        transaction1.TemplateRequest.Method <- "POST"
+        transaction1.TemplateRequest.Data <- "username=admin&password=qwerty&submit="
+        transaction1.TemplateRequest.Uri <- (new Uri(grovieraUrl, "/composed/test12/login")).AbsoluteUri
         
         // run the scan
         Utility.runScan(scanContext) 
         |> Utility.verifyInspector [
-            ("Reflected Cross Site Scripting", "/composed/test12/Dashboard")
+            ("Reflected Cross Site Scripting", "/composed/test12/dashboard")
         ]

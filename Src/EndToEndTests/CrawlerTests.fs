@@ -297,6 +297,7 @@
         // set authentication
         scanContext.Template.HttpRequestorSettings.Authentication <- 
             new AuthenticationInfo(
+                Enabled = true,
                 Type = AuthenticationType.HttpBasic,
                 Username = "admin",
                 Password = "admin"
@@ -316,6 +317,7 @@
         // set authentication
         scanContext.Template.HttpRequestorSettings.Authentication <- 
             new AuthenticationInfo(
+                Enabled = true,
                 Type = AuthenticationType.HttpDigest,
                 Username = "admin",
                 Password = "qwerty"
@@ -335,6 +337,7 @@
         // set authentication
         scanContext.Template.HttpRequestorSettings.Authentication <- 
             new AuthenticationInfo(
+                Enabled = true, 
                 Type = AuthenticationType.Bearer,
                 Token = "1234567890abcdefgh"
             )

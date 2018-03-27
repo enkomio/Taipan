@@ -31,13 +31,12 @@ type DefaultWebPageRequestor(httpRequestor: IHttpRequestor) =
         | None -> new WebResponse(HttpResponse.Error)
 
     member this.RequestInitialWebPage(webRequest: WebRequest) =
-        // the initial request is a bit special and needs to take into account if a journey path is defined
-        let defaultHttpRequestor = httpRequestor :?> DefaultHttpRequestor
+        // the initial request is a bit special and needs to take into account if a journey path is defined        
         match httpRequestor with
         | :? DefaultHttpRequestor as defaultHttpRequestor -> 
-            match defaultHttpRequestor.FollowPathNavigation() with
+            match defaultHttpRequestor.FollowJourneyPathNavigation() with
             | Some httpResponse -> new WebResponse(httpResponse, PageExists = true)
-            | None -> new WebResponse(HttpResponse.Empty)
+            | None -> this.RequestWebPage(webRequest)
         | _ -> this.RequestWebPage(webRequest)
 
     member val HttpRequestor = httpRequestor with get

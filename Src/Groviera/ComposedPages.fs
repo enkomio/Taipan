@@ -123,16 +123,21 @@ module ComposedPages =
                     else
                         OK "Sorry but you have to follow all the Journey again before to accept your data! <a href='/composed/test11/'>Click here to start</a>" ctx
 
-                path "/composed/test12/" >=> okContent """
-                    In order to access to the internal pages please authenticate with: admin:qwerty
-                    <form method="POST" action="/composed/test12/login">
-                        <table>
-                            <tr><td>Username:</td><td><input type="text" name="username"></td></tr>
-                            <tr><td>Password</td><td><input type="password" name="password"></td></tr>
-                            <tr><td></td><td><input type="submit"></td></tr>
-                        </table>
-                    </form>
-                """
+                path "/composed/test12/" >=> fun (ctx: HttpContext) -> 
+                    match getValueFromMemDb("/composed/test12/") with
+                    | Some v when v.Equals("OK") ->
+                        Redirection.redirect "/composed/test12/dashboard" ctx
+                    | _ -> 
+                        OK """
+                            In order to access to the internal pages please authenticate with: admin:qwerty
+                            <form method="POST" action="/composed/test12/login">
+                                <table>
+                                    <tr><td>Username:</td><td><input type="text" name="username"></td></tr>
+                                    <tr><td>Password</td><td><input type="password" name="password"></td></tr>
+                                    <tr><td></td><td><input type="submit"></td></tr>
+                                </table>
+                            </form>
+                        """ ctx
 
                 path "/composed/test12/dashboard" >=> fun (ctx: HttpContext) -> 
                     match getValueFromMemDb("/composed/test12/") with

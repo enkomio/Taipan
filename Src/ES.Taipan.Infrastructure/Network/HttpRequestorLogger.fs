@@ -7,9 +7,9 @@ open ES.Fslog
 type HttpRequestorLogger() =
     inherit LogSource("HttpRequestor  logger")
     
-    [<Log(1, Message = "Unable to authenticate for url: {0}. Login pattern: {1}", Level = LogLevel.Warning)>]
-    member this.UnableToAuthenticate(url: String, webFormAuth: WebFormAuthenticationDescriptor) =
-        this.WriteLog(1, [|url; webFormAuth.LoginMatchingPattern|])
+    [<Log(1, Message = "SessionState is null, it is not possible to authenticate via web form in this configuration", Level = LogLevel.Error)>]
+    member this.SessionStateNullOnWebAuth() =
+        this.WriteLog(1, [||])
 
     [<Log(2, Message = "Error on request: {0}. Message: {1}", Level = LogLevel.Verbose)>]
     member this.RequestError(url: String, message: String) =
@@ -18,3 +18,7 @@ type HttpRequestorLogger() =
     [<Log(3, Message = "{0}", Level = LogLevel.Informational)>]
     member this.JavascriptLog(message: String) =
         this.WriteLog(3, [|message|])
+
+    [<Log(4, Message = "The authentication process has failed", Level = LogLevel.Error)>]
+    member this.AuthenticationFailed() =
+        this.WriteLog(4, [||])

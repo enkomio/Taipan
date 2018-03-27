@@ -2,6 +2,7 @@
 
 open System
 open System.Collections.Generic
+open System.Text.RegularExpressions
 open System.Reflection
 open System.Text
 open System.Security.Cryptography.X509Certificates
@@ -60,42 +61,39 @@ type DefaultHttpRequestor(defaultSettings: HttpRequestorSettings, requestNotific
             if not cookieAlredyPresent then
                 httpRequest.Cookies.Add(new Cookie(cookieName, cookieValue, "/", httpRequest.Uri.Host))
                     
-    let applyAuthenticationInfoToRequestIfNeeded(httpRequest: HttpRequest) =        
-        match _settings.Authentication.Type with
-        | HttpBasic -> 
-            // can pre-create the auth header
-            match _httpAuthenticationToken with
-            | None ->
-                let token = String.Format("{0}:{1}", _settings.Authentication.Username, _settings.Authentication.Password)
-                _httpAuthenticationToken <- Some <| String.Format("Basic {0}", toAsciiBase64(token))
-            | _ -> ()
-            httpRequest.Headers.Add(new HttpHeader(Name="Authorization", Value=_httpAuthenticationToken.Value))
+    let applyAuthenticationInfoToRequestIfNeeded(httpRequest: HttpRequest) =    
+        if _settings.Authentication.Enabled then
+            match _settings.Authentication.Type with
+            | HttpBasic -> 
+                // can pre-create the auth header
+                match _httpAuthenticationToken with
+                | None ->
+                    let token = String.Format("{0}:{1}", _settings.Authentication.Username, _settings.Authentication.Password)
+                    _httpAuthenticationToken <- Some <| String.Format("Basic {0}", toAsciiBase64(token))
+                | _ -> ()
+                httpRequest.Headers.Add(new HttpHeader(Name="Authorization", Value=_httpAuthenticationToken.Value))
 
-        | HttpDigest ->
-            // if it is None, then a request to the server must be done in order to retrieve the needed information
-            if _httpDigestInfo.IsSome then
-                let digestToken = 
-                    HttpDigestAuthenticationUtility.getHttpDigestAuthenticationString(
-                        httpRequest, 
-                        _httpDigestInfo.Value, 
-                        _settings.Authentication.Username, 
-                        _settings.Authentication.Password
-                    )
+            | HttpDigest ->
+                // if it is None, then a request to the server must be done in order to retrieve the needed information
+                if _httpDigestInfo.IsSome then
+                    let digestToken = 
+                        HttpDigestAuthenticationUtility.getHttpDigestAuthenticationString(
+                            httpRequest, 
+                            _httpDigestInfo.Value, 
+                            _settings.Authentication.Username, 
+                            _settings.Authentication.Password
+                        )
 
-                httpRequest.Headers.Add(new HttpHeader(Name="Authorization", Value=digestToken))
+                    httpRequest.Headers.Add(new HttpHeader(Name="Authorization", Value=digestToken))
         
-        | Bearer ->
-            // add the given token
-            let token = String.Format("Bearer {0}", _settings.Authentication.Token)
-            httpRequest.Headers.Add(new HttpHeader(Name="Authorization", Value=token))
-
-        | WebForm ->
-            // this kind of authentication is handled after that the request was done            
-            ()
-        
-        | NoAuthentication ->
-            // no authentication header needs to be created
-            ()
+            | Bearer ->
+                // add the given token
+                let token = String.Format("Bearer {0}", _settings.Authentication.Token)
+                httpRequest.Headers.Add(new HttpHeader(Name="Authorization", Value=token))
+                    
+            | _ ->
+                // no authentication header needs to be considered
+                ()
 
     let isRequestOkToBeSentViaSelenium(httpRequest: HttpRequest) =
         if _settings.UseJavascriptEngineForRequest && httpRequest.Source.IsSome then
@@ -128,7 +126,7 @@ type DefaultHttpRequestor(defaultSettings: HttpRequestorSettings, requestNotific
                 _seleniumDriver.Value.Initialize()
         )
 
-    let rec sendTransaction (path: JourneyPath) (transaction: JourneyTransaction) : HttpResponse option =
+    let rec sendJourneyTransaction (path: JourneyPath) (transaction: JourneyTransaction) : HttpResponse option =
         let httpRequest = transaction.BuildBaseHttpRequest()
 
         // manage parameters
@@ -141,7 +139,7 @@ type DefaultHttpRequestor(defaultSettings: HttpRequestorSettings, requestNotific
                 else
                     // I have to request the template Uri request and retrieve the parameter value
                     let previousTransaction = path.[transaction.Index - 1]
-                    match sendTransaction path previousTransaction with
+                    match sendJourneyTransaction path previousTransaction with
                     | Some httpResponse -> RegexUtility.getHtmlInputValue(httpResponse.Html, parameter.Name)
                     | None -> parameter.Value
                     
@@ -160,6 +158,17 @@ type DefaultHttpRequestor(defaultSettings: HttpRequestorSettings, requestNotific
 
         // send HttpRequest
         this.SendRequestDirect(httpRequest)
+
+    let followPathNavigation() =        
+        match _settings.Journey.Paths |> Seq.tryHead with
+        | Some headPath ->                
+            // follow the navigation path
+            headPath.Transactions
+            |> Seq.toArray
+            |> Array.sortBy(fun transaction -> transaction.Index)
+            |> Array.map(sendJourneyTransaction headPath)
+            |> Array.last
+        | _ -> None
             
     do
         ServicePointManager.DefaultConnectionLimit <- Int32.MaxValue
@@ -171,7 +180,7 @@ type DefaultHttpRequestor(defaultSettings: HttpRequestorSettings, requestNotific
     new(defaultSettings: HttpRequestorSettings, logProvider: ILogProvider) = new DefaultHttpRequestor(defaultSettings, (fun _ -> ()), logProvider)
     
     member this.CertificationValidate = _certificationValidate.Publish
-    member val SessionState : SessionStateManager option = None with get, set
+    member val SessionState : SessionStateManager option = Some <| new SessionStateManager() with get, set
     member this.Settings = _settings
 
     member this.DownloadData(httpRequest: HttpRequest) =
@@ -295,33 +304,25 @@ type DefaultHttpRequestor(defaultSettings: HttpRequestorSettings, requestNotific
         this.SendRequestAsync(httpRequest)
         |> Async.RunSynchronously
 
-    member this.FollowPathNavigation() =
-        if _settings.Journey.Paths |> Seq.isEmpty |> not && _settings.Authentication.Type <> AuthenticationType.WebForm then
-            // we have a Journey and no webform authentication, so we habe to follow al pathes before to make the real request
-            let headPath = _settings.Journey.Paths |> Seq.head
-                
-            // follow the navigation path
-            headPath.Transactions
-            |> Seq.toArray
-            |> Array.sortBy(fun transaction -> transaction.Index)
-            |> Array.map(sendTransaction headPath)
-            |> Array.last
+    member this.FollowJourneyPathNavigation() =
+        if not _settings.Authentication.Enabled then
+            // this is just a Journey scan, need to follows the path
+            followPathNavigation()
         else
             None
         
     member this.SendRequest(httpRequest: HttpRequest) =        
         try
-            this.FollowPathNavigation() |> ignore
+            this.FollowJourneyPathNavigation() |> ignore
             this.SendRequestDirect(httpRequest)
         with _ -> None
 
     member private this.VerifyIfIsNeededToAuthenticate(httpRequest: HttpRequest, httpResponse: HttpResponse option) =
-        if not _skipAuthenticationProcess then
+        if not _skipAuthenticationProcess && _settings.Authentication.Enabled then
             let savedValue = _skipAuthenticationProcess
             _skipAuthenticationProcess <- true
 
-            let httpResponseResult = ref httpResponse
-                          
+            let httpResponseResult = ref httpResponse                          
             match _settings.Authentication.Type with
             | HttpDigest -> 
                 if httpResponse.IsSome && _httpDigestInfo.IsNone && httpResponse.Value.StatusCode = HttpStatusCode.Unauthorized then
@@ -329,21 +330,31 @@ type DefaultHttpRequestor(defaultSettings: HttpRequestorSettings, requestNotific
                     _httpDigestInfo <- HttpDigestAuthenticationUtility.retrieveAuthenticationInfo(httpResponse.Value)
                     httpResponseResult := this.SendRequestDirect(httpRequest)
       
-            | WebForm ->
-                (*
-                if httpResponse.IsSome then
-                    if webFormAuthDesc.IsLoggedOut(httpResponse.Value) then
-                        if not <| webFormAuthDesc.TryAuthenticate(this.SendRequestDirect) then
-                            _logger.UnableToAuthenticate(httpRequest.Uri.ToString(), webFormAuthDesc)
-                        else
-                            // repeat the request with the authentication cookie
-                            httpResponseResult := this.SendRequestDirect(httpRequest)
-                            *)
-                ()
+            | WebForm when httpResponse.IsSome && httpResponse.Value.StatusCode = HttpStatusCode.OK ->
+                match this.SessionState with
+                | Some _ ->
+                    let loginPatternMatched = _settings.Authentication.LoginPattern |> Seq.exists(fun pattern -> Regex.IsMatch(httpResponse.Value.Html, pattern))
+                    let logoutPatternMatched = _settings.Authentication.LogoutPattern |> Seq.exists(fun pattern -> Regex.IsMatch(httpResponse.Value.Html, pattern))
+                    
+                    if not loginPatternMatched && logoutPatternMatched then                   
+                        // a specific logout condition was found, need to re-authenticate by following the Authentication Journey path
+                        match followPathNavigation() with
+                        | Some httpResponse ->
+                            // re-do the check to be sure that now I'm authenticated
+                            let loginPatternMatched = _settings.Authentication.LoginPattern |> Seq.exists(fun pattern -> Regex.IsMatch(httpResponse.Html, pattern))
+                            let logoutPatternMatched = _settings.Authentication.LogoutPattern |> Seq.exists(fun pattern -> Regex.IsMatch(httpResponse.Html, pattern))
+                            if not loginPatternMatched && logoutPatternMatched then
+                                _logger.AuthenticationFailed()
+                            else
+                                // finally re-do the request in an authentication context
+                                httpResponseResult := this.SendRequestDirect(httpRequest)
+                        | None -> _logger.AuthenticationFailed()
+                | None -> _logger.SessionStateNullOnWebAuth()
             | _ -> 
                 // no authentication process needed
                 ()
 
+            // restore value
             _skipAuthenticationProcess <- savedValue
             !httpResponseResult
         
