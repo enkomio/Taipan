@@ -324,3 +324,21 @@
         // run the scan
         Utility.runScan(scanContext)
         |> Utility.verifyCrawler [get("/crawler/test23/authok")]
+
+    let ``Crawl a Bearer HTTP Authenticated page``(grovieraUrl: Uri) =   
+        let scanContext = 
+            new ScanContext(
+                StartRequest = new WebRequest(new Uri(grovieraUrl, "/crawler/test24/")),
+                Template = Templates.``Website crawling``()
+            )
+
+        // set authentication
+        scanContext.Template.HttpRequestorSettings.Authentication <- 
+            new AuthenticationInfo(
+                Type = AuthenticationType.Bearer,
+                Token = "1234567890abcdefgh"
+            )
+
+        // run the scan
+        Utility.runScan(scanContext)
+        |> Utility.verifyCrawler [get("/crawler/test24/secretlink_post_auth")]

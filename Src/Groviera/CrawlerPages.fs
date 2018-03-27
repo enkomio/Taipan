@@ -91,6 +91,7 @@ module CrawlerPages =
         <li>TEST21: <a href="/crawler/test21/">/crawler/test21/</a> Dynamic form</li>        
         <li>TEST22: <a href="/crawler/test22/">/crawler/test22/</a>HTTP Basic authentication</li>
         <li>TEST23: <a href="/crawler/test23/">/crawler/test23/</a>HTTP Digest authentication</li>
+        <li>TEST24: <a href="/crawler/test24/">/crawler/test24/</a>Bearer authentication with token value: 1234567890abcdefgh</li>
 	</ul><br/>
   </body>
 </html>""" ctx
@@ -278,6 +279,26 @@ function validateForm() {
                 // Test 23
                 path "/crawler/test23/" >=> AuthHelper.authorizeDigest (okContent "<a href='/crawler/test23/authok'>New link</a>")
                 path "/crawler/test23/authok" >=> AuthHelper.authorizeDigest ok
+
+                // Test 23
+                path "/crawler/test24/" >=> fun (ctx: HttpContext) ->
+                    match ctx.request.header "authorization" with
+                    | Choice1Of2 headerValue ->
+                        let items = headerValue.Split(' ')
+                        let (authType, token) = (items.[0].Trim(), items.[1].Trim())
+                        if authType.Equals("Bearer", StringComparison.OrdinalIgnoreCase) && token.Equals("1234567890abcdefgh", StringComparison.OrdinalIgnoreCase) then
+                            OK "<a href='/crawler/test24/secretlink_post_auth'>New link</a>" ctx
+                        else
+                            let bearerAuth =                         
+                                Writers.addHeader "WWW-Authenticate" ("Bearer realm=\"" + AuthHelper.realm + "\"")
+                                >=> Response.response HTTP_401 (Encoding.Default.GetBytes(HTTP_401.message))
+                            bearerAuth ctx
+                    | _ ->
+                        let bearerAuth =                         
+                            Writers.addHeader "WWW-Authenticate" ("Bearer realm=\"" + AuthHelper.realm + "\"")
+                            >=> Response.response HTTP_401 (Encoding.Default.GetBytes(HTTP_401.message))
+                        bearerAuth ctx
+                path "/crawler/test24/secretlink_post_auth" >=> ok
             ]
 
             POST >=> choose [

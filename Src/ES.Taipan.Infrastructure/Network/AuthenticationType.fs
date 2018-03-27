@@ -21,7 +21,7 @@ type AuthenticationType =
     static member Parse(authInfo: String) =
         match authInfo.ToLower() with
         | "none" -> NoAuthentication
-        | "nearer" -> Bearer
+        | "bearer" -> Bearer
         | "basic" -> HttpBasic
         | "digest" -> HttpDigest
         | "webform" -> WebForm

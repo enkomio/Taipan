@@ -50,6 +50,7 @@ let allTests : Expr<Uri -> unit> list = [
     <@ CrawlerTests.``Parse a form created via Javascript with pre-processing`` @>
     <@ CrawlerTests.``Crawl a Basic HTTP Authenticated page`` @>
     <@ CrawlerTests.``Crawl a Digest HTTP Authenticated page`` @>
+    <@ CrawlerTests.``Crawl a Bearer HTTP Authenticated page`` @>
      
     // Inspector tests
     <@ InspectorTests.``Identify a directory listing`` @>
