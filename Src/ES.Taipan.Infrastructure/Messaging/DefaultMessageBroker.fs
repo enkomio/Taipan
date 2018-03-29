@@ -13,9 +13,7 @@ type DefaultMessageBroker() =
             |> Seq.filter( fun kv -> kv.Key.IsAssignableFrom(message.GetType()))
             |> Seq.map (fun kv -> kv.Value)
             |> Seq.concat
-            |> Seq.map(fun o -> 
-                o :?> (Object * Envelope<_> -> unit)
-            )
+            |> Seq.map(fun o -> o :?> (Object * Envelope<_> -> unit))
             |> Seq.toList
         )
         

@@ -9,7 +9,6 @@ open ES.Fslog
 
 type FingerprintWithScripts
     (
-        serviceMetrics: FingerprinterMetrics,
         webPageRequestor: IWebPageRequestor,
         messageBroker: IMessageBroker,
         webServerFingerprint: WebServerFingerprint,
@@ -17,13 +16,16 @@ type FingerprintWithScripts
         stateController: ServiceStateController,
         stopRequested: unit -> Boolean,
         logProvider: ILogProvider
-    ) =
+    ) as this =
     
+    let _serviceMetrics = new ServiceMetrics("FingerprintWithScripts")
     let _logger =
         log "FingerprintWithScripts"
         |> info "WebApplicationVersionFoundViaScript" "Web application '{0}' version '{1}' found at: {2} (via: {3})"
         |> build
-    do logProvider.AddLogSourceToLoggers(_logger)
+    do 
+        logProvider.AddLogSourceToLoggers(_logger)
+        messageBroker.Subscribe<RequestMetricsMessage>(fun (sender, msg) -> msg.Item.AddResult(this, _serviceMetrics))
     
     let isScriptOkToRun(luaSignature: LuaScriptSignature, webApplicationFound: List<WebApplicationIdentified>) =
         // avoid to analyze applications that were already found or that was already analyzed by the script
@@ -58,7 +60,7 @@ type FingerprintWithScripts
             if not(stopRequested()) && not stateController.IsStopped then
                 match customScript with
                 | :? LuaScriptSignature as luaSignature when isScriptOkToRun(luaSignature, webApplicationFound) ->
-                    serviceMetrics.LastExecutedScript(luaSignature.FilePath)
+                    _serviceMetrics.AddMetric("Last executed script", luaSignature.FilePath)
                     let luaSignRes = luaSignature.Verify(fingerprintRequest.Request.Uri.AbsoluteUri, cacheableWebPageRequestor) :?> LuaSignatureVerificationResult
 
                     // if the app was found signal it with a message
@@ -78,7 +80,3 @@ type FingerprintWithScripts
                         // dispatch the event
                         messageBroker.Dispatch(this, new NewWebApplicationIdentifiedMessage(webAppIdentified))
                 | _ -> ()
-                        
-        // update metrics
-        serviceMetrics.LastExecutedScript("<All scripts executed>")
-

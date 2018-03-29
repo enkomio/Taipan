@@ -14,7 +14,6 @@ open ES.Fslog
 type FingerprintWithSignatures
     (
         settings: WebAppFingerprinterSettings,
-        serviceMetrics: FingerprinterMetrics,
         messageBroker: IMessageBroker,
         webServerFingerprint: WebServerFingerprint,
         webApplicationFingerprintRepository: IWebApplicationFingerprintRepository,   
@@ -24,6 +23,12 @@ type FingerprintWithSignatures
         stateController: ServiceStateController,
         stopRequested: unit -> Boolean
     ) as this =
+
+    let _serviceMetrics = new ServiceMetrics("FingerprintWithSignatures")
+    let serviceMetricHandler(sender: Object, msg: Envelope<RequestMetricsMessage>) =
+        msg.Item.AddResult(this, _serviceMetrics)
+
+    do messageBroker.Subscribe<RequestMetricsMessage>(serviceMetricHandler)
     
     let getWebApplicationsToAnalyze(webApplicationFound: List<WebApplicationIdentified>, webApplicationAnalyzed: List<String>) =
         let webApplicationFoundNames = webApplicationFound |> Seq.map(fun webApp -> webApp.WebApplicationFingerprint.Name)
@@ -56,13 +61,13 @@ type FingerprintWithSignatures
             if iterate() then
                 serviceStateController.WaitIfPauseRequested()
                 partialIdentifiedWebApps.Clear()
-                serviceMetrics.LastTestedApplication((!webApplicationFingerprint).Name)
-                (!webApplicationFingerprint).Metrics <- Some(upcast serviceMetrics)
+                _serviceMetrics.AddMetric("Last tested application", (!webApplicationFingerprint).Name)
 
                 // identify the current web application                
                 (!webApplicationFingerprint).Fingeprint(webPageRequestor, fingerprintRequest, serviceStateController)
                 |> Seq.takeWhile(fun(webAppVersion, fingerprintResult) -> 
                     serviceStateController.WaitIfPauseRequested()
+                    _serviceMetrics.AddMetric("Last tested web application version", webAppVersion.Version)
                     if settings.RaiseAnEventForEachVersionIdentified then
                         let webAppIdentified = new WebApplicationIdentified(!webApplicationFingerprint, fingerprintRequest)
                         webAppIdentified.IdentifiedVersions.Add(webAppVersion, fingerprintResult)
@@ -106,10 +111,7 @@ type FingerprintWithSignatures
             ) |> tasks.Add
 
         // wait for all task to complete
-        let counter = ref 0
-        while not(Task.WaitAll(tasks |> Seq.toArray, 1000)) do
-            incr counter
-            serviceMetrics.WaitForTasksFingerprintCompletation(!counter)
+        Task.WaitAll(tasks |> Seq.toArray)
 
         // add back the new web applications
         webApplicationFound.Clear()
@@ -128,3 +130,5 @@ type FingerprintWithSignatures
             
             if iterate then
                 runFingerprint(webApplicationToAnalyze, webApplicationFound, fingerprintRequest)
+
+        messageBroker.Unsubscribe(serviceMetricHandler)

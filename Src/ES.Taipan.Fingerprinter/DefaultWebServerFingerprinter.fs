@@ -119,6 +119,7 @@ type DefaultWebServerFingerprinter(httpRequestor: IHttpRequestor, logProvider: I
             ("X-AspNetMvc-Version: ([0-9.]+)", (fun v -> "Microsoft ASP.NET MVC " + v))
             ("X-AspNet-Version: ([0-9.]+)", (fun v -> "Microsoft ASP.NET " + v))
             ("X-Powered-By: PHP/([0-9.]+)", (fun v -> "PHP " + v))
+            ("X-Varnish: (.+)", fun _ -> "Varnish HTTP Cache")
         ]
         |> List.iter(fun check ->
             match checkHttpHeadersDeepth(headers, [check]) with
@@ -170,12 +171,16 @@ type DefaultWebServerFingerprinter(httpRequestor: IHttpRequestor, logProvider: I
                 toBeIdentified <- matches.Success
 
     let checkWordsInHtml(html: String, fingerprint: WebServerFingerprint) =
-        let struts2Keywords = (["jquery.ui.struts2.js"; "/struts2/"; "struts2_jquery"], "Struts")
+        let knownKeywords = 
+            [
+                (["jquery.ui.struts2.js"; "/struts2/"; "struts2_jquery"], fun (f: WebServerFingerprint) ->  f.Frameworks.Add("Struts"))
+                (["wp-content"], fun (f: WebServerFingerprint) ->  f.Languages.Add(ProgrammingLanguage.Php))
+            ]
 
         // inspect HTML
-        for (keywords, frameworkName) in [struts2Keywords] do
+        for (keywords, callback) in knownKeywords do
             if keywords |> List.exists(html.Contains) then
-                fingerprint.Frameworks.Add(frameworkName) |> ignore
+                callback(fingerprint) |> ignore
 
     do httpRequestor.Settings.AllowAutoRedirect <- true
     

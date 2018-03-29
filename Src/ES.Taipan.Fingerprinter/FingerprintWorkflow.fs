@@ -12,7 +12,6 @@ open ES.Fslog
 type FingerprintWorkflow
     (
         settings: WebAppFingerprinterSettings,
-        serviceMetrics: FingerprinterMetrics,
         messageBroker: IMessageBroker,
         webServerFingerprinter: IWebServerFingerprinter, 
         webApplicationFingerprintRepository: IWebApplicationFingerprintRepository,   
@@ -23,7 +22,7 @@ type FingerprintWorkflow
         stopRequested: unit -> Boolean,        
         logProvider: ILogProvider
     ) =
-
+        
     let _supportedLanguages = new List<String>()
     let mutable _webServerFingerprint: WebServerFingerprint option = None
 
@@ -34,15 +33,16 @@ type FingerprintWorkflow
     do logProvider.AddLogSourceToLoggers(_logger)
 
     let identifySupportedServerLanguages(fingerprintRequest: FingerprintRequest) =
-        _webServerFingerprint <- Some <| webServerFingerprinter.Fingerprint(fingerprintRequest.Request.Uri)               
-        if _webServerFingerprint.Value.Languages |> Seq.isEmpty then                
-            // unable to identify the language, by deafult add all supported languages
-            FSharpType.GetUnionCases typeof<ProgrammingLanguage>
-            |> Seq.map(fun l -> l.Name)
-            |> _supportedLanguages.AddRange
-            _logger?LoadAllProgrammingLanguages(String.Join(",", _supportedLanguages))
-        else
-            _supportedLanguages.AddRange(_webServerFingerprint.Value.Languages |> Seq.map(fun l -> l.ToString())) 
+        if _supportedLanguages |> Seq.isEmpty then
+            _webServerFingerprint <- Some <| webServerFingerprinter.Fingerprint(fingerprintRequest.Request.Uri)               
+            if _webServerFingerprint.Value.Languages |> Seq.isEmpty then                
+                // unable to identify the language, by deafult add all supported languages            
+                FSharpType.GetUnionCases typeof<ProgrammingLanguage>
+                |> Seq.map(fun l -> l.Name)
+                |> _supportedLanguages.AddRange
+                _logger?LoadAllProgrammingLanguages(String.Join(",", _supportedLanguages))
+            else
+                _supportedLanguages.AddRange(_webServerFingerprint.Value.Languages |> Seq.map(fun l -> l.ToString()))            
                 
     member this.Fingerprint(fingerprintRequest: FingerprintRequest, webApplicationFound: List<WebApplicationIdentified>) = 
         identifySupportedServerLanguages(fingerprintRequest)
@@ -50,7 +50,6 @@ type FingerprintWorkflow
         let fingerprintWithSignature = 
             new FingerprintWithSignatures(
                 settings,
-                serviceMetrics,
                 messageBroker,
                 _webServerFingerprint.Value, 
                 webApplicationFingerprintRepository,   
@@ -63,7 +62,6 @@ type FingerprintWorkflow
 
         let fingerprintWithScripts =
             new FingerprintWithScripts(
-                serviceMetrics,
                 webPageRequestor,
                 messageBroker,
                 _webServerFingerprint.Value, 

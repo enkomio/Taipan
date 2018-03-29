@@ -24,7 +24,7 @@ type DefaultWebAppFingerprinter(settings: WebAppFingerprinterSettings, webApplic
     let _noMoreWebRequestsToProcess = new Event<IWebAppFingerprinter>()
     let _logger = new WebAppFingerprinterLogger()    
     let _serviceDiagnostics = new ServiceDiagnostics()
-    let _serviceMetrics = new FingerprinterMetrics()
+    let _serviceMetrics = new ServiceMetrics("Fingerprinter")
     let _statusMonitor = new Object()
     let _runToCompletationCalledLock = new ManualResetEventSlim()
 
@@ -41,7 +41,6 @@ type DefaultWebAppFingerprinter(settings: WebAppFingerprinterSettings, webApplic
     let _fingerprintWorkFlow = 
         new FingerprintWorkflow(
             settings,
-            _serviceMetrics,
             messageBroker,
             webServerFingerprinter,
             webApplicationFingerprintRepository,
@@ -59,14 +58,14 @@ type DefaultWebAppFingerprinter(settings: WebAppFingerprinterSettings, webApplic
             _stateController.ReleaseStopIfNecessary()
             _stateController.UnlockPause()
             _processCompleted.Trigger(this)
-            _serviceMetrics.CurrentState("Completed")
+            _serviceMetrics.AddMetric("Status", "Completed")
 
     let processFingerprintRequest(fingerprintRequest: FingerprintRequest) =
         if not _stateController.IsStopped && not _stopRequested then            
             this.Fingerprint(fingerprintRequest) |> ignore
 
     let triggerIdleState() =
-        _serviceMetrics.CurrentState("Idle")
+        _serviceMetrics.AddMetric("Status", "Idle")
         _serviceDiagnostics.GoIdle()
         _logger.GoIdle()
         _noMoreWebRequestsToProcess.Trigger(this)
@@ -81,20 +80,19 @@ type DefaultWebAppFingerprinter(settings: WebAppFingerprinterSettings, webApplic
             let numOfServicedRequests = ref 0
             let timer = new System.Timers.Timer(1000. * 60.)
             timer.Elapsed.Add(fun _ -> 
-                let oldVal = Interlocked.Exchange(numOfServicedRequests, 0)
-                _serviceMetrics.RequestPerSeconds(oldVal)
+                let oldVal = Interlocked.Exchange(numOfServicedRequests, 0)                
+                _serviceMetrics.AddMetric("Request per seconds", oldVal.ToString())
             )                
             timer.Start()
 
             // main process loop
             _initializationCompleted.Trigger(this)
-            _serviceMetrics.InitializationCompleted()
-            _serviceMetrics.LastFingerprintedDirectory("<no one>")
+            _serviceMetrics.AddMetric("Last fingerprinted directory", "<no one>")
             for fingerprintRequest in _requestsToProcess.GetConsumingEnumerable() do
                 if not _stateController.IsStopped && not _stopRequested then
                     lock _statusMonitor (fun () ->
                         _serviceDiagnostics.Activate()
-                        _serviceMetrics.CurrentState("Running")
+                        _serviceMetrics.AddMetric("Status", "Running")
                         processFingerprintRequest(fingerprintRequest)
                         Interlocked.Increment(numOfServicedRequests) |> ignore
                         checkFingerprinterState()
@@ -155,6 +153,7 @@ type DefaultWebAppFingerprinter(settings: WebAppFingerprinterSettings, webApplic
         messageBroker.Subscribe<String>(handleControlMessage)
         messageBroker.Subscribe<FingerprintRequest>(handleFingerprintRequestMessage)
         messageBroker.Subscribe<GetAvailableVersionsMessage>(handleGetAvailableVersionsMessage)
+        messageBroker.Subscribe<RequestMetricsMessage>(fun (sender, msg) -> msg.Item.AddResult(this, _serviceMetrics))
 
     new(settings: WebAppFingerprinterSettings, webApplicationFingerprintRepository: IWebApplicationFingerprintRepository, webServerFingerprinter: IWebServerFingerprinter, webRequestor: IWebPageRequestor, logProvider: ILogProvider) = new DefaultWebAppFingerprinter(settings, webApplicationFingerprintRepository, webServerFingerprinter, webRequestor, new NullMessageBroker(), logProvider)
 
@@ -164,7 +163,6 @@ type DefaultWebAppFingerprinter(settings: WebAppFingerprinterSettings, webApplic
     member this.InitializationCompleted = _initializationCompleted.Publish
     member this.NoMoreWebRequestsToProcess = _noMoreWebRequestsToProcess.Publish
     member val Diagnostics = _serviceDiagnostics with get
-    member val Metrics = _serviceMetrics with get
 
     member this.Pause() = 
         // if there aren't requests that must be processed the not blocking call of Pause must be executed because the
@@ -176,12 +174,12 @@ type DefaultWebAppFingerprinter(settings: WebAppFingerprinterSettings, webApplic
 
         if action() then
             _logger.WebAppFingerprinterPaused()
-            _serviceMetrics.CurrentState("Paused")
+            _serviceMetrics.AddMetric("Status", "Paused")
                 
     member this.Resume() = 
         if _stateController.ReleasePause() then
-            _logger.WebAppFingerprinterResumed()
-            _serviceMetrics.CurrentState("Running")
+            _logger.WebAppFingerprinterResumed()            
+            _serviceMetrics.AddMetric("Status", "Running")
             checkFingerprinterState()
         
     member this.Stop() = 
@@ -191,11 +189,11 @@ type DefaultWebAppFingerprinter(settings: WebAppFingerprinterSettings, webApplic
         _requestsToProcess.CompleteAdding()  
 
         if _stateController.Stop() then
-            _logger.WebAppFingerprinterStopped()   
-            _serviceMetrics.CurrentState("Stopped")         
+            _logger.WebAppFingerprinterStopped()     
+            _serviceMetrics.AddMetric("Status", "Stopped")
 
     member this.RunToCompletation() =
-        _serviceMetrics.CurrentState("Run to completation")
+        _serviceMetrics.AddMetric("Status", "Run to completation")
         _logger.RunToCompletation()
 
         // must verify that all the plugins completed their work before to invoke the completeProcess method
@@ -207,7 +205,7 @@ type DefaultWebAppFingerprinter(settings: WebAppFingerprinterSettings, webApplic
     member this.Fingerprint(fingerprintRequest: FingerprintRequest) =
         let webApplicationFound = new List<WebApplicationIdentified>()
         if isValidForFingerprint(fingerprintRequest) then
-            _serviceMetrics.LastFingerprintedDirectory(fingerprintRequest.Request.Uri.ToString())
+            _serviceMetrics.AddMetric("Last fingerprinted directory", fingerprintRequest.Request.Uri.ToString())
             _fingerprintWorkFlow.Fingerprint(fingerprintRequest, webApplicationFound)
         
         webApplicationFound
@@ -234,10 +232,7 @@ type DefaultWebAppFingerprinter(settings: WebAppFingerprinterSettings, webApplic
 
         member this.Diagnostics
             with get() = this.Diagnostics
-
-        member this.Metrics
-            with get() = upcast this.Metrics
-
+            
         member this.Fingerprint(fingerprintRequest: FingerprintRequest) =
             this.Fingerprint(fingerprintRequest)
 

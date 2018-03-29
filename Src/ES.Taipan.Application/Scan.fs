@@ -103,14 +103,14 @@ type ScanMetrics() =
     member this.LastHttpRequestCompleted(req: HttpRequest) =
         this.AddMetric("Last HTTP request completed", req.ToString())
 
-type Scan(scanContext: ScanContext, logProvider: ILogProvider) as this =    
-    let _scanWorkflow = new ScanWorkflow(logProvider)        
+type Scan(scanContext: ScanContext, logProvider: ILogProvider) as this =        
     let _serviceMetrics = new ScanMetrics()    
     let _waitLock = new ManualResetEventSlim(false)
     let _serviceCompletedLock = new Object()
     let _logger = new ScanLogger()
     let mutable _container : IContainer option = None
     let mutable _messageBroker : IMessageBroker option = None
+    let mutable _scanWorkflow: ScanWorkflow option = None
     let mutable _serviceCompletedFunctionCalled = false
     
     do logProvider.AddLogSourceToLoggers(_logger)
@@ -127,8 +127,8 @@ type Scan(scanContext: ScanContext, logProvider: ILogProvider) as this =
     
     let serviceCompleted (inIdleState: Boolean) (service: IService) =
         lock _serviceCompletedLock (fun() ->
-            _scanWorkflow.ServiceCompleted(service, inIdleState)    
-            if _scanWorkflow.AllServicesCompleted() && not _serviceCompletedFunctionCalled then  
+            _scanWorkflow.Value.ServiceCompleted(service, inIdleState)    
+            if _scanWorkflow.Value.AllServicesCompleted() && not _serviceCompletedFunctionCalled then  
                 _serviceCompletedFunctionCalled <- true
                 this.FinishedAt <- DateTime.UtcNow
                 _processCompleted.Trigger(this)                
@@ -156,6 +156,7 @@ type Scan(scanContext: ScanContext, logProvider: ILogProvider) as this =
         
         let builder = new ContainerBuilder()
         ignore(
+            builder.RegisterType<ScanWorkflow>(),
             builder.RegisterInstance(logProvider).As<ILogProvider>().SingleInstance(),
             builder.RegisterType<DefaultHttpRequestor>().As<IHttpRequestor>().WithParameter("requestNotificationCallback", requestNotificationCallback),
             builder.RegisterInstance(scanContext.Template.HttpRequestorSettings).As<HttpRequestorSettings>().SingleInstance(),
@@ -181,6 +182,7 @@ type Scan(scanContext: ScanContext, logProvider: ILogProvider) as this =
             builder.RegisterType<DefaultCrawler>().As<ICrawler>()
         )
         _container <- Some(builder.Build())
+        _scanWorkflow <- Some(_container.Value.Resolve<ScanWorkflow>())
                 
     // events objects
     member this.ProcessStarted = _processStarted.Publish
@@ -246,11 +248,11 @@ type Scan(scanContext: ScanContext, logProvider: ILogProvider) as this =
             _messageBroker.Value.Dispatch(this, convertPageReProcessedToTestRequest(message))
 
     member this.GetServiceMetrics() =
-        let services =
-            _scanWorkflow.GetServices()
-            |> Seq.map(fun (_, service) -> service.Metrics)
-            |> Seq.toList
-        (_serviceMetrics :> ServiceMetrics)::_scanWorkflow.GetMetrics()::services  
+        let metricMessage = new RequestMetricsMessage()
+        _messageBroker.Value.Dispatch(this, metricMessage)        
+        metricMessage.GetResults() 
+        |> Seq.map(fun kv -> kv.Value :?> ServiceMetrics)
+        |> Seq.toList
         
     member internal this.StartScanIp(ip: String) =
         _logger.ScanEngineUsed()
@@ -282,14 +284,14 @@ type Scan(scanContext: ScanContext, logProvider: ILogProvider) as this =
         // launch vulnerability scanner
         if scanContext.Template.RunVulnerabilityScanner then
             let vulnerabilityScanner = container.Resolve<IVulnerabilityScanner>()
-            _scanWorkflow.AddExecutedService(vulnerabilityScanner, scanContext.Template)
+            _scanWorkflow.Value.AddExecutedService(vulnerabilityScanner, scanContext.Template)
             vulnerabilityScanner.NoMoreTestRequestsToProcess.Add(serviceCompleted true)
             vulnerabilityScanner.ProcessCompleted.Add(serviceCompleted false)
 
         // launch web application fingerprinter
         if scanContext.Template.RunWebAppFingerprinter then
             let webAppFingerprinter = container.Resolve<IWebAppFingerprinter>()
-            _scanWorkflow.AddExecutedService(webAppFingerprinter, scanContext.Template)
+            _scanWorkflow.Value.AddExecutedService(webAppFingerprinter, scanContext.Template)
             webAppFingerprinter.NoMoreWebRequestsToProcess.Add(serviceCompleted true)
             webAppFingerprinter.ProcessCompleted.Add(serviceCompleted false)
 
@@ -305,7 +307,7 @@ type Scan(scanContext: ScanContext, logProvider: ILogProvider) as this =
 
             // instantiate components
             let resourceDiscoverer = container.Resolve<IResourceDiscoverer>()
-            _scanWorkflow.AddExecutedService(resourceDiscoverer, scanContext.Template)
+            _scanWorkflow.Value.AddExecutedService(resourceDiscoverer, scanContext.Template)
             resourceDiscoverer.NoMoreWebRequestsToProcess.Add(serviceCompleted true)
             resourceDiscoverer.ProcessCompleted.Add(serviceCompleted false)
 
@@ -329,7 +331,7 @@ type Scan(scanContext: ScanContext, logProvider: ILogProvider) as this =
             let crawler = container.Resolve<ICrawler>()
             crawler.NoMoreWebRequestsToProcess.Add(serviceCompleted true)
             crawler.ProcessCompleted.Add(serviceCompleted false)            
-            _scanWorkflow.AddExecutedService(crawler, scanContext.Template)
+            _scanWorkflow.Value.AddExecutedService(crawler, scanContext.Template)
 
             // start the crawler but not pages will be crawled due to the settings restriction
             crawlerRunned <- crawler.Run(scanContext.StartRequest.HttpRequest)
@@ -350,7 +352,7 @@ type Scan(scanContext: ScanContext, logProvider: ILogProvider) as this =
                     crawler.NoMoreWebRequestsToProcess.Add(serviceCompleted true)
                     crawler.ProcessCompleted.Add(serviceCompleted false)
                     
-                    _scanWorkflow.AddExecutedService(crawler, scanContext.Template)
+                    _scanWorkflow.Value.AddExecutedService(crawler, scanContext.Template)
 
                     let scanRequestHost = scanContext.StartRequest.HttpRequest.Uri.Host
                     if not <| scanContext.Template.CrawlerSettings.AllowedHosts.Contains(scanRequestHost) then
@@ -378,10 +380,10 @@ type Scan(scanContext: ScanContext, logProvider: ILogProvider) as this =
                 instantiateCrawlers([new AuthenticationInfo()])
 
         // the scan initialization can be considered done
-        _scanWorkflow.InitializationCompleted()
+        _scanWorkflow.Value.InitializationCompleted()
         
         if not crawlerRunned then
-            _scanWorkflow.GetServices()
+            _scanWorkflow.Value.GetServices()
             |> Seq.map(fun (_, srv) -> srv)
             |> Seq.filter(fun srv -> srv :? ICrawler)
             |> Seq.map(fun srv -> srv :?> ICrawler)
@@ -436,18 +438,18 @@ type Scan(scanContext: ScanContext, logProvider: ILogProvider) as this =
         int32 timeSpan.TotalSeconds
 
     member this.Pause() =
-        _scanWorkflow.Pause()
+        _scanWorkflow.Value.Pause()
         _logger.ScanPaused()
 
     member this.Stop() =
-        _scanWorkflow.Stop()
+        _scanWorkflow.Value.Stop()
         _logger.ScanStopped()
         this.State <- ScanState.Stopped
 
     member this.Resume() =
-        _scanWorkflow.Resume()
+        _scanWorkflow.Value.Resume()
         _logger.ScanResumed()
 
     interface IDisposable with
         member this.Dispose() =
-            (_scanWorkflow :> IDisposable).Dispose()
+            (_scanWorkflow.Value :> IDisposable).Dispose()

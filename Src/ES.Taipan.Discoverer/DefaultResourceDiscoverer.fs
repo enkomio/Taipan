@@ -102,6 +102,7 @@ type DefaultResourceDiscoverer(settings: ResourceDiscovererSettings, webRequesto
     let mutable _requestsToProcess = new BlockingCollection<DiscoverRequest>()
     let mutable _processCompletedInvoked = false
     let mutable _stopRequested = false    
+    let _numOfServicedRequests = ref 0
     let _numOfParallelRequestWorkers = 20
     let _cachedRequests = new List<DiscoverRequest>()
     let _discoveredDirectories = new HashSet<String>()
@@ -157,15 +158,6 @@ type DefaultResourceDiscoverer(settings: ResourceDiscovererSettings, webRequesto
             triggerIdleState()    
 
     let discovererLoop() =
-        // code to get request done per second metric
-        let numOfServicedRequests = ref 0
-        let timer = new System.Timers.Timer(1000.)                
-        timer.Elapsed.Add(fun _ -> 
-            let oldVal = Interlocked.Exchange(numOfServicedRequests, 0)
-            _serviceMetrics.RequestPerSeconds(oldVal)
-        )                
-        timer.Start()
-
         // main process loop
         let completed = ref false
         _initializationCompleted.Trigger(this)
@@ -177,7 +169,6 @@ type DefaultResourceDiscoverer(settings: ResourceDiscovererSettings, webRequesto
                         _serviceDiagnostics.Activate()
                         _serviceMetrics.CurrentState("Running")
                         processDiscoverRequest(discoverRequest)
-                        Interlocked.Increment(numOfServicedRequests) |> ignore
                         checkResourceDiscovererState()
                     )
 
@@ -305,6 +296,7 @@ type DefaultResourceDiscoverer(settings: ResourceDiscovererSettings, webRequesto
                     let webRequest = new WebRequest(resourceUri)                       
                     let webResponse = webRequestor.RequestWebPage(webRequest)
                     
+                    Interlocked.Increment(_numOfServicedRequests) |> ignore
                     Interlocked.Increment(counter) |> ignore
                     _logger.ScanProgress(discoverRequest.Request.Uri.AbsolutePath, total, !counter)
 
@@ -328,11 +320,20 @@ type DefaultResourceDiscoverer(settings: ResourceDiscovererSettings, webRequesto
         // message subscription
         messageBroker.Subscribe<String>(handleControlMessage)
         messageBroker.Subscribe<DiscoverRequest>(handleDiscoverRequestMessage)
+        messageBroker.Subscribe<RequestMetricsMessage>(fun (sender, msg) -> msg.Item.AddResult(this, _serviceMetrics))
 
         // add forbidden directories loaded via repository
         settings.ForbiddenDirectories 
         |> Seq.append(resourceRepository.GetForbiddenDirectories())
         |> _forbiddenDirectories.AddRange
+
+        // code to get request done per second metric
+        let timer = new System.Timers.Timer(1000.)                
+        timer.Elapsed.Add(fun _ -> 
+            let oldVal = Interlocked.Exchange(_numOfServicedRequests, 0)
+            _serviceMetrics.RequestPerSeconds(oldVal)
+        )                
+        timer.Start()
 
     static member ResourceDiscovererId = Guid.Parse("8DD36C46-8FEB-455F-A1BA-C14363339318")
     member val ServiceId = DefaultResourceDiscoverer.ResourceDiscovererId with get
@@ -452,7 +453,6 @@ type DefaultResourceDiscoverer(settings: ResourceDiscovererSettings, webRequesto
         identifiedResources |> Seq.toList
 
     member val Diagnostics = _serviceDiagnostics with get
-    member val Metrics = _serviceMetrics with get
 
     interface IDisposable with
         member this.Dispose() =
@@ -469,10 +469,7 @@ type DefaultResourceDiscoverer(settings: ResourceDiscovererSettings, webRequesto
 
          member this.Diagnostics
             with get() = this.Diagnostics
-
-        member this.Metrics
-            with get() = upcast this.Metrics
-
+            
         member this.Discover(discoverRequest: DiscoverRequest) =
             this.Discover(discoverRequest)
 

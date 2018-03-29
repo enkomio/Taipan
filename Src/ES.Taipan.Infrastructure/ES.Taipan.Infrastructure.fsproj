@@ -126,6 +126,7 @@
     <Compile Include="Text\ConverterUtility.fs" />
     <Compile Include="Messaging\Envelope.fs" />
     <Compile Include="Messaging\IMessageBroker.fs" />
+    <Compile Include="Messaging\ResultMessage.fs" />
     <Compile Include="Messaging\DefaultMessageBroker.fs" />
     <Compile Include="Messaging\NullMessageBroker.fs" />
     <Compile Include="Service\ServiceDiagnostics.fs" />

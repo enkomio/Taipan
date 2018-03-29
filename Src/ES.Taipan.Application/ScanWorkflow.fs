@@ -11,6 +11,7 @@ open ES.Taipan.Fingerprinter
 open ES.Taipan.Discoverer
 open ES.Taipan.Infrastructure.Service
 open ES.Fslog
+open ES.Taipan.Infrastructure.Messaging
 
 type ScanWorkflowLogger() =
     inherit LogSource("ScanWorkflow")
@@ -46,13 +47,16 @@ type ScanWorkflowLogger() =
 type ScanWorkflowMetrics() =
     inherit ServiceMetrics("Scan Workflow")
 
+    member this.LastIdleProcess(service: IService) =
+        this.AddMetric("Last idle service", service.GetType().Name)
+
     member this.LastCompletedProcess(service: IService) =
-        this.AddMetric("Completed process " + service.GetType().Name, String.Empty)
+        this.AddMetric("Last completed service", service.GetType().Name)
 
     member this.LastRunToCompletationProcess(service: IService) =
-        this.AddMetric("Last run to completation process " + service.GetType().Name, String.Empty)
+        this.AddMetric("Last run to completation service", service.GetType().Name)
 
-type ScanWorkflow(logProvider: ILogProvider) =  
+type ScanWorkflow(messageBroker: IMessageBroker, logProvider: ILogProvider) as this =  
     let _logger = new ScanWorkflowLogger()  
     let _serviceMetrics = new ScanWorkflowMetrics()
     let _statusQueue = new Queue<String>()
@@ -65,7 +69,9 @@ type ScanWorkflow(logProvider: ILogProvider) =
     let _currentServiceLevel = ref 0
     let mutable _scanCompleted = false  
     let mutable _scanInitializationCompleted = false 
-    do logProvider.AddLogSourceToLoggers(_logger)
+    do 
+        logProvider.AddLogSourceToLoggers(_logger)
+        messageBroker.Subscribe<RequestMetricsMessage>(fun (sender, msg) -> msg.Item.AddResult(this, _serviceMetrics))
 
     let (|Crawler|VulnerabilityScanner|WebAppFingerprinter|ResourceDiscoverer|Unknown|) (v: IService) =
         let typeOfService = v.GetType()
@@ -125,26 +131,20 @@ type ScanWorkflow(logProvider: ILogProvider) =
         | _ -> ()        
 
         service.InitializationCompleted.Add(fun srv -> 
-            _serviceMetrics.AddMetric(String.Format("Service {0} initialized", srv.GetType().FullName), "true")
             _logger.ServiceInitialized(srv)
             Interlocked.Increment(_initializedServices) |> ignore
         )
 
-        _serviceMetrics.AddMetric(String.Format("Service {0} added", service.GetType().FullName), "true")
         _activatedServices.Add(getServiceLevel(service), service)
         service.Activate()
-
-    member this.GetMetrics() =
-        _serviceMetrics :> ServiceMetrics
-
+        
     member this.InitializationCompleted() =
         _scanInitializationCompleted <- true
                     
     // this is the most important function. it is in charge for the process workflow
     member this.ServiceCompleted(service: IService, inIdleState: Boolean) =
         verifyAllServiceCompletedTheInitialization()
-        lock _serviceStatusChangeSyncRoot (fun () ->
-            _serviceMetrics.LastCompletedProcess(service)
+        lock _serviceStatusChangeSyncRoot (fun () ->            
             _pendingServiceForCompletation.Remove(service.ServiceId) |> ignore
             
             if inIdleState then
@@ -155,6 +155,7 @@ type ScanWorkflow(logProvider: ILogProvider) =
                 // the service really completed, not more work for it
                 _completedServices.[service] <- true
                 _logger.ServiceCompleted(service)
+                _serviceMetrics.LastCompletedProcess(service)
 
             let allProducerServicesInIdleState = _producerServices |> Seq.forall(fun srv -> srv.Diagnostics.IsIdle)
             let noPendingServiceForCompletation = _pendingServiceForCompletation |> Seq.isEmpty

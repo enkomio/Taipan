@@ -115,16 +115,19 @@ module Cli =
                         |> Seq.iter prettyPrintMetrics
                         Console.WriteLine()
                     else
-                        match scanService.GetCurrenScanStatus() with
-                        | Some scanResult -> 
-                            let scan = scanResult.Scan
-                            if key = 'p' || key = 'P' then
-                                scan.Pause()
-                            elif key = 'r' || key = 'R' then
-                                scan.Resume()
-                            elif key = 's' || key = 'S' then
-                                scan.Stop()
-                        | None -> ()
+                        // run this code in a separated thread since it can freeze the UI
+                        Task.Factory.StartNew(fun _ ->
+                            match scanService.GetCurrenScanStatus() with
+                            | Some scanResult -> 
+                                let scan = scanResult.Scan
+                                if key = 'p' || key = 'P' then
+                                    scan.Pause()
+                                elif key = 'r' || key = 'R' then
+                                    scan.Resume()
+                                elif key = 's' || key = 'S' then
+                                    scan.Stop()
+                            | None -> ()
+                        ) |> ignore
                 else
                     Thread.Sleep(500)
         , TaskCreationOptions.LongRunning) |> ignore

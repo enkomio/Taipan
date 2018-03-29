@@ -5,10 +5,9 @@ open System.Globalization
 open System.Linq
 open System.Collections.Generic
 open ES.Taipan.Infrastructure.Network
-open System.Xml.Linq
-open System.Linq
 open ES.Fslog
 open ES.Taipan.Infrastructure.Service
+open System.Xml.Linq
 
 type WebApplicationIdentified(webApplicationFingerprint: WebApplicationFingerprint, fingerprintRequest: FingerprintRequest) =
     member val WebApplicationFingerprint = webApplicationFingerprint with get
@@ -22,7 +21,7 @@ type WebApplicationIdentified(webApplicationFingerprint: WebApplicationFingerpri
 and WebApplicationFingerprint(logProvider: ILogProvider) = 
     static let x str = XName.Get str
     let _logger = new WebApplicationFingerprintLogger()
-    
+        
     do logProvider.AddLogSourceToLoggers(_logger)
     new() = new WebApplicationFingerprint(new LogProvider())
 
@@ -33,7 +32,6 @@ and WebApplicationFingerprint(logProvider: ILogProvider) =
     member val Versions : ICollection<WebApplicationVersionFingerprint> = upcast new List<WebApplicationVersionFingerprint>() with get
     member val AcceptanceRate = 0.01 with get, set
     member val DependantWebApplications = new List<DependantWebApplication>() with get
-    member val Metrics : ServiceMetrics option = None with get, set
 
     member this.Fingeprint(webPageRequestor: IWebPageRequestor, fingerprintRequest: FingerprintRequest, serviceStateController: ServiceStateController) =
         seq {
@@ -41,15 +39,7 @@ and WebApplicationFingerprint(logProvider: ILogProvider) =
                 _logger.TestForWebApplication(this.Name, fingerprintRequest.Request.Uri.ToString())
                 let fingStrategy = new FingerprintingStrategy(webPageRequestor, serviceStateController)
                 let result = fingStrategy.Calculate(fingerprintRequest.Request.Uri.AbsoluteUri, this.BaseSignatures)
-                
-                // fillup metrics
-                if this.Metrics.IsSome then 
-                    let signatureNames =
-                        result.MatchedSignatures
-                        |> Seq.map(fun s -> s.Signature.Value.ToString())
-                        |> fun sl -> String.Join(",", sl)
-                    this.Metrics.Value.AddMetric("Last matched signature", this.Name + " " + signatureNames)
-        
+                        
                 if result.IsHighThan(this.AcceptanceRate) then                
                     _logger.WebApplicationSeemsToExists(this.Name, result)
 
@@ -57,9 +47,7 @@ and WebApplicationFingerprint(logProvider: ILogProvider) =
                     for version in this.Versions do
                         if version.Signatures.Count > 0 && not serviceStateController.IsStopped then
                             serviceStateController.WaitIfPauseRequested()
-
-                            this.Metrics.Value.AddMetric("Last tested version for ", this.Name + " " + version.Version)
-
+                            
                             _logger.TestForWebApplicationVersion(this.Name, version.Version, fingerprintRequest.Request.Uri.AbsoluteUri)
                             let (found, result) = version.Fingeprint(webPageRequestor, fingerprintRequest, fingStrategy)
                             if found then

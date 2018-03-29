@@ -43,101 +43,50 @@ type internal FilesystemWebApplicationFingerprintRepositoryLogger() =
     member this.LoadSignatureInDirectory(directory: String) = 
         this.WriteLog(7, [|directory|])
 
+type internal WebAppVersionDescriptor() =
+    member val Info = String.Empty with get, set
+    member val Signatures = new List<String>() with get
+
+type internal WebAppDescriptor() =
+    member val Info = String.Empty with get, set
+    member val Signatures = new List<String>() with get
+    member val Versions = new Dictionary<String, WebAppVersionDescriptor>() with get
+
 /// Read all the stored signatures from the filesystem
 type FilesystemWebApplicationFingerprintRepository(path: String, logProvider: ILogProvider) =
-    static let x str = XName.Get str    
     let _logger = new FilesystemWebApplicationFingerprintRepositoryLogger()
     let mutable _customScriptCheckers : List<BaseSignature> option = None    
     let mutable _webApplicationFingerprints : List<WebApplicationFingerprint> option = None
 
     do logProvider.AddLogSourceToLoggers(_logger)
 
-    let loadWebAppVersionFingerprint (webApp: WebApplicationFingerprint) (directory: String) (interruptLoading: unit -> Boolean) =
-        for versionDirectory in Directory.EnumerateDirectories(directory) do
+    let createWebApplicationFingerprint(webAppDescriptor: WebAppDescriptor, interruptLoading: unit -> Boolean) =
+        let webAppFingeprint = new WebApplicationFingerprint(logProvider)
+        webAppFingeprint.AcquireFromXml(webAppDescriptor.Info)
+
+        // add web app signatures
+        for xmlSignature in webAppDescriptor.Signatures do
             if not(interruptLoading()) then
-                let webAppVersionFingerprint = new WebApplicationVersionFingerprint()
-            
-                let versionFile = Path.Combine(versionDirectory, "version.xml")
-                if File.Exists(versionFile) then
-                    let versionXml = File.ReadAllText(versionFile)
+                let signature = SignatureFactory.createSignatureFromXml(xmlSignature, logProvider)
+                webAppFingeprint.BaseSignatures.Add(signature)
 
-                    // populate the web app version Fingerprint base properties
-                    let doc = XDocument.Parse(versionXml)
-                    let root = doc.Element(x"WebApplicationVersion")        
-                    webAppVersionFingerprint.Version <- root.Element(x"Version").Value            
-                    webAppVersionFingerprint.AcceptanceRate <- XmlConvert.ToDouble(root.Element(x"AcceptanceRate").Value)
+        // add all versions
+        for versionDesc in webAppDescriptor.Versions.Values do
+            if not(interruptLoading()) then
+                let version = new WebApplicationVersionFingerprint()
+                version.AcquireFromXml(versionDesc.Info)
 
-                    // read version signatures
-                    for signatureFile in Directory.EnumerateFiles(Path.Combine(versionDirectory, "Signatures")) do
-                        if not(interruptLoading()) then
-                            let signatureXml = File.ReadAllText(signatureFile)
-                            let signature = SignatureFactory.createSignatureFromXml(signatureXml, logProvider)
-                            webAppVersionFingerprint.Signatures.Add(signature)
-                                    
-                    webApp.Versions.Add(webAppVersionFingerprint)
-
-    let loadSignatures (fingerprintsDirectory: String) (webAppFingerprint: WebApplicationFingerprint) (interruptLoading: unit -> Boolean) =
-        // load standard signatures            
-        let numOfSignatures = ref 0
-        let signaturesDirectory = Path.Combine(fingerprintsDirectory, webAppFingerprint.Name, "Apps")
-        if Directory.Exists(signaturesDirectory) then
-            for versionDirectory in Directory.EnumerateDirectories(signaturesDirectory) do
-                if not(interruptLoading()) then
-                    let versionName = Path.GetFileName(versionDirectory)
-                    let versionFingerprintOpt = 
-                        webAppFingerprint.Versions
-                        |> Seq.tryFind(fun webAppVer -> webAppVer.Version.Equals(versionName, StringComparison.Ordinal))
-            
-                    if versionFingerprintOpt.IsSome then
-                        // load all signatures of the current version
-                        for file in Directory.EnumerateFiles(versionDirectory) do
-                            if not(interruptLoading()) then
-                                let signatureXml = File.ReadAllText(file)
-                                let signature = SignatureFactory.createSignatureFromXml(signatureXml, logProvider)
-                                incr numOfSignatures
-                                versionFingerprintOpt.Value.Signatures.Add(signature)
-                    else
-                        // load all signatures of the web application
-                        for file in Directory.EnumerateFiles(versionDirectory) do
-                            if not(interruptLoading()) then
-                                let signatureXml = File.ReadAllText(file)
-                                let signature = SignatureFactory.createSignatureFromXml(signatureXml, logProvider)
-                                incr numOfSignatures
-                                webAppFingerprint.BaseSignatures.Add(signature)
-
-        !numOfSignatures
-
-    let loadWebApplicationVersion(appName: String, appDirectory: String, interruptLoading: unit -> Boolean) =
-        // read the application file descriptor
-        let appFilename = appName + ".xml"
-        let filePath = Path.Combine(appDirectory, appFilename) 
-        
-        let webAppFingerprint = new WebApplicationFingerprint(logProvider)
-
-        if File.Exists(filePath) then            
-            let appFileDescriptorXmlContent = File.ReadAllText(filePath)                  
-            webAppFingerprint.AcquireFromXml(appFileDescriptorXmlContent)
-
-        // read the version file descriptor
-        for versionFile in Directory.EnumerateFiles(appDirectory) do
-            let fileName = Path.GetFileName(versionFile)
-            if not <| fileName.Equals(appFilename, StringComparison.OrdinalIgnoreCase) && not(interruptLoading()) then
-                let appVerFileDescriptorXmlContent = File.ReadAllText(versionFile)
-                let webAppVerFingerprint = new WebApplicationVersionFingerprint()
-                webAppVerFingerprint.AcquireFromXml(appVerFileDescriptorXmlContent)
-                webAppFingerprint.Versions.Add(webAppVerFingerprint)
-
-        webAppFingerprint
+                // load all version signatures
+                for xmlSignature in versionDesc.Signatures do
+                    if not(interruptLoading()) then
+                        let signature = SignatureFactory.createSignatureFromXml(xmlSignature, logProvider)
+                        version.Signatures.Add(signature)
+        webAppFingeprint
 
     let getDirectories(language: String) =        
         let fingerprintsDirectory = Path.Combine(path, "Data", "Signatures", language.ToString())
         let scriptDirectory = Path.Combine(path, "Data", "Scripts", language)
         (fingerprintsDirectory, scriptDirectory)
-
-    let loadWebAppFingerprint(appDirectory: String, interruptLoading: unit -> Boolean) =        
-        let appName = Path.GetFileName(appDirectory)
-        let configurationDirectory = Path.Combine(appDirectory, "Configuration")
-        loadWebApplicationVersion(appName, configurationDirectory, interruptLoading)
 
     let loadScripts(supportedLanguages: String seq, interruptLoading: unit -> Boolean) =
         _customScriptCheckers <- Some <| new List<BaseSignature>()
@@ -175,6 +124,46 @@ type FilesystemWebApplicationFingerprintRepository(path: String, logProvider: IL
 
                 _logger.LoadedScripts(_customScriptCheckers.Value)
 
+    let processFileContent(appName: String, fullname: String, fileContent: String, webAppDescriptor: WebAppDescriptor) =
+        let filename = Path.GetFileNameWithoutExtension(fullname)
+        if fullname.Contains("Configuration") then
+            // it is a configuration file                                    
+            let isWebAppConfig = filename.Equals(appName, StringComparison.OrdinalIgnoreCase)
+
+            if isWebAppConfig then
+                // it is the web app descriptor
+                webAppDescriptor.Info <- fileContent
+            else
+                // it is a web app version descriptor
+                if not <| webAppDescriptor.Versions.ContainsKey(filename) then
+                    webAppDescriptor.Versions.Add(filename, new WebAppVersionDescriptor())
+                webAppDescriptor.Versions.[filename].Info <- fileContent
+        else
+            // it is a signature file
+            let version = Path.GetFileName(Path.GetDirectoryName(fullname))
+
+            let isWebAppSignature = version.Equals(appName, StringComparison.OrdinalIgnoreCase)
+            if isWebAppSignature then
+                webAppDescriptor.Signatures.Add(fileContent)
+            else
+                if not <| webAppDescriptor.Versions.ContainsKey(version) then
+                    webAppDescriptor.Versions.Add(version, new WebAppVersionDescriptor())
+                webAppDescriptor.Versions.[version].Signatures.Add(fileContent)
+
+    let analyzeZipFile(appZippedFile: String) =
+        use zipFile = ZipFile.OpenRead(appZippedFile)
+        let webAppDescriptor = new WebAppDescriptor()
+        zipFile.Entries
+        |> Seq.iter(fun zipEntry ->
+            if zipEntry.Length > 0L then
+                // read and process content
+                use streamReader = new StreamReader(zipEntry.Open())
+                let entryValue = streamReader.ReadToEnd()
+                let appName = Path.GetFileNameWithoutExtension(appZippedFile)
+                processFileContent(appName, zipEntry.FullName, entryValue, webAppDescriptor)
+        )
+        webAppDescriptor
+
     let loadSignatures(supportedLanguages: String seq, interruptLoading: unit -> Boolean) =
         _logger.LoadAllSignatures()
         _webApplicationFingerprints <- Some <| new List<WebApplicationFingerprint>()
@@ -196,43 +185,44 @@ type FilesystemWebApplicationFingerprintRepository(path: String, logProvider: IL
                         _logger.LoadSignatureInZipFile(appZippedFile)
                         loadedApplications <- loadedApplications + 1
 
-                        let tempDirectory = Path.Combine(Path.GetTempPath(), Path.GetRandomFileName())
-                        Directory.CreateDirectory(tempDirectory) |> ignore
+                        // analyze zip file                        
+                        let webAppDescriptor = analyzeZipFile(appZippedFile)
 
-                        // extract zip file
-                        let appName = Path.GetFileNameWithoutExtension(appZippedFile)                            
-                        use zipFile = ZipFile.OpenRead(appZippedFile)
-                            
-                        zipFile.Entries
-                        |> Seq.iter(fun zipEntry ->
-                            if zipEntry.Length > 0L then
-                                // it is a file
-                                let fileName = Path.Combine(tempDirectory, zipEntry.FullName)
-                                Directory.CreateDirectory(Path.GetDirectoryName(fileName)) |> ignore
-                                zipEntry.ExtractToFile(Path.Combine(tempDirectory, zipEntry.FullName))
-                        )
-
-                        // load the signature
-                        let webAppFingerprint = loadWebAppFingerprint(Path.Combine(tempDirectory, appName), interruptLoading)
-                        let numSign = loadSignatures tempDirectory webAppFingerprint interruptLoading
+                        // create the fingerprint object
+                        let webAppFingerprint = createWebApplicationFingerprint(webAppDescriptor, interruptLoading)
+                        let webAppTotalSign = webAppFingerprint.BaseSignatures.Count + (webAppFingerprint.Versions |> Seq.sumBy(fun v -> v.Signatures.Count))
+                        
+                        // update counter
                         loadedVersions <- loadedVersions + webAppFingerprint.Versions.Count
-                        loadedSignatures <- loadedSignatures + numSign
-                        _logger.LoadedWebApplication(appName, webAppFingerprint.Versions.Count, numSign)
-                        Directory.Delete(tempDirectory, true)
+                        loadedSignatures <- loadedSignatures + webAppTotalSign                        
+                        
+                        _logger.LoadedWebApplication(webAppFingerprint.Name, webAppFingerprint.Versions.Count, webAppTotalSign)
                         _webApplicationFingerprints.Value.Add(webAppFingerprint)
 
                 // load all signatures files
                 for appDirectory in Directory.EnumerateDirectories(fingerprintsDirectory) do
-                    if not(interruptLoading()) then
-                        _logger.LoadSignatureInDirectory(appDirectory)
-                        loadedApplications <- loadedApplications + 1
-                        let appName = Path.GetFileName(appDirectory)
-                        let webAppFingerprint = loadWebAppFingerprint(appDirectory, interruptLoading)                     
-                        let numSign = loadSignatures fingerprintsDirectory webAppFingerprint interruptLoading
-                        loadedVersions <- loadedVersions + webAppFingerprint.Versions.Count
-                        loadedSignatures <- loadedSignatures + numSign
-                        _logger.LoadedWebApplication(appName, webAppFingerprint.Versions.Count, numSign)
-                        _webApplicationFingerprints.Value.Add(webAppFingerprint)
+                    let webAppDescriptor = new WebAppDescriptor()
+                    let appName = Path.GetFileName(appDirectory)
+                                        
+                    _logger.LoadSignatureInDirectory(appDirectory)
+                    loadedApplications <- loadedApplications + 1
+
+                    // process all web application files
+                    for appFile in Directory.EnumerateFiles(appDirectory, "*", SearchOption.AllDirectories) do
+                        if not(interruptLoading()) then
+                            let fileContent = File.ReadAllText(appFile)
+                            processFileContent(appName, appFile, fileContent, webAppDescriptor)
+
+                    // create the fingerprint object
+                    let webAppFingerprint = createWebApplicationFingerprint(webAppDescriptor, interruptLoading)
+                    let webAppTotalSign = webAppFingerprint.BaseSignatures.Count + (webAppFingerprint.Versions |> Seq.sumBy(fun v -> v.Signatures.Count))
+
+                    // update counter
+                    loadedVersions <- loadedVersions + webAppFingerprint.Versions.Count
+                    loadedSignatures <- loadedSignatures + webAppTotalSign                        
+                        
+                    _logger.LoadedWebApplication(webAppFingerprint.Name, webAppFingerprint.Versions.Count, webAppTotalSign)
+                    _webApplicationFingerprints.Value.Add(webAppFingerprint)
 
         _logger.LoadSignaturesCompleted(loadedApplications, loadedVersions, loadedSignatures)
 

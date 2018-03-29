@@ -264,6 +264,7 @@ type DefaultCrawler(settings: CrawlerSettings, webRequestor: IWebPageRequestor, 
         messageBroker.Subscribe<CrawlRequest>(handleCrawlRequestMessage)
         messageBroker.Subscribe<ExtractWebLinksMessage>(handleExtractWebLinksMessage)
         messageBroker.Subscribe<GetSettingsMessage>(handleGetSettings)
+        messageBroker.Subscribe<RequestMetricsMessage>(fun (sender, msg) -> msg.Item.AddResult(this, _serviceMetrics))
         logProvider.AddLogSourceToLoggers(_logger)
 
         // load only enabled addOn
@@ -286,7 +287,6 @@ type DefaultCrawler(settings: CrawlerSettings, webRequestor: IWebPageRequestor, 
     member val ServiceId = Guid.NewGuid() with get    
     member this.NoMoreWebRequestsToProcess = _noMoreWebRequestsToProcess.Publish
     member val Diagnostics = _serviceDiagnostics with get
-    member val Metrics = _serviceMetrics with get
 
     member this.LinkMutator
         with get() = _linkMutator
@@ -381,10 +381,7 @@ type DefaultCrawler(settings: CrawlerSettings, webRequestor: IWebPageRequestor, 
 
          member this.Diagnostics
             with get() = this.Diagnostics
-
-        member this.Metrics
-            with get() = upcast this.Metrics
-
+            
         member this.State
             with get() = this.State
 

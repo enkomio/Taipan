@@ -122,7 +122,6 @@
     <Compile Include="IWebApplicationFingerprintRepository.fs" />
     <Compile Include="IWebAppFingerprinter.fs" />
     <Compile Include="WebAppFingerprinterSettings.fs" />
-    <Compile Include="FingerprinterMetrics.fs" />
     <Compile Include="FingerprintWithSignatures.fs" />
     <Compile Include="FingerprintWithScripts.fs" />
     <Compile Include="FingerprintWorkflow.fs" />
