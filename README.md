@@ -75,6 +75,7 @@ We use [SemVer](http://semver.org/) for versioning. For the versions available, 
 ## Authors
 
 * **Antonio Parata** - *Core Developer* - [s4tan](https://twitter.com/s4tan)
+* **Andrea Gulino** - *Front End Developer* - [andreagulino](https://www.linkedin.com/in/andreagulino/)
 
 See also the list of [contributors](https://github.com/taipan-scanner/Taipan/graphs/contributors) who participated in this project.
 
