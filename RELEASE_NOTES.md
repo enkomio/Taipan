@@ -1,3 +1,7 @@
+### 1.7.0 - XX/XX/2018
+* Improved system metrics generation
+* Improved code to load signature by decreasing the time to load them
+
 ### 1.6.0 - 28/03/2018
 * Resolved resource leak in ChromeDriver usage
 * Fixed some bugs (FPs, Mem leak, ...)

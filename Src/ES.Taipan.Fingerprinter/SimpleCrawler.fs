@@ -98,8 +98,10 @@ module internal SimpleCrawler =
                                 | Gate -> supervisor.Post Done
                                           (y :> IDisposable).Dispose()
                                 | _ -> return! loop (count + 1)
-                        | None -> supervisor.Post Stop
-                                  return! loop count
+                        | None -> 
+                            if q.IsEmpty then
+                                supervisor.Post Stop
+                            return! loop count
                     }
                 loop 1)
     
