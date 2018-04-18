@@ -75,6 +75,7 @@ type FilesystemWebApplicationFingerprintRepository(path: String, logProvider: IL
             if not(interruptLoading()) then
                 let version = new WebApplicationVersionFingerprint()
                 version.AcquireFromXml(versionDesc.Info)
+                webAppFingeprint.Versions.Add(version)
 
                 // load all version signatures
                 for xmlSignature in versionDesc.Signatures do

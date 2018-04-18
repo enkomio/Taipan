@@ -10,6 +10,7 @@ open ES.Taipan.Infrastructure.Threading
 open ES.Taipan.Infrastructure.Service
 open ES.Taipan.Infrastructure.Messaging
 open ES.Fslog
+open MoonSharp.Interpreter.CoreLib
 
 type FingerprintWithSignatures
     (

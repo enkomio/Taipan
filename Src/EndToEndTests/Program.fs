@@ -9,6 +9,7 @@ open Microsoft.FSharp.Quotations.DerivedPatterns
 open FSharp.Quotations.Evaluator
 
 let allTests : Expr<Uri -> unit> list = [
+    
     // Discovere tests
     <@ DiscovererTests.``Non recursive discoverer of hidden resources`` @>
     <@ DiscovererTests.``Recursive discoverer of hidden resources`` @>
@@ -19,7 +20,7 @@ let allTests : Expr<Uri -> unit> list = [
     <@ DiscovererTests.``Recursive discoverer of hidden resources identifing a redirect resource`` @>
     <@ DiscovererTests.``The entrypoint for the discover is a file`` @>
     <@ DiscovererTests.``Ensure that redirect to an hidden directory doesn't generate two discovery`` @>
-
+    
     // Web Application fingerprint tests
     <@ FingerprinterTests.``Fingerprint a Joomla fake web application`` @>
     <@ FingerprinterTests.``Ensure that if the dependant application is not found neither the plugin is found`` @>
