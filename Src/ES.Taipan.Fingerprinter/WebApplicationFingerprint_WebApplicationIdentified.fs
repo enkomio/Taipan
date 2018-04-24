@@ -30,7 +30,7 @@ and WebApplicationFingerprint(logProvider: ILogProvider) =
     member val BaseSignatures = new List<BaseSignature>() with get
     member val ScriptSignatures = new List<BaseSignature>() with get
     member val Versions : ICollection<WebApplicationVersionFingerprint> = upcast new List<WebApplicationVersionFingerprint>() with get
-    member val AcceptanceRate = 0.01 with get, set
+    member val AcceptanceRate = 0.03 with get, set
     member val DependantWebApplications = new List<DependantWebApplication>() with get
 
     member this.Fingeprint(webPageRequestor: IWebPageRequestor, fingerprintRequest: FingerprintRequest, serviceStateController: ServiceStateController) =
@@ -67,7 +67,6 @@ and WebApplicationFingerprint(logProvider: ILogProvider) =
 
         this.Id <- Guid.Parse(root.Element(x"Id").Value)
         this.Name <- root.Element(x"Name").Value
-        this.AcceptanceRate <- Double.Parse(root.Element(x"AcceptanceRate").Value, CultureInfo.InvariantCulture)
 
         // add the dependant web applications
         root.Element(x"DependantWebApplications").Elements(x"WebAppName")

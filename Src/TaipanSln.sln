@@ -1,7 +1,7 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
-# Visual Studio 14
-VisualStudioVersion = 14.0.25420.1
+# Visual Studio 15
+VisualStudioVersion = 15.0.27428.2015
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Build", "Build", "{E58CD0A9-4D33-45C3-AE59-F65C692F7495}"
 	ProjectSection(SolutionItems) = preProject
@@ -42,6 +42,8 @@ EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "TestSSLServerLib", "Thirdpart\TestSSLServerLib\TestSSLServerLib.csproj", "{51C57651-2013-4493-B514-730C0D77F5DC}"
 EndProject
 Project("{F2A71F9B-5D33-465A-A702-920D77279786}") = "UnitTests", "UnitTests\UnitTests.fsproj", "{B00C1187-1C3E-4B4D-AAE5-E1AFC4FD8D23}"
+EndProject
+Project("{F2A71F9B-5D33-465A-A702-920D77279786}") = "VulnerabilityEditor", "VulnerabilityEditor\VulnerabilityEditor.fsproj", "{C43ED77E-FB78-4B8B-A05E-2DFF8DCEEB92}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -197,6 +199,18 @@ Global
 		{B00C1187-1C3E-4B4D-AAE5-E1AFC4FD8D23}.Release|Any CPU.Build.0 = Release|Any CPU
 		{B00C1187-1C3E-4B4D-AAE5-E1AFC4FD8D23}.Release|x86.ActiveCfg = Release|Any CPU
 		{B00C1187-1C3E-4B4D-AAE5-E1AFC4FD8D23}.Release|x86.Build.0 = Release|Any CPU
+		{C43ED77E-FB78-4B8B-A05E-2DFF8DCEEB92}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{C43ED77E-FB78-4B8B-A05E-2DFF8DCEEB92}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{C43ED77E-FB78-4B8B-A05E-2DFF8DCEEB92}.Debug|x86.ActiveCfg = Debug|Any CPU
+		{C43ED77E-FB78-4B8B-A05E-2DFF8DCEEB92}.Debug|x86.Build.0 = Debug|Any CPU
+		{C43ED77E-FB78-4B8B-A05E-2DFF8DCEEB92}.Package|Any CPU.ActiveCfg = Release|Any CPU
+		{C43ED77E-FB78-4B8B-A05E-2DFF8DCEEB92}.Package|Any CPU.Build.0 = Release|Any CPU
+		{C43ED77E-FB78-4B8B-A05E-2DFF8DCEEB92}.Package|x86.ActiveCfg = Release|Any CPU
+		{C43ED77E-FB78-4B8B-A05E-2DFF8DCEEB92}.Package|x86.Build.0 = Release|Any CPU
+		{C43ED77E-FB78-4B8B-A05E-2DFF8DCEEB92}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{C43ED77E-FB78-4B8B-A05E-2DFF8DCEEB92}.Release|Any CPU.Build.0 = Release|Any CPU
+		{C43ED77E-FB78-4B8B-A05E-2DFF8DCEEB92}.Release|x86.ActiveCfg = Release|Any CPU
+		{C43ED77E-FB78-4B8B-A05E-2DFF8DCEEB92}.Release|x86.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
@@ -207,5 +221,9 @@ Global
 		{91DFA8CA-7708-45CD-BC52-F78AFA141BC7} = {8405954E-993B-47CA-922E-72DA3C2CD6B8}
 		{51C57651-2013-4493-B514-730C0D77F5DC} = {76DB6A4B-FDD1-4532-A34E-142D27DAAB3C}
 		{B00C1187-1C3E-4B4D-AAE5-E1AFC4FD8D23} = {8405954E-993B-47CA-922E-72DA3C2CD6B8}
+		{C43ED77E-FB78-4B8B-A05E-2DFF8DCEEB92} = {6005F28D-10D2-4285-89C0-5014EBCD5FB4}
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {C329D6AE-A135-4640-B1A3-A5723911C2EC}
 	EndGlobalSection
 EndGlobal

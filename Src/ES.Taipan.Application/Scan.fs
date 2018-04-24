@@ -33,9 +33,9 @@ type internal ScanLogger() =
     member this.ScanResumed() =
         this.WriteLog(3, [||])
 
-    [<Log(4, Message = "Start scan of: {0} [{1}]. Template: {2} [{3}]", Level = LogLevel.Informational)>]
+    [<Log(4, Message = "Start scan of: {0} [{1}]", Level = LogLevel.Informational)>]
     member this.ScanStarted(ip: String, scanContext: ScanContext) =
-        this.WriteLog(4, [|scanContext.StartRequest.HttpRequest.Uri; ip; scanContext.Template.Name; scanContext.Template.Id|])
+        this.WriteLog(4, [|scanContext.StartRequest.HttpRequest.Uri; ip|])
 
     [<Log(5, Message = "Scan engine version: {0}", Level = LogLevel.Informational)>]
     member this.ScanEngineUsed() =
@@ -45,6 +45,10 @@ type internal ScanLogger() =
     [<Log(6, Message = "Completed scan of: {0} in {1} seconds", Level = LogLevel.Informational)>]
     member this.ScanCompleted(scanContext: ScanContext, seconds: Int32) =
         this.WriteLog(6, [|scanContext.StartRequest.HttpRequest.Uri; seconds|])
+
+    [<Log(7, Message = "Using template: {0} [{1}]", Level = LogLevel.Informational)>]
+    member this.UsedTemplate(template: TemplateProfile) =
+        this.WriteLog(7, [|template.Name; template.Id|])
                 
     [<Log(8, Message = "{0}", Level = LogLevel.Critical)>]
     member this.FatalScanError(e: Exception) =
@@ -146,6 +150,18 @@ type Scan(scanContext: ScanContext, logProvider: ILogProvider) as this =
             // enabled Journey Scan, need to force some specific settings
             scanContext.Template.RunResourceDiscoverer <- false
             scanContext.Template.RunWebAppFingerprinter <- false
+
+    let checkForRedirectToWww(uri: Uri, httpResponse: HttpResponse) =
+        if HttpUtility.isRedirect(httpResponse.StatusCode) then
+            match HttpUtility.tryGetHeader( "Location", httpResponse.Headers) with
+            | Some hdr -> 
+                let originHost = (new UriBuilder(uri)).Host
+                let redirectHost = (new UriBuilder(new Uri(hdr.Value))).Host
+                if redirectHost.Equals("www." + originHost, StringComparison.OrdinalIgnoreCase) 
+                then Some hdr.Value
+                else None
+            | None -> None
+        else None
                 
     do
         if scanContext.Template.CrawlerSettings.Scope <> NavigationScope.WholeDomain then
@@ -257,6 +273,7 @@ type Scan(scanContext: ScanContext, logProvider: ILogProvider) as this =
     member internal this.StartScanIp(ip: String) =
         _logger.ScanEngineUsed()
         _logger.ScanStarted(ip, scanContext)
+        _logger.UsedTemplate(scanContext.Template)
 
         this.StartedAt <- DateTime.UtcNow
         this.State <- ScanState.Running
@@ -401,7 +418,14 @@ type Scan(scanContext: ScanContext, logProvider: ILogProvider) as this =
             ip <- Some(Dns.GetHostAddresses(uri.Host) |> Seq.head)
             let webRequestor = _container.Value.Resolve<IWebPageRequestor>()
             
-            let webResponse = webRequestor.RequestInitialWebPage(new WebRequest(uri))
+            let mutable webResponse = webRequestor.RequestInitialWebPage(new WebRequest(uri))
+
+            // check for redirect
+            match checkForRedirectToWww(uri, webResponse.HttpResponse) with
+            | Some redirectUri -> 
+                scanContext.StartRequest.HttpRequest.Uri <- new Uri(redirectUri)
+                webResponse <- webRequestor.RequestInitialWebPage(new WebRequest(redirectUri))
+            | None -> ()
 
             // this is necessary to avoid leak from the ChromeDriver
             match webRequestor with

@@ -26,7 +26,6 @@ type WebApplicationVersionFingerprint() =
         
         this.Id <- Guid.Parse(root.Element(x"Id").Value)
         this.Version <- root.Element(x"Version").Value
-        this.AcceptanceRate <- Double.Parse(root.Element(x"AcceptanceRate").Value, CultureInfo.InvariantCulture)
 
     override this.ToString() =
         String.Format("{0} AcceptRate={1}", this.Version, this.AcceptanceRate)
