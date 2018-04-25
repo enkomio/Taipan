@@ -1,1 +1,16 @@
-<?xml version="1.0" encoding="utf-16"?><FsPickler version="2.0.0.0" type="ES.Taipan.Inspector.AddOnStorageValue"><value><AddOn>Vulnerable Web Application AddOn</AddOn><Name>Olimometer_Unauthenticated SQL Injection</Name><Value>&amp;lt;?xml version=&amp;quot;1.0&amp;quot; encoding=&amp;quot;utf-16&amp;quot;?&amp;gt;&amp;lt;FsPickler version=&amp;quot;2.0.0.0&amp;quot; type=&amp;quot;ES.Taipan.Inspector.AddOns.WebApplicationVulnerability.ApplicationVulnerabilityDescriptor&amp;quot;&amp;gt;&amp;lt;value&amp;gt;&amp;lt;Id&amp;gt;69644b08-7bb3-4694-a791-e006083110bc&amp;lt;/Id&amp;gt;&amp;lt;Application&amp;gt;Olimometer&amp;lt;/Application&amp;gt;&amp;lt;AffectedVersions flags=&amp;quot;sequence&amp;quot;&amp;gt;&amp;lt;elem&amp;gt;&amp;amp;amp;lt;2.57&amp;lt;/elem&amp;gt;&amp;lt;/AffectedVersions&amp;gt;&amp;lt;VulnerabilityName&amp;gt;Unauthenticated SQL Injection&amp;lt;/VulnerabilityName&amp;gt;&amp;lt;ExternalReferer&amp;gt;WPVDB-ID-8678&amp;lt;/ExternalReferer&amp;gt;&amp;lt;Impact&amp;gt;Critical&amp;lt;/Impact&amp;gt;&amp;lt;/value&amp;gt;&amp;lt;/FsPickler&amp;gt;</Value></value></FsPickler>
+<AddOnStorageValue>
+  <AddOn>Vulnerable Web Application AddOn</AddOn>
+  <Name>Olimometer_Unauthenticated SQL Injection</Name>
+  <Type>ES.Taipan.Inspector.AddOns.WebApplicationVulnerability.ApplicationVulnerabilityDescriptor</Type>
+  <Value><![CDATA[{
+  "Id": "69644b08-7bb3-4694-a791-e006083110bc",
+  "Application": "Olimometer",
+  "AffectedVersions": [
+    "<2.57"
+  ],
+  "VulnerabilityName": "Unauthenticated SQL Injection",
+  "ExternalReferer": "WPVDB-ID-8678",
+  "Impact": "Critical",
+  "Note": ""
+}]]></Value>
+</AddOnStorageValue>

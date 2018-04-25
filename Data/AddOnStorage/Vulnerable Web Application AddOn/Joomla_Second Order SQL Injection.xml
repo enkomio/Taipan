@@ -1,0 +1,16 @@
+<AddOnStorageValue>
+  <AddOn>Vulnerable Web Application AddOn</AddOn>
+  <Name>Joomla_Second Order SQL Injection</Name>
+  <Type>ES.Taipan.Inspector.AddOns.WebApplicationVulnerability.ApplicationVulnerabilityDescriptor</Type>
+  <Value><![CDATA[{
+  "Id": "72fd9b4a-1d21-4275-9a41-565e0458d492",
+  "Application": "Joomla",
+  "AffectedVersions": [
+    "3.7.0-3.8.3"
+  ],
+  "VulnerabilityName": "Second Order SQL Injection",
+  "ExternalReferer": "CVE-2018-6376",
+  "Impact": "Critical",
+  "Note": "An attacker exploiting this vulnerability can read arbitrary data from the database. This data can be used to further extend the permissions of the attacker and gaining full administrative privileges."
+}]]></Value>
+</AddOnStorageValue>

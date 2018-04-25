@@ -1,0 +1,16 @@
+<AddOnStorageValue>
+  <AddOn>Vulnerable Web Application AddOn</AddOn>
+  <Name>vBulletin_cacheTemplates Unauthenticated Remote Arbitrary File Deletion</Name>
+  <Type>ES.Taipan.Inspector.AddOns.WebApplicationVulnerability.ApplicationVulnerabilityDescriptor</Type>
+  <Value><![CDATA[{
+  "Id": "d86240a1-a955-4101-a320-2e86390cab3a",
+  "Application": "vBulletin",
+  "AffectedVersions": [
+    "5.0.1-5.3.3"
+  ],
+  "VulnerabilityName": "cacheTemplates Unauthenticated Remote Arbitrary File Deletion",
+  "ExternalReferer": "CVE-2017-17672",
+  "Impact": "Critical",
+  "Note": "N/A"
+}]]></Value>
+</AddOnStorageValue>

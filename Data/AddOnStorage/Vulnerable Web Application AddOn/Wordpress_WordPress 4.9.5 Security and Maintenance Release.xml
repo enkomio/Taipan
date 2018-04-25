@@ -1,0 +1,16 @@
+<AddOnStorageValue>
+  <AddOn>Vulnerable Web Application AddOn</AddOn>
+  <Name>Wordpress_WordPress 4.9.5 Security and Maintenance Release</Name>
+  <Type>ES.Taipan.Inspector.AddOns.WebApplicationVulnerability.ApplicationVulnerabilityDescriptor</Type>
+  <Value><![CDATA[{
+  "Id": "a997f9fb-cf39-4db6-b92d-1303d364c216",
+  "Application": "Wordpress",
+  "AffectedVersions": [
+    "3.7-4.9.4"
+  ],
+  "VulnerabilityName": "WordPress 4.9.5 Security and Maintenance Release",
+  "ExternalReferer": "WPVDB-ID-9053",
+  "Impact": "Low",
+  "Note": "WordPress versions 4.9.4 and earlier are affected by three security issues. Twenty-five other bugs were fixed in WordPress 4.9.5."
+}]]></Value>
+</AddOnStorageValue>

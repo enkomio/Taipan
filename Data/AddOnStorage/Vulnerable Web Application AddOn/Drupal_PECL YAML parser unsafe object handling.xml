@@ -1,1 +1,16 @@
-<?xml version="1.0" encoding="utf-16"?><FsPickler version="2.0.0.0" type="ES.Taipan.Inspector.AddOnStorageValue"><value><AddOn>Vulnerable Web Application AddOn</AddOn><Name>Drupal_PECL YAML parser unsafe object handling</Name><Value>&amp;lt;?xml version=&amp;quot;1.0&amp;quot; encoding=&amp;quot;utf-16&amp;quot;?&amp;gt;&amp;lt;FsPickler version=&amp;quot;2.0.0.0&amp;quot; type=&amp;quot;ES.Taipan.Inspector.AddOns.WebApplicationVulnerability.ApplicationVulnerabilityDescriptor&amp;quot;&amp;gt;&amp;lt;value&amp;gt;&amp;lt;Id&amp;gt;700b4ece-9d63-42a5-b664-cf8754e53881&amp;lt;/Id&amp;gt;&amp;lt;Application&amp;gt;Drupal&amp;lt;/Application&amp;gt;&amp;lt;AffectedVersions flags=&amp;quot;sequence&amp;quot;&amp;gt;&amp;lt;elem&amp;gt;&amp;amp;amp;gt;=8.0&amp;lt;/elem&amp;gt;&amp;lt;elem&amp;gt; &amp;amp;amp;lt;=8.3.3&amp;lt;/elem&amp;gt;&amp;lt;/AffectedVersions&amp;gt;&amp;lt;VulnerabilityName&amp;gt;PECL YAML parser unsafe object handling&amp;lt;/VulnerabilityName&amp;gt;&amp;lt;ExternalReferer&amp;gt;CVE-2017-6920, SA-CORE-2017-003&amp;lt;/ExternalReferer&amp;gt;&amp;lt;Impact&amp;gt;Critical&amp;lt;/Impact&amp;gt;&amp;lt;/value&amp;gt;&amp;lt;/FsPickler&amp;gt;</Value></value></FsPickler>
+<AddOnStorageValue>
+  <AddOn>Vulnerable Web Application AddOn</AddOn>
+  <Name>Drupal_PECL YAML parser unsafe object handling</Name>
+  <Type>ES.Taipan.Inspector.AddOns.WebApplicationVulnerability.ApplicationVulnerabilityDescriptor</Type>
+  <Value><![CDATA[{
+  "Id": "700b4ece-9d63-42a5-b664-cf8754e53881",
+  "Application": "Drupal",
+  "AffectedVersions": [
+    "8.0-8.3.3"
+  ],
+  "VulnerabilityName": "PECL YAML parser unsafe object handling",
+  "ExternalReferer": "CVE-2017-6920, SA-CORE-2017-003",
+  "Impact": "Critical",
+  "Note": ""
+}]]></Value>
+</AddOnStorageValue>

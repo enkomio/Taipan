@@ -1,1 +1,16 @@
-<?xml version="1.0" encoding="utf-16"?><FsPickler version="2.0.0.0" type="ES.Taipan.Inspector.AddOnStorageValue"><value><AddOn>Vulnerable Web Application AddOn</AddOn><Name>Duplicator_Stored Cross-Site Scripting</Name><Value>&amp;lt;?xml version=&amp;quot;1.0&amp;quot; encoding=&amp;quot;utf-16&amp;quot;?&amp;gt;&amp;lt;FsPickler version=&amp;quot;2.0.0.0&amp;quot; type=&amp;quot;ES.Taipan.Inspector.AddOns.WebApplicationVulnerability.ApplicationVulnerabilityDescriptor&amp;quot;&amp;gt;&amp;lt;value&amp;gt;&amp;lt;Id&amp;gt;26cace55-fd48-4e18-9ddd-1739e010cf89&amp;lt;/Id&amp;gt;&amp;lt;Application&amp;gt;Duplicator&amp;lt;/Application&amp;gt;&amp;lt;AffectedVersions flags=&amp;quot;sequence&amp;quot;&amp;gt;&amp;lt;elem&amp;gt;&amp;amp;amp;lt;=1.2.28&amp;lt;/elem&amp;gt;&amp;lt;/AffectedVersions&amp;gt;&amp;lt;VulnerabilityName&amp;gt;Stored Cross-Site Scripting&amp;lt;/VulnerabilityName&amp;gt;&amp;lt;ExternalReferer&amp;gt;WPVDB-ID-8959, CVE-2017-16815&amp;lt;/ExternalReferer&amp;gt;&amp;lt;Impact&amp;gt;High&amp;lt;/Impact&amp;gt;&amp;lt;/value&amp;gt;&amp;lt;/FsPickler&amp;gt;</Value></value></FsPickler>
+<AddOnStorageValue>
+  <AddOn>Vulnerable Web Application AddOn</AddOn>
+  <Name>Duplicator_Stored Cross-Site Scripting</Name>
+  <Type>ES.Taipan.Inspector.AddOns.WebApplicationVulnerability.ApplicationVulnerabilityDescriptor</Type>
+  <Value><![CDATA[{
+  "Id": "26cace55-fd48-4e18-9ddd-1739e010cf89",
+  "Application": "Duplicator",
+  "AffectedVersions": [
+    "<=1.2.28"
+  ],
+  "VulnerabilityName": "Stored Cross-Site Scripting",
+  "ExternalReferer": "WPVDB-ID-8959, CVE-2017-16815",
+  "Impact": "High",
+  "Note": ""
+}]]></Value>
+</AddOnStorageValue>

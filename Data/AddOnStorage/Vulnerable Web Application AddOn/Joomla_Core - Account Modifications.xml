@@ -1,1 +1,16 @@
-<?xml version="1.0" encoding="utf-16"?><FsPickler version="2.0.0.0" type="ES.Taipan.Inspector.AddOnStorageValue"><value><AddOn>Vulnerable Web Application AddOn</AddOn><Name>Joomla_Core - Account Modifications</Name><Value>&amp;lt;?xml version=&amp;quot;1.0&amp;quot; encoding=&amp;quot;utf-16&amp;quot;?&amp;gt;&amp;lt;FsPickler version=&amp;quot;2.0.0.0&amp;quot; type=&amp;quot;ES.Taipan.Inspector.AddOns.WebApplicationVulnerability.ApplicationVulnerabilityDescriptor&amp;quot;&amp;gt;&amp;lt;value&amp;gt;&amp;lt;Id&amp;gt;0bb150c9-682f-43da-8286-094202665333&amp;lt;/Id&amp;gt;&amp;lt;Application&amp;gt;Joomla&amp;lt;/Application&amp;gt;&amp;lt;AffectedVersions flags=&amp;quot;sequence&amp;quot;&amp;gt;&amp;lt;elem&amp;gt;&amp;amp;amp;gt;=3.4.4&amp;lt;/elem&amp;gt;&amp;lt;elem&amp;gt; &amp;amp;amp;lt;=3.6.3&amp;lt;/elem&amp;gt;&amp;lt;/AffectedVersions&amp;gt;&amp;lt;VulnerabilityName&amp;gt;Core - Account Modifications&amp;lt;/VulnerabilityName&amp;gt;&amp;lt;ExternalReferer&amp;gt;CVE-2016-9081&amp;lt;/ExternalReferer&amp;gt;&amp;lt;Impact&amp;gt;High&amp;lt;/Impact&amp;gt;&amp;lt;/value&amp;gt;&amp;lt;/FsPickler&amp;gt;</Value></value></FsPickler>
+<AddOnStorageValue>
+  <AddOn>Vulnerable Web Application AddOn</AddOn>
+  <Name>Joomla_Core - Account Modifications</Name>
+  <Type>ES.Taipan.Inspector.AddOns.WebApplicationVulnerability.ApplicationVulnerabilityDescriptor</Type>
+  <Value><![CDATA[{
+  "Id": "0bb150c9-682f-43da-8286-094202665333",
+  "Application": "Joomla",
+  "AffectedVersions": [
+    "3.4.4-3.6.3"
+  ],
+  "VulnerabilityName": "Core - Account Modifications",
+  "ExternalReferer": "CVE-2016-9081",
+  "Impact": "High",
+  "Note": ""
+}]]></Value>
+</AddOnStorageValue>

@@ -1,0 +1,17 @@
+<AddOnStorageValue>
+  <AddOn>Vulnerable Web Application AddOn</AddOn>
+  <Name>Drupal_Remote Code Execution</Name>
+  <Type>ES.Taipan.Inspector.AddOns.WebApplicationVulnerability.ApplicationVulnerabilityDescriptor</Type>
+  <Value><![CDATA[{
+  "Id": "1685355a-3b77-4fa5-a5ad-80b37bc08148",
+  "Application": "Drupal",
+  "AffectedVersions": [
+    "<7.58",
+    "8.0-8.5.0"
+  ],
+  "VulnerabilityName": "Remote Code Execution",
+  "ExternalReferer": "SA-CORE-2018-002, CVE-2018-7600",
+  "Impact": "Critical",
+  "Note": "A remote code execution vulnerability exists within multiple subsystems of Drupal 7.x and 8.x. This potentially allows attackers to exploit multiple attack vectors on a Drupal site, which could result in the site being completely compromised."
+}]]></Value>
+</AddOnStorageValue>

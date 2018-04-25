@@ -1,1 +1,16 @@
-<?xml version="1.0" encoding="utf-16"?><FsPickler version="2.0.0.0" type="ES.Taipan.Inspector.AddOnStorageValue"><value><AddOn>Vulnerable Web Application AddOn</AddOn><Name>MailChimp for WordPress_Authenticated Cross-Site Scripting (XSS)</Name><Value>&amp;lt;?xml version=&amp;quot;1.0&amp;quot; encoding=&amp;quot;utf-16&amp;quot;?&amp;gt;&amp;lt;FsPickler version=&amp;quot;2.0.0.0&amp;quot; type=&amp;quot;ES.Taipan.Inspector.AddOns.WebApplicationVulnerability.ApplicationVulnerabilityDescriptor&amp;quot;&amp;gt;&amp;lt;value&amp;gt;&amp;lt;Id&amp;gt;7f14271a-b6be-4901-b636-baa7e8e00cf8&amp;lt;/Id&amp;gt;&amp;lt;Application&amp;gt;MailChimp for WordPress&amp;lt;/Application&amp;gt;&amp;lt;AffectedVersions flags=&amp;quot;sequence&amp;quot;&amp;gt;&amp;lt;elem&amp;gt;&amp;amp;amp;lt;=4.0.10&amp;lt;/elem&amp;gt;&amp;lt;/AffectedVersions&amp;gt;&amp;lt;VulnerabilityName&amp;gt;Authenticated Cross-Site Scripting (XSS)&amp;lt;/VulnerabilityName&amp;gt;&amp;lt;ExternalReferer&amp;gt;WPVDB-ID-8695&amp;lt;/ExternalReferer&amp;gt;&amp;lt;Impact&amp;gt;Medium&amp;lt;/Impact&amp;gt;&amp;lt;/value&amp;gt;&amp;lt;/FsPickler&amp;gt;</Value></value></FsPickler>
+<AddOnStorageValue>
+  <AddOn>Vulnerable Web Application AddOn</AddOn>
+  <Name>MailChimp for WordPress_Authenticated Cross-Site Scripting (XSS)</Name>
+  <Type>ES.Taipan.Inspector.AddOns.WebApplicationVulnerability.ApplicationVulnerabilityDescriptor</Type>
+  <Value><![CDATA[{
+  "Id": "7f14271a-b6be-4901-b636-baa7e8e00cf8",
+  "Application": "MailChimp for WordPress",
+  "AffectedVersions": [
+    "<=4.0.10"
+  ],
+  "VulnerabilityName": "Authenticated Cross-Site Scripting (XSS)",
+  "ExternalReferer": "WPVDB-ID-8695",
+  "Impact": "Medium",
+  "Note": ""
+}]]></Value>
+</AddOnStorageValue>

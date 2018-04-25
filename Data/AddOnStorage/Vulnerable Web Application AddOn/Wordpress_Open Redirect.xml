@@ -1,1 +1,33 @@
-<?xml version="1.0" encoding="utf-16"?><FsPickler version="2.0.0.0" type="ES.Taipan.Inspector.AddOnStorageValue"><value><AddOn>Vulnerable Web Application AddOn</AddOn><Name>Wordpress_Open Redirect</Name><Value>&amp;lt;?xml version=&amp;quot;1.0&amp;quot; encoding=&amp;quot;utf-16&amp;quot;?&amp;gt;&amp;lt;FsPickler version=&amp;quot;2.0.0.0&amp;quot; type=&amp;quot;ES.Taipan.Inspector.AddOns.WebApplicationVulnerability.ApplicationVulnerabilityDescriptor&amp;quot;&amp;gt;&amp;lt;value&amp;gt;&amp;lt;Id&amp;gt;8cfe9a1b-bea9-48af-8ac0-fe4667fcccdd&amp;lt;/Id&amp;gt;&amp;lt;Application&amp;gt;Wordpress&amp;lt;/Application&amp;gt;&amp;lt;AffectedVersions flags=&amp;quot;sequence&amp;quot;&amp;gt;&amp;lt;elem&amp;gt;4.6-4.8.1&amp;lt;/elem&amp;gt;&amp;lt;elem&amp;gt; 4.5-4.5.9&amp;lt;/elem&amp;gt;&amp;lt;elem&amp;gt; 4.4-4.4.9&amp;lt;/elem&amp;gt;&amp;lt;elem&amp;gt; 4.3-4.3.9&amp;lt;/elem&amp;gt;&amp;lt;elem&amp;gt; 4.2-4.2.9&amp;lt;/elem&amp;gt;&amp;lt;elem&amp;gt; 4.1-4.1.9&amp;lt;/elem&amp;gt;&amp;lt;elem&amp;gt; 4.0-4.0.9&amp;lt;/elem&amp;gt;&amp;lt;elem&amp;gt; 3.9-3.9.9&amp;lt;/elem&amp;gt;&amp;lt;elem&amp;gt; 3.8-3.8.9&amp;lt;/elem&amp;gt;&amp;lt;elem&amp;gt; 3.7-3.7.9&amp;lt;/elem&amp;gt;&amp;lt;elem&amp;gt; 3.6&amp;lt;/elem&amp;gt;&amp;lt;elem&amp;gt; 3.6.1&amp;lt;/elem&amp;gt;&amp;lt;elem&amp;gt; 3.5&amp;lt;/elem&amp;gt;&amp;lt;elem&amp;gt; 3.5.1&amp;lt;/elem&amp;gt;&amp;lt;elem&amp;gt; 3.5.2&amp;lt;/elem&amp;gt;&amp;lt;elem&amp;gt; 3.4&amp;lt;/elem&amp;gt;&amp;lt;elem&amp;gt; 3.4.1&amp;lt;/elem&amp;gt;&amp;lt;elem&amp;gt; 3.4.2&amp;lt;/elem&amp;gt;&amp;lt;elem&amp;gt; 2.9.2-3.3.3&amp;lt;/elem&amp;gt;&amp;lt;/AffectedVersions&amp;gt;&amp;lt;VulnerabilityName&amp;gt;Open Redirect&amp;lt;/VulnerabilityName&amp;gt;&amp;lt;ExternalReferer&amp;gt;WPVDB-ID-8910, CVE-2017-14725&amp;lt;/ExternalReferer&amp;gt;&amp;lt;Impact&amp;gt;Low&amp;lt;/Impact&amp;gt;&amp;lt;/value&amp;gt;&amp;lt;/FsPickler&amp;gt;</Value></value></FsPickler>
+<AddOnStorageValue>
+  <AddOn>Vulnerable Web Application AddOn</AddOn>
+  <Name>Wordpress_Open Redirect</Name>
+  <Type>ES.Taipan.Inspector.AddOns.WebApplicationVulnerability.ApplicationVulnerabilityDescriptor</Type>
+  <Value><![CDATA[{
+  "Id": "8cfe9a1b-bea9-48af-8ac0-fe4667fcccdd",
+  "Application": "Wordpress",
+  "AffectedVersions": [
+    "4.6-4.8.1",
+    "4.5-4.5.9",
+    "4.4-4.4.9",
+    "4.3-4.3.9",
+    "4.2-4.2.9",
+    "4.1-4.1.9",
+    "4.0-4.0.9",
+    "3.9-3.9.9",
+    "3.8-3.8.9",
+    "3.7-3.7.9",
+    "3.6 3.6.1",
+    "3.5",
+    "3.5.1",
+    "3.5.2",
+    "3.4",
+    "3.4.1",
+    "3.4.2",
+    "2.9.2-3.3.3"
+  ],
+  "VulnerabilityName": "Open Redirect",
+  "ExternalReferer": "WPVDB-ID-8910, CVE-2017-14725",
+  "Impact": "Low",
+  "Note": ""
+}]]></Value>
+</AddOnStorageValue>

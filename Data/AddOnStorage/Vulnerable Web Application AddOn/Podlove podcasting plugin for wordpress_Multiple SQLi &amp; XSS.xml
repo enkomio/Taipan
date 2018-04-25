@@ -1,0 +1,16 @@
+<AddOnStorageValue>
+  <AddOn>Vulnerable Web Application AddOn</AddOn>
+  <Name>Podlove podcasting plugin for wordpress_Multiple SQLi &amp;amp; XSS</Name>
+  <Type>ES.Taipan.Inspector.AddOns.WebApplicationVulnerability.ApplicationVulnerabilityDescriptor</Type>
+  <Value><![CDATA[{
+  "Id": "f7ad66d2-25a7-4054-bf64-611813b9330d",
+  "Application": "Podlove podcasting plugin for wordpress",
+  "AffectedVersions": [
+    "<=2.3.15"
+  ],
+  "VulnerabilityName": "Multiple SQLi &amp;amp; XSS",
+  "ExternalReferer": "WPVDB-ID-8697",
+  "Impact": "High",
+  "Note": ""
+}]]></Value>
+</AddOnStorageValue>
