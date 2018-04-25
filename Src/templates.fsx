@@ -131,6 +131,12 @@ let fingerprintWebApplication() =
     template.VulnerabilityScannerSettings.ActivateAllAddOns <- false
     template.VulnerabilityScannerSettings.AddOnIdsToActivate.Clear()
 
+    // vulnerability scanner settings enavle only Vulnerable Web Applications AddOn
+    template.RunVulnerabilityScanner <- true
+    template.VulnerabilityScannerSettings.ActivateAllAddOns <- false
+    template.VulnerabilityScannerSettings.AddOnIdsToActivate.Add(Guid.Parse("C1B47585-5961-42B8-945E-1367B9CD251C")) // outdated application
+    template.VulnerabilityScannerSettings.AddOnIdsToActivate.Add(Guid.Parse("864BA3EF-E9E2-4B18-AE7F-4530CEBCCBF6")) // vulnerable web application
+
     // disable Javascript Engine
     template.HttpRequestorSettings.UseJavascriptEngineForRequest <- false
     template.CrawlerSettings.ActivateAllAddOns <- false

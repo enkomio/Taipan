@@ -220,12 +220,11 @@ module MockData
             
             let addOn = new WebApplicationVulnerabilityAddOn()
             let context = new ES.Taipan.Inspector.Context(ES.Taipan.Inspector.FilesystemAddOnStorage(addOn), fun _ -> ())
-            context.AddOnStorage.SaveProperty("Joomla", ["V0001"; "V0002"])
-            
-            let vuln = {Id = Guid.NewGuid(); Application = "Joomla"; AffectedVersions = ["3.0.0 - 3.4.5"]; VulnerabilityName = "Joomla 3.4.4 RXSS"; Impact = "Low"; ExternalReferer = "CVE-1.2.3"}
+                        
+            let vuln = {Id = Guid.NewGuid(); Application = "Joomla"; AffectedVersions = ["3.0.0 - 3.4.5"]; VulnerabilityName = "Joomla 3.4.4 RXSS"; Impact = "Low"; ExternalReferer = "CVE-1.2.3"; Note=""}
             context.AddOnStorage.SaveProperty("Joomla_V0001", vuln)
 
-            let vuln = {Id = Guid.NewGuid(); Application = "Joomla"; AffectedVersions = ["3.4.3"]; VulnerabilityName = "Joomla 3.4.4 RCE"; Impact = "Medium"; ExternalReferer = "CVE-1.2.4"}
+            let vuln = {Id = Guid.NewGuid(); Application = "Joomla"; AffectedVersions = ["3.4.3"]; VulnerabilityName = "Joomla 3.4.4 RCE"; Impact = "Medium"; ExternalReferer = "CVE-1.2.4"; Note=""}
             context.AddOnStorage.SaveProperty("Joomla_V0002", vuln)
                         
         let ``Website fingerprinting``() =

@@ -1,15 +1,54 @@
 ﻿namespace ES.Taipan.Inspector
 
 open System
+open System.Collections.Generic
 open System.IO
+open System.Xml
+open System.Xml.Linq
 open System.Reflection
-open MBrace.FsPickler
+open Newtonsoft.Json
 
-type private AddOnStorageValue = {
+[<AutoOpen>]
+module private TypeCache =
+    let _cachedTypes = new Dictionary<String, Type>()
+
+type AddOnStorageValue = {
     AddOn: String
     Name: String
-    Value: String
-}
+    Type: String
+    Value: Object
+} with
+    member this.ToXml() =
+        let x(str) = XName.Get str
+        (new XDocument(
+            new XElement(x"AddOnStorageValue",
+                new XElement(x"AddOn", this.AddOn),
+                new XElement(x"Name", this.Name),
+                new XElement(x"Type", this.Type),
+                new XElement(x"Value", new XCData(JsonConvert.SerializeObject(this.Value, Formatting.Indented)))
+            )
+        )).ToString()
+
+    static member FromXml(xmlString: String) =
+        let x(str) = XName.Get str
+        let doc = XDocument.Parse(xmlString)                
+        let root = doc.Element(x"AddOnStorageValue")
+
+        let typeStr = root.Element(x"Type").Value
+        if not <| _cachedTypes.ContainsKey(typeStr) then
+            let objType = 
+                AppDomain.CurrentDomain.GetAssemblies()
+                |> Seq.map(fun a -> a.GetTypes())
+                |> Seq.concat
+                |> Seq.find(fun t -> t.FullName.Equals(typeStr, StringComparison.OrdinalIgnoreCase))
+            _cachedTypes.[typeStr] <- objType
+
+        {
+            AddOn = root.Element(x"AddOn").Value
+            Name = root.Element(x"Name").Value
+            Type = _cachedTypes.[typeStr].FullName
+            Value = JsonConvert.DeserializeObject(root.Element(x"Value").Value, _cachedTypes.[typeStr])
+        }
 
 type FilesystemAddOnStorage(addOn: IVulnerabilityScannerAddOn, baseDir: String) =
     let _addOnsDirectory = Path.Combine(baseDir, "Data", "AddOnStorage")
@@ -26,36 +65,49 @@ type FilesystemAddOnStorage(addOn: IVulnerabilityScannerAddOn, baseDir: String) 
             incr index
 
         effectiveFileName + ".xml"
-        
+
+    let getAddOnDirectoryStorage() =
+        Path.Combine(_addOnsDirectory, addOn.Name)
+
+    let getPropertyFilename(propertyName: String) =
+        Path.Combine(getAddOnDirectoryStorage(), getFilename(propertyName))
+
     new (addOn: IVulnerabilityScannerAddOn) = 
         let curDir = Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location)
         new FilesystemAddOnStorage(addOn, curDir)
 
     member this.ReadProperty<'a>(propertyName: String) =
-        let filename = Path.Combine(_addOnsDirectory, addOn.Name, getFilename(propertyName))
+        let filename = getPropertyFilename(propertyName)
         if File.Exists(filename) then
             try
                 let fileContent = File.ReadAllText(filename)
-                let xmlSerializer = FsPickler.CreateXmlSerializer()
-                let storageValue = xmlSerializer.Deserialize<AddOnStorageValue>(new StringReader(fileContent))
-                Some <| xmlSerializer.Deserialize<'a>(new StringReader(storageValue.Value))
+                let addOnData = AddOnStorageValue.FromXml(fileContent)
+                Some(addOnData.Value :?> 'a)
             with _ -> None
         else None
 
-    member this.SaveProperty<'a>(propertyName: String, propertyValue: 'a) =
-        // serialize the value and create the data object
-        let xmlSerializer = FsPickler.CreateXmlSerializer()
-        let serializedValue = new StringWriter()
-        xmlSerializer.Serialize(serializedValue, propertyValue)
+    member this.GetProperties<'a>(filter: 'a -> Boolean) = seq {
+        for filename in Directory.GetFiles(getAddOnDirectoryStorage()) do
+            let fileContent = File.ReadAllText(filename)
+            let addOnData = AddOnStorageValue.FromXml(fileContent)
+            if filter(addOnData.Value :?> 'a) then
+                yield addOnData.Value :?> 'a
+    }
 
-        let serializedData = new StringWriter()
-        let addOnData = {AddOn = addOn.Name; Name = propertyName; Value = serializedValue.ToString()}
-        xmlSerializer.Serialize(serializedData, addOnData)
+    member this.SaveProperty<'a>(propertyName: String, propertyValue: 'a) =
+        let addOnData = {
+            AddOn = addOn.Name
+            Name = propertyName
+            Type = propertyValue.GetType().FullName
+            Value = propertyValue
+        }
+        let serializedAddOnData = addOnData.ToXml()
         
         // save the data value
         let addOnDirectory = Path.Combine(_addOnsDirectory, addOn.Name)
         Directory.CreateDirectory(addOnDirectory) |> ignore
-        File.WriteAllText(Path.Combine(addOnDirectory, getFilename(propertyName)), serializedData.ToString())
+        let filename = getPropertyFilename(propertyName)
+        File.WriteAllText(filename, serializedAddOnData)
 
     interface IAddOnStorage with
         member this.ReadProperty<'a>(propertyName: String) =
@@ -63,4 +115,7 @@ type FilesystemAddOnStorage(addOn: IVulnerabilityScannerAddOn, baseDir: String) 
 
         member this.SaveProperty<'a>(propertyName: String, propertyValue: 'a) =
             this.SaveProperty(propertyName, propertyValue)    
+
+        member this.GetProperties<'a>(filter: 'a -> Boolean) =
+            this.GetProperties<'a>(filter)
 

@@ -14,7 +14,6 @@ nuget Autofac
 nuget AutoMapper
 nuget MoonSharp
 nuget FSharpLog
-nuget FsPickler
 nuget FSharp.Quotations.Evaluator
 nuget SharpZipLib
 nuget Zlib.Portable
