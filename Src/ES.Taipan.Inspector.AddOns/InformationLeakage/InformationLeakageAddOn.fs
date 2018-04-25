@@ -28,30 +28,30 @@ type InformationLeakageAddOn() as this =
                 yield m.Groups.[1].Value.Trim()
                 m <- m.NextMatch()
         }
+
+    let isValidTld(email: String) =
+        TldList.tdlList 
+        |> Array.exists(fun validTld -> email.EndsWith("." + validTld, StringComparison.OrdinalIgnoreCase))
+
+    let extractEmailsFromChunk(text: String) = seq {
+        let mutable m = Regex.Match(text, "([A-Z0-9._%-]+)@[A-Z0-9.-]+\.[A-Z]{2,4}", RegexOptions.Singleline ||| RegexOptions.IgnoreCase)
+        while m.Success do
+            let email = m.Groups.[0].Value.Trim()
+            if isValidTld(email) then
+                yield email
+            m <- m.NextMatch()
+    }
         
     let extractEmailsFromComments(html: String) =
         seq {
             for comment in getHtmlComments(html) do
-                let mutable m = Regex.Match(comment.ToUpperInvariant(), "[A-Z0-9._%-]+@[A-Z0-9.-]+\.[A-Z]{2,4}", RegexOptions.Singleline)
-                while m.Success do
-                    let email = comment.Substring(m.Index, m.Length).Trim()
-                    let isValidTld = TldList.tdlList |> Array.exists(fun validTld -> email.EndsWith("." + validTld, StringComparison.OrdinalIgnoreCase))
-                    if isValidTld then 
-                        yield email
-                    m <- m.NextMatch()
+                yield! extractEmailsFromChunk(comment)
         }
 
-    let blacklistedEmail = ["contact"; "hello"; "info"; "sales"]
     let extractEmails(rawHtml: String) =
         seq {
             let (html, _) = RegexUtility.removeHtmlComments(rawHtml)
-            let mutable m = Regex.Match(html, "([A-Z0-9._%-]+)@[A-Z0-9.-]+\.[A-Z]{2,4}", RegexOptions.Singleline ||| RegexOptions.IgnoreCase)
-            while m.Success do
-                let email = m.Groups.[0].Value.Trim()
-                let name = m.Groups.[1].Value.Trim()
-                if not(blacklistedEmail |> List.contains name) then
-                    yield email
-                m <- m.NextMatch()
+            yield! extractEmailsFromChunk(html)
         }
         
     let extractIps(html: String) =

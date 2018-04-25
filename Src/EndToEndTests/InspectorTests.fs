@@ -587,3 +587,17 @@
         // run the scan
         Utility.runScan(scanContext) 
         |> Utility.verifyInspector [("Reflected Cross Site Scripting", "/inspector/test36/setname")]
+
+    let ``Avoid to raise a FP when encounter an email pattern with invalid TLD``(grovieraUrl: Uri) =   
+        let scanContext = 
+            new ScanContext(
+                StartRequest = new WebRequest(new Uri(grovieraUrl, "/inspector/test37/")),
+                Template = Templates.``Full template``()
+            )
+        scanContext.Template.RunResourceDiscoverer <- false
+        scanContext.Template.RunWebAppFingerprinter <- false
+        activatePlugin(scanContext, "AFA1E309-2AC4-4504-86BD-35216950CEFA")
+
+        // run the scan
+        Utility.runScan(scanContext) 
+        |> Utility.verifyInspector []

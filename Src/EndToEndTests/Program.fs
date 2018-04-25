@@ -89,6 +89,7 @@ let allTests : Expr<Uri -> unit> list = [
     <@ InspectorTests.``Identify a session token sent via GET`` @>
     <@ InspectorTests.``RXSS on data parameter after redirect`` @>
     <@ InspectorTests.``RXSS on query parameter in redirect page`` @>
+    <@ InspectorTests.``Avoid to raise a FP when encounter an email pattern with invalid TLD`` @>
     
     // Composed tests
     <@ ComposedTests.``Identify an hidden directory and discover a know web application`` @>
@@ -130,7 +131,7 @@ let runTest (grovieraUri: Uri) (testExpr: Expr<Uri -> unit>) =
 [<EntryPoint>]
 let main argv = 
     let grovieraUri = Utility.runGrovieraServer()
-    let run = runTest grovieraUri    
+    let run = runTest grovieraUri
     allTests |> List.iter(run)
     Utility.shutDownServer()
     0

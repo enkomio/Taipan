@@ -78,6 +78,7 @@ module InspectorPages =
         <li>TEST34: <a href="/inspector/test34/">/inspector/test34/</a> Web Application Session ID Passed In URL</li>
         <li>TEST35: <a href="/inspector/test35/">/inspector/test35/</a> RXSS on data parameter after redirect</li>
         <li>TEST36: <a href="/inspector/test36/">/inspector/test36/</a> RXSS on redirect html content</li>
+        <li>TEST37: <a href="/inspector/test37/">/inspector/test37/</a> Regression: Avoid a FP when found an email with invalid TLD</li>
 	</ul><br/>
   </body>
 </html>""" ctx
@@ -395,6 +396,14 @@ module InspectorPages =
                         >=> Response.response HTTP_302 html
                     
                     redirectWithCustomContent ctx
+
+                path "/inspector/test37/" >=> 
+                    okContent """
+                    This is an example of email False Positive                     
+                    <div class="header-logo">
+                      <a href="index.html"><img src="images/logo.png" data-ot-retina="images/logo@2x.png" alt=""></a>
+                    </div>
+                    """
             ]
         
             // *************************
