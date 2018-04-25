@@ -46,7 +46,7 @@ During a scan you can interact with it by set the scan in Pause or Stop it if ne
 
 The state change is not immediate and you have to wait until all threads have reached the desider state.
 
-### Launch a scan
+### Launch a Full scan
 To launch a new scan you have to provide the _url_ and the _profile_ which must be used. It is not necessary to specify the full profile name, a prefix is enough. 
 
     Taipan.exe -p Full -u http://127.0.0.1/
@@ -61,12 +61,20 @@ _Taipan_ is currently developed with using VisualStudio 2017 Community Edition a
 * run ``paket.exe install``
 * open the solution in VisualStudio and compile it
 
-### Taipan Components
+## Taipan Components
 _Taipan_ is composed of four main components: 
-- Web Application fingerprinter: it inspects the given application in order to identify if it is a COTS application. If so, it extracts the identified version.
-- Hidden Resource Discovery: this component scans the application in order to identify resources that are not directly navigable or that shouldn't be accessed, like secret pages or test pages.
-- Crawler: This component navigates the web site in order to provide to the other components a list of pages to analyze. It allows to mutate the request in order to find not so common pathes.
-- Vulnerability Scanner: this component probes the web application and tries to identify possible vulnerabilities. It is composed of various AddOn in order to easily expand its Knowledge Base.
+
+### Web Application fingerprinter 
+it inspects the given application in order to identify if it is a COTS application. If so, it extracts the identified version. This components is very important since it allows to identify vulnerable web applications.
+
+### Hidden Resource Discovery 
+this component scans the application in order to identify resources that are not directly navigable or that shouldn't be accessed, like secret pages or test pages.
+
+### Crawler
+This component navigates the web site in order to provide to the other components a list of pages to analyze. It allows to mutate the request in order to find not so common pathes.
+
+### Vulnerability Scanner
+this component probes the web application and tries to identify possible vulnerabilities. It is composed of various AddOn in order to easily expand its Knowledge Base. It is also in charge for the identification of know vulnerabilities which are defined by the user.
 
 ## Versioning
 
