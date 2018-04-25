@@ -37,14 +37,14 @@ _Taipan_ can run on both Windows (natively) and Linux (with mono). To run it in 
 ### Scan Profile
 _Taipan_ allow to scan the given web site by specify different kind of profiles. Each profile enable or disable a specific scan feature, to show all the available profile just run _Taipan_ with the `--show-profiles_` option.
 
-### Scan/Stop/Pause a scan
+### Pause/Stop/Resume a scan
 During a scan you can interact with it by set the scan in Pause or Stop it if necessary. In order to do so you have to press:
 
 - P: pause the scan
 - S: stop the scan
 - R: resume a paused scan
 
-The state change is not immediate and you have to wait until all threads have reached the desider state.
+The change is not immediate and you have to wait until all threads have reached the desider state.
 
 ### Launch a Full scan
 To launch a new scan you have to provide the _url_ and the _profile_ which must be used. It is not necessary to specify the full profile name, a prefix is enough. 
@@ -55,7 +55,7 @@ Below an example of execution:
 
 <a href="https://asciinema.org/a/166362" target="_blank"><img src="https://asciinema.org/a/166362.png" /></a>
 
-### Build Taipan
+## Build Taipan
 _Taipan_ is currently developed with using VisualStudio 2017 Community Edition and uses _paket_ as packet manager. To build the source code you have to:
 * clone the repository
 * run ``paket.exe install``
