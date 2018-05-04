@@ -25,14 +25,17 @@ type HttpRequest(uri: Uri) =
     member val Source: SourcePage option = None with get, set
 
     static member DeepClone(httpRequestTemplate: HttpRequest) =
+        let cookies = httpRequestTemplate.Cookies |> Seq.toList
+        let headers = httpRequestTemplate.Headers |> Seq.toList
+
         let httpRequest = new HttpRequest(httpRequestTemplate.Uri)
         httpRequest.Method <- httpRequestTemplate.Method
         httpRequest.HttpVersion <- httpRequestTemplate.HttpVersion
         httpRequest.Data <- httpRequestTemplate.Data
         httpRequest.AllowAutoRedirect <- httpRequestTemplate.AllowAutoRedirect
 
-        httpRequestTemplate.Cookies
-        |> Seq.iter(fun cookie -> 
+        cookies
+        |> List.iter(fun cookie -> 
             let newCookie = new Cookie(cookie.Name, cookie.Value, cookie.Path, cookie.Domain)
             newCookie.Comment <- cookie.Comment
             newCookie.CommentUri <- cookie.CommentUri
@@ -46,8 +49,8 @@ type HttpRequest(uri: Uri) =
             httpRequest.Cookies.Add(newCookie)
         )
 
-        httpRequestTemplate.Headers
-        |> Seq.iter(fun httpHeader ->
+        headers
+        |> List.iter(fun httpHeader ->
             httpRequest.Headers.Add(new HttpHeader(Name = httpHeader.Name, Value = httpHeader.Value))
         )
 
