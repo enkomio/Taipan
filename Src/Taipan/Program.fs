@@ -141,26 +141,30 @@ module Cli =
     
         if _scanService.IsNone then
             _scanService <- Some <| new ScanService(logProvider)
-
-        programLogger.ScanCommands()        
+        
         _scanService.Value.GetScanResult(scanContext, queryId, logProvider)  
-
-    let getScanServices() =
-        _scanService.Value
-            
-    // scan manager
-    let runScanFromTemplateContent(templateString: String, url: String, queryId: Guid, logProvider: ILogProvider) =
-        let template = new TemplateProfile()
-        template.AcquireSettingsFromXml(templateString)
-        runScan(url, template, queryId, logProvider) |> ignore
 
     let completeScan(queryId: Guid) =
         if _scanService.IsSome then
             _scanService.Value.FreeScan(queryId)
         _scanService <- None
-            
+                    
+    // scan manager
+    let runScanFromTemplateContent(templateString: String, url: String, queryId: Guid, logProvider: ILogProvider) =
+        let template = new TemplateProfile()
+        template.AcquireSettingsFromXml(templateString)
+        runScan(url, template, queryId, logProvider) |> ignore
+        completeScan(queryId)
+
+    // scan manager
+    let tryGetScanResult(queryId: Guid) =
+        match _scanService with
+        | Some scanService -> Some <| scanService.GetScanStatus(queryId)
+        | None -> None        
+    
     let runScanWithTemplate(url: String, template: TemplateProfile, logProvider: ILogProvider) = 
         let queryId = Guid.NewGuid()
+        programLogger.ScanCommands()        
         let scanResult = runScan(url, template, queryId, logProvider)        
         completeScan(queryId)
         scanResult

@@ -89,9 +89,11 @@ type ScanState =
     | Paused
     | Stopped
     | Completed
+    | Error
 
     override this.ToString() =
         match this with
+        | Error -> "Error"
         | Created -> "Created"
         | Running -> "Running"
         | Paused -> "Parsed"
@@ -443,9 +445,11 @@ type Scan(scanContext: ScanContext, logProvider: ILogProvider) as this =
             try this.StartScanIp(ip.ToString())
             with e -> 
                 _logger.FatalScanError(e)
+                this.State <- ScanState.Error
                 _waitLock.Set()
         | _ ->             
             _logger.HostPortNotReachable(uri.Host, uri.Port)
+            this.State <- ScanState.Error
             _waitLock.Set()            
         
     member this.WaitForcompletation() =
