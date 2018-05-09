@@ -272,12 +272,10 @@ type Scan(scanContext: ScanContext, logProvider: ILogProvider) as this =
         |> Seq.map(fun kv -> kv.Value :?> ServiceMetrics)
         |> Seq.toList
         
-    member internal this.StartScanIp(ip: String) =
-        _logger.ScanEngineUsed()
+    member internal this.StartScanIp(ip: String) =        
         _logger.ScanStarted(ip, scanContext)
         _logger.UsedTemplate(scanContext.Template)
-
-        this.StartedAt <- DateTime.UtcNow
+        
         this.State <- ScanState.Running
         _processStarted.Trigger(this)
         this.ProcessCompleted.Add(fun _ -> _waitLock.Set())
@@ -416,6 +414,9 @@ type Scan(scanContext: ScanContext, logProvider: ILogProvider) as this =
         let uri = scanContext.StartRequest.HttpRequest.Uri
             
         try
+            this.StartedAt <- DateTime.UtcNow
+            _logger.ScanEngineUsed()
+
             // try to get the IP and verify if the host is reachable
             ip <- Some(Dns.GetHostAddresses(uri.Host) |> Seq.head)
             let webRequestor = _container.Value.Resolve<IWebPageRequestor>()

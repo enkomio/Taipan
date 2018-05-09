@@ -144,22 +144,21 @@ module Cli =
         
         _scanService.Value.GetScanResult(scanContext, queryId, logProvider)  
 
+    // scan manager
     let completeScan(queryId: Guid) =
         if _scanService.IsSome then
             _scanService.Value.FreeScan(queryId)
-        _scanService <- None
                     
     // scan manager
     let runScanFromTemplateContent(templateString: String, url: String, queryId: Guid, logProvider: ILogProvider) =
         let template = new TemplateProfile()
         template.AcquireSettingsFromXml(templateString)
         runScan(url, template, queryId, logProvider) |> ignore
-        completeScan(queryId)
-
+        
     // scan manager
     let tryGetScanResult(queryId: Guid) =
         match _scanService with
-        | Some scanService -> Some <| scanService.GetScanStatus(queryId)
+        | Some scanService -> scanService.GetScanStatus(queryId)
         | None -> None        
     
     let runScanWithTemplate(url: String, template: TemplateProfile, logProvider: ILogProvider) = 

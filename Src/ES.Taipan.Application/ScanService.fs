@@ -26,7 +26,9 @@ type ScanService(logProvider: ILogProvider) =
         _currentScanResult
 
     member this.GetScanStatus(queryId: Guid) =
-        _savedScanResults.[queryId]
+        if _savedScanResults.ContainsKey(queryId) 
+        then Some(_savedScanResults.[queryId] :> Object)
+        else None
 
     member this.GetScanMetrics(scan: Scan) =
         scan.GetServiceMetrics()
@@ -56,14 +58,15 @@ type ScanService(logProvider: ILogProvider) =
         _currentScanResult <- Some scanResult
 
         // run the scan in a new thread
-        _thread <- Some <| new Thread(new ThreadStart(fun _ -> 
+        let currentThread = new Thread(new ThreadStart(fun _ -> 
             this.StartScan(scan)              
             scan.WaitForcompletation()
         ))
+        _thread <- Some currentThread
 
         try
-            _thread.Value.Start()
-            _thread.Value.Join()
+            currentThread.Start()
+            currentThread.Join()
         with 
             | :? ThreadInterruptedException
             | :? ThreadStateException -> 
