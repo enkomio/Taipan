@@ -15,7 +15,7 @@ type RequestMetricsMessage() =
 
 type ServiceMetrics(serviceName: String) =
     let _metrics = new ConcurrentDictionary<String, Metric>()
-
+    
     member val ServiceName = serviceName with get
 
     member this.AddMetric(name: String, value: String) =

@@ -21,7 +21,7 @@ type ReflectedCrossSiteScriptingAddOn() as this =
     let _forbiddenContentTypes = ["video/"; "audio/"; "image/"]
 
     // this parameter contains a list of: attack vector | list of string to search in HTML for success
-    let mutable _payloads: (String * String list) list = []
+    let mutable _payloads = new Dictionary<String, List<String>>()
 
     let _log = 
         log "ReflectedCrossSiteScriptingAddOn"
@@ -128,7 +128,8 @@ type ReflectedCrossSiteScriptingAddOn() as this =
         if isParameterSafeToTest(parameter) && verifyPrecondition(parameter, probeRequest, rebuild) then
             _log?MaybeXss(probeRequest.TestRequest.WebRequest.HttpRequest.Uri.AbsolutePath, parameter)
             // do a more deepth test to avoid FP and to identify a payload
-            for (vector, checks) in _payloads do
+            for kv in _payloads do
+                let (vector, checks) = (kv.Key, kv.Value |> Seq.toList)
                 if not isVulnerable then
                     match specificTest(parameter, probeRequest, vector, checks, rebuild) with
                     | Some (foundVector, foundPaload, html) -> 
@@ -215,7 +216,7 @@ type ReflectedCrossSiteScriptingAddOn() as this =
         base.Initialize(context, webRequestor, messageBroker, logProvider) |> ignore
         logProvider.AddLogSourceToLoggers(_log)        
 
-        match this.Context.Value.AddOnStorage.ReadProperty<(String * String list) list>("Payloads") with
+        match this.Context.Value.AddOnStorage.ReadProperty<Dictionary<String, List<String>>>("Payloads") with
         | Some payloads -> _payloads <- payloads
         | None -> ()
 

@@ -137,9 +137,9 @@ type SqlInjectionAddOn() as this =
         base.Initialize(context, webRequestor, messageBroker, logProvider) |> ignore
         
         let errors =
-            match this.Context.Value.AddOnStorage.ReadProperty<(String * String list) list>("Errors") with
+            match this.Context.Value.AddOnStorage.ReadProperty<Dictionary<String, List<String>>>("Errors") with
             | Some errors -> errors
-            | None -> List.empty
+            | None -> new Dictionary<String, List<String>>()
 
         // verify if some of these addOn should be deactivated
         let settingsMsg = new InspectorSettingsMessage()

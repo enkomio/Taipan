@@ -4,7 +4,7 @@ open System
 open System.Text
 open System.Net
 open System.Threading
-open System.IO
+open System.Collections.Concurrent
 open System.Diagnostics
 open System.Reflection
 open Autofac
@@ -83,6 +83,10 @@ type internal ScanLogger() =
     member this.HostPortNotReachable(host: String, port: Int32) =
         this.WriteLog(10, [|host; port|])
 
+    [<Log(11, Message = "Start assessment step for web site: {0}", Level = LogLevel.Informational)>]
+    member this.StartAssessment(uri: String) =
+        this.WriteLog(11, [|uri|])
+
 type ScanState =
     | Created
     | Running
@@ -113,12 +117,19 @@ type Scan(scanContext: ScanContext, logProvider: ILogProvider) as this =
     let _serviceMetrics = new ScanMetrics()    
     let _waitLock = new ManualResetEventSlim(false)
     let _serviceCompletedLock = new Object()
+
+    // local storage for assessment phase
+    let _newResourceDiscoveredMessageList = new ConcurrentQueue<NewResourceDiscoveredMessage>()
+    let _pageProcessedMessageList = new ConcurrentQueue<PageProcessedMessage>()
+    let _pageReProcessedMessage = new ConcurrentQueue<PageReProcessedMessage>()
+    let mutable _assessmentPhaseStarted = false
+
     let _logger = new ScanLogger()
     let mutable _container : IContainer option = None
     let mutable _messageBroker : IMessageBroker option = None
     let mutable _scanWorkflow: ScanWorkflow option = None
     let mutable _serviceCompletedFunctionCalled = false
-    
+        
     do logProvider.AddLogSourceToLoggers(_logger)
     
     // events definition
@@ -164,7 +175,38 @@ type Scan(scanContext: ScanContext, logProvider: ILogProvider) as this =
                 else None
             | None -> None
         else None
-                
+
+    let runAssessmentPhase() =
+        if not _assessmentPhaseStarted then
+            _assessmentPhaseStarted <- true
+            _logger.StartAssessment(scanContext.StartRequest.HttpRequest.Uri.AbsoluteUri)
+
+            _newResourceDiscoveredMessageList
+            |> Seq.iter(fun message ->
+                // notify other components
+                if scanContext.Template.RunWebAppFingerprinter then
+                    _messageBroker.Value.Dispatch(this, convertNewResourceDiscoveredToFingerprintRequest(message))
+
+                if scanContext.Template.RunVulnerabilityScanner then
+                    _messageBroker.Value.Dispatch(this, convertNewResourceDiscoveredToTestRequest(message))
+            )
+
+            _pageProcessedMessageList
+            |> Seq.iter(fun message ->
+                if scanContext.Template.RunWebAppFingerprinter then
+                    _messageBroker.Value.Dispatch(this, convertPageProcessedToFingerprintRequest(message))
+
+                if scanContext.Template.RunVulnerabilityScanner then
+                    _messageBroker.Value.Dispatch(this, convertPageProcessedToTestRequest(message))
+            )
+
+            _pageReProcessedMessage
+            |> Seq.iter(fun message ->
+                // notify other components
+                if scanContext.Template.RunVulnerabilityScanner then
+                    _messageBroker.Value.Dispatch(this, convertPageReProcessedToTestRequest(message))
+            )
+        
     do
         if scanContext.Template.CrawlerSettings.Scope <> NavigationScope.WholeDomain then
             // need to adjust the discovere depth in order to avoid meaningless scan
@@ -174,7 +216,7 @@ type Scan(scanContext: ScanContext, logProvider: ILogProvider) as this =
         
         let builder = new ContainerBuilder()
         ignore(
-            builder.RegisterType<ScanWorkflow>(),
+            builder.RegisterType<ScanWorkflow>().WithParameter("runAssessmentPhaseCallback", runAssessmentPhase),
             builder.RegisterInstance(logProvider).As<ILogProvider>().SingleInstance(),
             builder.RegisterType<DefaultHttpRequestor>().As<IHttpRequestor>().WithParameter("requestNotificationCallback", requestNotificationCallback),
             builder.RegisterInstance(scanContext.Template.HttpRequestorSettings).As<HttpRequestorSettings>().SingleInstance(),
@@ -230,13 +272,7 @@ type Scan(scanContext: ScanContext, logProvider: ILogProvider) as this =
     default this.NewResourceDiscoveredMessageHandle(sender: Object, envelope: Envelope<NewResourceDiscoveredMessage> ) =
         let message = envelope.Item
         _newResourceDiscovered.Trigger(message)
-
-        // notify other components
-        if scanContext.Template.RunWebAppFingerprinter then
-            _messageBroker.Value.Dispatch(this, convertNewResourceDiscoveredToFingerprintRequest(message))
-
-        if scanContext.Template.RunVulnerabilityScanner then
-            _messageBroker.Value.Dispatch(this, convertNewResourceDiscoveredToTestRequest(message))
+        _newResourceDiscoveredMessageList.Enqueue(message)
 
         if scanContext.Template.RunCrawler then
             _messageBroker.Value.Dispatch(this, convertNewResourceDiscoveredToCrawlRequest(message))
@@ -245,25 +281,17 @@ type Scan(scanContext: ScanContext, logProvider: ILogProvider) as this =
     default this.PageProcessedMessageHandler(sender: Object, envelope: Envelope<PageProcessedMessage>) =
         let message = envelope.Item
         _pageProcessed.Trigger(message)
+        _pageProcessedMessageList.Enqueue(message)
 
         // notify other components
-        if scanContext.Template.RunWebAppFingerprinter then
-            _messageBroker.Value.Dispatch(this, convertPageProcessedToFingerprintRequest(message))
-
         if scanContext.Template.RunResourceDiscoverer then
             _messageBroker.Value.Dispatch(this, convertPageProcessedToResourceDiscovererRequest(message))
-
-        if scanContext.Template.RunVulnerabilityScanner then
-            _messageBroker.Value.Dispatch(this, convertPageProcessedToTestRequest(message))
-
+                    
     abstract PageReProcessedMessageHandler : Object * Envelope<PageReProcessedMessage> -> unit
     default this.PageReProcessedMessageHandler(sender: Object, envelope: Envelope<PageReProcessedMessage>) =
         let message = envelope.Item
         _pageReProcessed.Trigger(message)
-
-        // notify other components
-        if scanContext.Template.RunVulnerabilityScanner then
-            _messageBroker.Value.Dispatch(this, convertPageReProcessedToTestRequest(message))
+        _pageReProcessedMessage.Enqueue(message)
 
     member this.GetServiceMetrics() =
         let metricMessage = new RequestMetricsMessage()
@@ -301,14 +329,14 @@ type Scan(scanContext: ScanContext, logProvider: ILogProvider) as this =
         // launch vulnerability scanner
         if scanContext.Template.RunVulnerabilityScanner then
             let vulnerabilityScanner = container.Resolve<IVulnerabilityScanner>()
-            _scanWorkflow.Value.AddExecutedService(vulnerabilityScanner, scanContext.Template)
+            _scanWorkflow.Value.AddExecutedService(vulnerabilityScanner)
             vulnerabilityScanner.NoMoreTestRequestsToProcess.Add(serviceCompleted true)
             vulnerabilityScanner.ProcessCompleted.Add(serviceCompleted false)
 
         // launch web application fingerprinter
         if scanContext.Template.RunWebAppFingerprinter then
             let webAppFingerprinter = container.Resolve<IWebAppFingerprinter>()
-            _scanWorkflow.Value.AddExecutedService(webAppFingerprinter, scanContext.Template)
+            _scanWorkflow.Value.AddExecutedService(webAppFingerprinter)
             webAppFingerprinter.NoMoreWebRequestsToProcess.Add(serviceCompleted true)
             webAppFingerprinter.ProcessCompleted.Add(serviceCompleted false)
 
@@ -324,7 +352,7 @@ type Scan(scanContext: ScanContext, logProvider: ILogProvider) as this =
 
             // instantiate components
             let resourceDiscoverer = container.Resolve<IResourceDiscoverer>()
-            _scanWorkflow.Value.AddExecutedService(resourceDiscoverer, scanContext.Template)
+            _scanWorkflow.Value.AddExecutedService(resourceDiscoverer)
             resourceDiscoverer.NoMoreWebRequestsToProcess.Add(serviceCompleted true)
             resourceDiscoverer.ProcessCompleted.Add(serviceCompleted false)
 
@@ -348,7 +376,7 @@ type Scan(scanContext: ScanContext, logProvider: ILogProvider) as this =
             let crawler = container.Resolve<ICrawler>()
             crawler.NoMoreWebRequestsToProcess.Add(serviceCompleted true)
             crawler.ProcessCompleted.Add(serviceCompleted false)            
-            _scanWorkflow.Value.AddExecutedService(crawler, scanContext.Template)
+            _scanWorkflow.Value.AddExecutedService(crawler)
 
             // start the crawler but not pages will be crawled due to the settings restriction
             crawlerRunned <- crawler.Run(scanContext.StartRequest.HttpRequest)
@@ -369,7 +397,7 @@ type Scan(scanContext: ScanContext, logProvider: ILogProvider) as this =
                     crawler.NoMoreWebRequestsToProcess.Add(serviceCompleted true)
                     crawler.ProcessCompleted.Add(serviceCompleted false)
                     
-                    _scanWorkflow.Value.AddExecutedService(crawler, scanContext.Template)
+                    _scanWorkflow.Value.AddExecutedService(crawler)
 
                     let scanRequestHost = scanContext.StartRequest.HttpRequest.Uri.Host
                     if not <| scanContext.Template.CrawlerSettings.AllowedHosts.Contains(scanRequestHost) then

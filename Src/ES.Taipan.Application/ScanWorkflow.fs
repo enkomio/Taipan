@@ -56,7 +56,7 @@ type ScanWorkflowMetrics() =
     member this.LastRunToCompletationProcess(service: IService) =
         this.AddMetric("Last run to completation service", service.GetType().Name)
 
-type ScanWorkflow(messageBroker: IMessageBroker, logProvider: ILogProvider) as this =  
+type ScanWorkflow(messageBroker: IMessageBroker, runAssessmentPhaseCallback: unit -> unit, logProvider: ILogProvider) as this =  
     let _logger = new ScanWorkflowLogger()  
     let _serviceMetrics = new ScanWorkflowMetrics()
     let _statusQueue = new Queue<String>()
@@ -66,7 +66,8 @@ type ScanWorkflow(messageBroker: IMessageBroker, logProvider: ILogProvider) as t
     let _pendingServiceForCompletation = new List<Guid>()
     let _activatedServices = new List<Int32 * IService>()    
     let _initializedServices = ref 0
-    let _currentServiceLevel = ref 0
+    let _currentRunToCompletationServiceLevel = ref Int32.MaxValue
+    let _maxServiceLevelPriority = 4
     let mutable _scanCompleted = false  
     let mutable _scanInitializationCompleted = false 
     do 
@@ -80,7 +81,7 @@ type ScanWorkflow(messageBroker: IMessageBroker, logProvider: ILogProvider) as t
         elif typeof<IWebAppFingerprinter>.IsAssignableFrom(typeOfService) then WebAppFingerprinter
         elif typeof<IResourceDiscoverer>.IsAssignableFrom(typeOfService) then ResourceDiscoverer
         else Unknown
-        
+                
     let getServiceLevel = function
         | Crawler -> 0
         | ResourceDiscoverer -> 1
@@ -94,7 +95,13 @@ type ScanWorkflow(messageBroker: IMessageBroker, logProvider: ILogProvider) as t
             
     let allServicesRunnedForCompletation() =
         _completedServices.Count = _activatedServices.Count && (_completedServices.Values |> Seq.forall (id))
-    
+
+    let haveToCallRunToCompletation() =
+        let allProducerServicesInIdleState = _producerServices |> Seq.forall(fun srv -> srv.Diagnostics.IsIdle)
+        let noPendingServiceForCompletation = _pendingServiceForCompletation |> Seq.isEmpty
+        _logger.IdleAndCompletationServices(allProducerServicesInIdleState, noPendingServiceForCompletation)
+        allProducerServicesInIdleState && noPendingServiceForCompletation
+        
     let manageStatuschange() =
         verifyAllServiceCompletedTheInitialization()
         lock _statusQueue (fun () ->            
@@ -120,15 +127,88 @@ type ScanWorkflow(messageBroker: IMessageBroker, logProvider: ILogProvider) as t
                 | _ -> ()
         )
 
+    let runToCompletation(srv: IService) =
+        _logger.RunServiceToCompletation(srv)  
+        _serviceMetrics.LastRunToCompletationProcess(srv)
+        _pendingServiceForCompletation.Add(srv.ServiceId)   
+        _completedServices.[srv] <- false
+
+        _currentRunToCompletationServiceLevel := getServiceLevel(srv) + 1
+
+        // check if it is time to run the assessment phase. This is done if all service of level
+        // strictly minor then 2 are completed
+        if getServiceLevel(srv) >= 2 then
+            runAssessmentPhaseCallback()
+
+        srv.RunToCompletation()
+
+    let tryIdentifyServiceAndRunToCompletation(inIdleState: Boolean) =
+        if haveToCallRunToCompletation() then
+            let mutable nextServiceIdentified = false
+            let mutable tmpCurrentRunToCompletationServiceLevel = !_currentRunToCompletationServiceLevel
+            let mutable loopCompleted = false
+
+            while not loopCompleted do
+                _activatedServices 
+                |> Seq.toList
+                |> List.sortBy(fun (level, _) -> level)
+                |> List.filter(fun (serviceLevel, _) -> serviceLevel = tmpCurrentRunToCompletationServiceLevel)
+                |> List.iter(fun (_, srv) -> 
+                    nextServiceIdentified <- true
+
+                    if not inIdleState then
+                        // the next identified service must be in idle state,
+                        // otherwise I'll wait for its idle state
+                        if srv.Diagnostics.IsIdle 
+                        then runToCompletation(srv)
+                    else
+                        runToCompletation(srv)
+                )
+
+                loopCompleted <- nextServiceIdentified || tmpCurrentRunToCompletationServiceLevel > _maxServiceLevelPriority
+                tmpCurrentRunToCompletationServiceLevel <- tmpCurrentRunToCompletationServiceLevel + 1
+
+    // This is the most important function. it is in charge for the process workflow.
+    // All services need to go through an idle state and then run to completation.
+    // All services have a priority level, the service with high priority (low number) need
+    // to be finish first.
+    member this.ServiceCompleted(service: IService, inIdleState: Boolean) =
+        verifyAllServiceCompletedTheInitialization()
+        lock _serviceStatusChangeSyncRoot (fun () ->            
+            _pendingServiceForCompletation.Remove(service.ServiceId) |> ignore
+            
+            if inIdleState then
+                // the service just went to an idle state, it can be resumed 
+                // later, when new work is requested
+                _logger.ServiceIdle(service) 
+
+                tryIdentifyServiceAndRunToCompletation(inIdleState)
+            else
+                // the service really completed, not more work for it
+                _completedServices.[service] <- true
+                _logger.ServiceCompleted(service)
+                _serviceMetrics.LastCompletedProcess(service)
+                                
+                tryIdentifyServiceAndRunToCompletation(inIdleState)
+            
+                if allServicesRunnedForCompletation() then 
+                    _logger.AllServiceCompleted()
+                    _scanCompleted <- true
+        )
+
     member this.GetServices() =
         _activatedServices
 
-    member this.AddExecutedService(service: IService, scanProfile: TemplateProfile) =
+    member this.AddExecutedService(service: IService) =
         match service with
         | Crawler 
         | WebAppFingerprinter
         | ResourceDiscoverer -> _producerServices.Add(service)
         | _ -> ()        
+        
+        // set the service level to the minimum possible value among the activated services
+        if !_currentRunToCompletationServiceLevel > getServiceLevel(service) then
+            _currentRunToCompletationServiceLevel := getServiceLevel(service)
 
         service.InitializationCompleted.Add(fun srv -> 
             _logger.ServiceInitialized(srv)
@@ -140,57 +220,6 @@ type ScanWorkflow(messageBroker: IMessageBroker, logProvider: ILogProvider) as t
         
     member this.InitializationCompleted() =
         _scanInitializationCompleted <- true
-                    
-    // this is the most important function. it is in charge for the process workflow
-    member this.ServiceCompleted(service: IService, inIdleState: Boolean) =
-        verifyAllServiceCompletedTheInitialization()
-        lock _serviceStatusChangeSyncRoot (fun () ->            
-            _pendingServiceForCompletation.Remove(service.ServiceId) |> ignore
-            
-            if inIdleState then
-                // the service just went to an idle state, it can be resumed 
-                // wether new work is requested
-                _logger.ServiceIdle(service)                
-            else
-                // the service really completed, not more work for it
-                _completedServices.[service] <- true
-                _logger.ServiceCompleted(service)
-                _serviceMetrics.LastCompletedProcess(service)
-
-            let allProducerServicesInIdleState = _producerServices |> Seq.forall(fun srv -> srv.Diagnostics.IsIdle)
-            let noPendingServiceForCompletation = _pendingServiceForCompletation |> Seq.isEmpty
-            _logger.IdleAndCompletationServices(allProducerServicesInIdleState, noPendingServiceForCompletation)
-
-            if allProducerServicesInIdleState && noPendingServiceForCompletation then        
-                // need to call run to completation for all idle services, but following the right priority level
-                let mutable savedCurrentServiceLevel = !_currentServiceLevel
-                incr _currentServiceLevel
-
-                // the components with a low level need to run to completation            
-                let mutable nextServiceIdentified = false
-                while not nextServiceIdentified && savedCurrentServiceLevel <= 3 do
-                    _activatedServices 
-                    |> Seq.toList
-                    |> List.sortBy(fun (level, _) -> level)
-                    |> List.filter(fun (serviceLevel, _) -> serviceLevel = savedCurrentServiceLevel)
-                    |> List.iter(fun (_, srv) -> 
-                        _pendingServiceForCompletation.Add(srv.ServiceId)   
-                        _logger.RunServiceToCompletation(srv)  
-                        _serviceMetrics.LastRunToCompletationProcess(srv)                                   
-                        _completedServices.[srv] <- false
-                        nextServiceIdentified <- true
-                        srv.RunToCompletation()
-                    )
-
-                    if not nextServiceIdentified then
-                        savedCurrentServiceLevel <- !_currentServiceLevel
-                        incr _currentServiceLevel
-
-                // if no service needs to run to completation then the scan completed
-                if allServicesRunnedForCompletation() then 
-                    _logger.AllServiceCompleted()
-                    _scanCompleted <- true
-        )
                     
     member this.AllServicesCompleted() =
         _scanCompleted

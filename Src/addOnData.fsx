@@ -8,19 +8,20 @@
 #r @"build/Taipan/ES.Taipan.Inspector.AddOns.dll"
 
 open System
+open System.Collections.Generic
 open System.IO
 open Fake
 open ES.Taipan.Inspector
-open ES.Taipan.Inspector.AddOns
 
-let writeAddOnData(addOn: IVulnerabilityScannerAddOn, data, propertyName: String, buildDir: String) =
+let writeAddOnData(addOn: IVulnerabilityScannerAddOn, data: Dictionary<String, List<String>>, propertyName: String, buildDir: String) =
     let context = new Context(new FilesystemAddOnStorage(addOn, Path.Combine(buildDir, "Taipan")), fun _ -> ())
-    context.AddOnStorage.SaveProperty<(String * String list) list>(propertyName, data)
+    context.AddOnStorage.SaveProperty(propertyName, data)
 
 let createAddOnData(buildDir: String) =
     ensureDirectory (buildDir + "/Taipan/Data")  
     // write xss payload  
-    let xssData = [
+    let xssData = new Dictionary<String, List<String>>()
+    [
         // attack vector | list of payloads to search in the html    
         ("<img src=x onerror=document.write('<h1>-= TEXT XSS =-</h1>')>", ["<h1>-= TEXT XSS =-</h1>"])
         ("<SCRIPT>document.write('<h1>-= TEXT XSS =-</h1>');</SCRIPT>", ["<h1>-= TEXT XSS =-</h1>"])
@@ -34,6 +35,7 @@ let createAddOnData(buildDir: String) =
         ("<IMG SRC=&#0000106&#0000097&#0000118&#0000097&#0000115&#0000099&#0000114&#0000105&#0000112&#0000116&#0000058&#0000097&#0000108&#0000101&#0000114&#0000116&#0000040&#0000039&#0000088&#0000083&#0000083&#0000039&#0000041>", ["javascript:alert('XSS')"])
         ("%25%33%63%25%34%39%25%34%64%25%34%37%25%32%30%25%35%33%25%35%32%25%34%33%25%33%64%25%34%61%25%36%31%25%35%36%25%36%31%25%35%33%25%36%33%25%35%32%25%36%39%25%35%30%25%37%34%25%33%61%25%36%31%25%36%63%25%36%35%25%37%32%25%37%34%25%32%38%25%32%37%25%35%38%25%35%33%25%35%33%25%32%37%25%32%39%25%33%65", ["javascript:alert('XSS')"])
     ]
+    |> List.iter(fun (a, b) -> xssData.Add(a, new List<String>(b)))
 
     [
         new ES.Taipan.Inspector.AddOns.ReflectedCrossSiteScripting.ReflectedCrossSiteScriptingAddOn() :> ES.Taipan.Inspector.AddOns.BaseStatelessAddOn
@@ -43,7 +45,8 @@ let createAddOnData(buildDir: String) =
 
     // write sql injection errors, src: sqlmap project
     let sqliAddOn = new ES.Taipan.Inspector.AddOns.SqlInjection.SqlInjectionAddOn()
-    let sqliErrors = [
+    let sqliErrors = new Dictionary<String, List<String>>()
+    [
         ("MySQL", [
             @"SQL syntax.*MySQL";
             @"Warning.*mysql_.*";
@@ -158,6 +161,7 @@ let createAddOnData(buildDir: String) =
             @"Unexpected token.*in statement \[";
         ]);
     ]
+    |> List.iter(fun (a, b) -> sqliErrors.Add(a, new List<String>(b)))
     writeAddOnData(sqliAddOn, sqliErrors, "Errors", buildDir)
 
 let deployToDirectory(buildDir: String) =

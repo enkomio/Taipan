@@ -213,19 +213,27 @@
     let ``500 Internal server error``(grovieraUrl: Uri) =  errorTests(grovieraUrl, "/inspector/test17/")
 
     let writeXssData(data: (String * String list) list) =
+        let storageData = new Dictionary<String, List<String>>()
+        data
+        |> List.iter(fun (a, b) -> storageData.Add(a, new List<String>(b)))
+
         [
             new ES.Taipan.Inspector.AddOns.ReflectedCrossSiteScripting.ReflectedCrossSiteScriptingAddOn() :> IVulnerabilityScannerAddOn
             new ES.Taipan.Inspector.AddOns.StoredCrossSiteScripting.StoredCrossSiteScriptingAddOn() :> IVulnerabilityScannerAddOn
         ]
         |> List.iter(fun addOn ->
             let context = new ES.Taipan.Inspector.Context(ES.Taipan.Inspector.FilesystemAddOnStorage(addOn), fun _ -> ())
-            context.AddOnStorage.SaveProperty<(String * String list) list>("Payloads", data)
+            context.AddOnStorage.SaveProperty("Payloads", storageData)
         )        
 
     let writeSqliData(data: (String * String list) list) =
+        let storageData = new Dictionary<String, List<String>>()
+        data
+        |> List.iter(fun (a, b) -> storageData.Add(a, new List<String>(b)))
+
         let addOn = new ES.Taipan.Inspector.AddOns.SqlInjection.SqlInjectionAddOn()
         let context = new ES.Taipan.Inspector.Context(ES.Taipan.Inspector.FilesystemAddOnStorage(addOn), fun _ -> ())
-        context.AddOnStorage.SaveProperty<(String * String list) list>("Errors", data)
+        context.AddOnStorage.SaveProperty("Errors", storageData)
 
     let ``RXSS in query parameter``(grovieraUrl: Uri) =
         let scanContext = 
@@ -233,7 +241,7 @@
                  StartRequest = new WebRequest(new Uri(grovieraUrl, "/inspector/test18/vuln.php?a=b")),
                 Template = Templates.``Website inspector``()
             )
-        activatePlugin(scanContext, "B2D7CBCF-B458-4C33-B3EE-44606E06E949")
+        activatePlugin(scanContext, "B2D7CBCF-B458-4C33-B3EE-44606E06E949")        
         writeXssData([
             ("<SCRIPT>alert('XSS');</SCRIPT>", ["<SCRIPT>alert('XSS');</SCRIPT>"; "<IMG SRC=\"javascript:alert('XSS');\">"])
         ])

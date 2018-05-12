@@ -23,7 +23,7 @@ type StoredCrossSiteScriptingAddOn() as this =
     let _forbiddenContentTypes = ["video/"; "audio/"; "image/"]
 
     // this parameter contains a list of: attack vector | list of string to search in HTML for success
-    let mutable _payloads: (String * String list) list = []
+    let mutable _payloads = new Dictionary<String, List<String>>()
     let mutable _messageBroker: IMessageBroker option = None
 
     let _log = 
@@ -153,7 +153,8 @@ type StoredCrossSiteScriptingAddOn() as this =
 
         _log?MaybeXss(probeRequest.TestRequest.WebRequest.HttpRequest.Uri.AbsolutePath, parameter.Name, outRequest.HttpRequest.Uri.AbsolutePath)
         // do a more deepth test to avoid FP and to identify a payload
-        for (attackVector, checks) in _payloads do
+        for kv in _payloads do
+            let (attackVector, checks) = (kv.Key, kv.Value |> Seq.toList)
             if not isVulnerable then
                 // send input probe
                 parameter.AlterValue(attackVector)
@@ -195,7 +196,7 @@ type StoredCrossSiteScriptingAddOn() as this =
 
         _messageBroker <- Some messageBroker
 
-        match this.Context.Value.AddOnStorage.ReadProperty<(String * String list) list>("Payloads") with
+        match this.Context.Value.AddOnStorage.ReadProperty<Dictionary<String, List<String>>>("Payloads") with
         | Some payloads -> _payloads <- payloads
         | None -> ()
         

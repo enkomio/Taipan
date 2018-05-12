@@ -1,6 +1,7 @@
 ﻿namespace ES.Taipan.Fingerprinter
 
 open System
+open System.Linq
 open System.Threading
 open System.Collections.Concurrent
 open System.Collections.Generic
@@ -9,6 +10,18 @@ open ES.Taipan.Infrastructure.Messaging
 open ES.Taipan.Infrastructure.Threading
 open ES.Taipan.Infrastructure.Service
 open ES.Fslog
+
+type DefaultWebAppFingerprinterMetrics(requestsToProcess: _ seq) =
+    inherit ServiceMetrics("Web Application Fingerprinter")
+    let mutable _numRequestProcessed = 0
+    
+    member this.RequestProcessed() =
+        _numRequestProcessed <- _numRequestProcessed + 1
+        this.PercentageCompletation()
+
+    member this.PercentageCompletation() =
+        let percentage = float _numRequestProcessed / float (requestsToProcess.Count())
+        this.AddMetric("Completation", percentage.ToString())
 
 type DefaultWebAppFingerprinter(settings: WebAppFingerprinterSettings, webApplicationFingerprintRepository: IWebApplicationFingerprintRepository, webServerFingerprinter: IWebServerFingerprinter, webRequestor: IWebPageRequestor, messageBroker: IMessageBroker, logProvider: ILogProvider) as this =    
     let mutable _processCompletedInvoked = false
@@ -24,7 +37,7 @@ type DefaultWebAppFingerprinter(settings: WebAppFingerprinterSettings, webApplic
     let _noMoreWebRequestsToProcess = new Event<IWebAppFingerprinter>()
     let _logger = new WebAppFingerprinterLogger()    
     let _serviceDiagnostics = new ServiceDiagnostics()
-    let _serviceMetrics = new ServiceMetrics("Fingerprinter")
+    let _serviceMetrics = new DefaultWebAppFingerprinterMetrics(_requestsToProcess)
     let _statusMonitor = new Object()
     let _runToCompletationCalledLock = new ManualResetEventSlim()
 
@@ -94,6 +107,7 @@ type DefaultWebAppFingerprinter(settings: WebAppFingerprinterSettings, webApplic
                         _serviceDiagnostics.Activate()
                         _serviceMetrics.AddMetric("Status", "Running")
                         processFingerprintRequest(fingerprintRequest)
+                        _serviceMetrics.RequestProcessed()
                         Interlocked.Increment(numOfServicedRequests) |> ignore
                         checkFingerprinterState()
                     )

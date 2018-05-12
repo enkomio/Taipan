@@ -7,7 +7,7 @@ open ES.Fslog
 open ES.Taipan.Inspector
 open ES.Taipan.Infrastructure.Network
 
-type ErrorBasedSqliChecker(webRequestor: IWebPageRequestor, errors: (String * String list) list, logProvider: ILogProvider) =
+type ErrorBasedSqliChecker(webRequestor: IWebPageRequestor, errors: Dictionary<String, List<String>>, logProvider: ILogProvider) =
     let _log = 
         log "ErrorBasedSqliChecker"        
         |> verbose "FoundSqlInjection" "Identified Error Based SQL Injection on path '{0}', parameter: {1}, attack string: {2}, db: {3}, error: {4}"
@@ -36,7 +36,8 @@ type ErrorBasedSqliChecker(webRequestor: IWebPageRequestor, errors: (String * St
         if box(webResponse.HttpResponse) <> null then
             probeRequest.WebResponse <- Some webResponse
             let html = webResponse.HttpResponse.Html
-            for (dbName, dbErrors) in errors do
+            for kv in errors do
+                let (dbName, dbErrors) = (kv.Key, kv.Value |> Seq.toList)
                 for dbError in dbErrors do
                     if result.IsNone then
                         let m = Regex.Match(html, dbError, RegexOptions.Singleline)

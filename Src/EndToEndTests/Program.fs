@@ -69,12 +69,12 @@ let allTests : Expr<Uri -> unit> list = [
     <@ InspectorTests.``PHP fopen error`` @>
     <@ InspectorTests.``Ruby On Rails error`` @>
     <@ InspectorTests.``ASP.NET error`` @>
-    <@ InspectorTests.``500 Internal server error`` @> 
+    <@ InspectorTests.``500 Internal server error`` @>
     <@ InspectorTests.``RXSS in query parameter`` @>
     <@ InspectorTests.``RXSS on data parameter`` @>
     <@ InspectorTests.``RXSS in User-Agent`` @>
     <@ InspectorTests.``Identify info leak in .DS_Store file`` @>
-    //<@ InspectorTests.``RXSS in filename parameter`` @> suave non sembra digerire bene le multi-part form. da verificare in altro modo
+    //<@ InspectorTests.``RXSS in filename parameter`` @> suave seems to have problem with multi-part form. verify in some other way
     <@ InspectorTests.``Sqli error based in name parameter`` @>
     <@ InspectorTests.``Sqli error based in name parameter with AntiCSRF protection`` @>
     <@ InspectorTests.``RXSS on data parameter and AntiCSRF protection`` @>

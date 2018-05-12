@@ -8,10 +8,6 @@ open System.Xml.Linq
 open System.Reflection
 open Newtonsoft.Json
 
-[<AutoOpen>]
-module private TypeCache =
-    let _cachedTypes = new Dictionary<String, Type>()
-
 type AddOnStorageValue = {
     AddOn: String
     Name: String
@@ -35,19 +31,13 @@ type AddOnStorageValue = {
         let root = doc.Element(x"AddOnStorageValue")
 
         let typeStr = root.Element(x"Type").Value
-        if not <| _cachedTypes.ContainsKey(typeStr) then
-            let objType = 
-                AppDomain.CurrentDomain.GetAssemblies()
-                |> Seq.map(fun a -> a.GetTypes())
-                |> Seq.concat
-                |> Seq.find(fun t -> t.FullName.Equals(typeStr, StringComparison.OrdinalIgnoreCase))
-            _cachedTypes.[typeStr] <- objType
+        let objType = Type.GetType(typeStr)
 
         {
             AddOn = root.Element(x"AddOn").Value
             Name = root.Element(x"Name").Value
-            Type = _cachedTypes.[typeStr].FullName
-            Value = JsonConvert.DeserializeObject(root.Element(x"Value").Value, _cachedTypes.[typeStr])
+            Type = typeStr
+            Value = JsonConvert.DeserializeObject(root.Element(x"Value").Value, objType)
         }
 
 type FilesystemAddOnStorage(addOn: IVulnerabilityScannerAddOn, baseDir: String) =
@@ -79,11 +69,9 @@ type FilesystemAddOnStorage(addOn: IVulnerabilityScannerAddOn, baseDir: String) 
     member this.ReadProperty<'a>(propertyName: String) =
         let filename = getPropertyFilename(propertyName)
         if File.Exists(filename) then
-            try
-                let fileContent = File.ReadAllText(filename)
-                let addOnData = AddOnStorageValue.FromXml(fileContent)
-                Some(addOnData.Value :?> 'a)
-            with _ -> None
+            let fileContent = File.ReadAllText(filename)
+            let addOnData = AddOnStorageValue.FromXml(fileContent)
+            Some(addOnData.Value :?> 'a)
         else None
 
     member this.GetProperties<'a>(filter: 'a -> Boolean) = seq {
