@@ -30,8 +30,14 @@ type AddOnStorageValue = {
         let doc = XDocument.Parse(xmlString)                
         let root = doc.Element(x"AddOnStorageValue")
 
-        let typeStr = root.Element(x"Type").Value
-        let objType = Type.GetType(typeStr)
+        let typeStr = root.Element(x"Type").Value        
+        let objType = 
+            AppDomain.CurrentDomain.GetAssemblies()
+            |> Array.filter(fun a -> 
+                let nn = a.GetName()
+                typeStr.StartsWith(a.GetName().Name))
+            |> Array.map(fun assembly -> assembly.GetType(typeStr))
+            |> Array.head        
 
         {
             AddOn = root.Element(x"AddOn").Value
