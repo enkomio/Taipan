@@ -29,14 +29,13 @@ type AddOnStorageValue = {
         let x(str) = XName.Get str
         let doc = XDocument.Parse(xmlString)                
         let root = doc.Element(x"AddOnStorageValue")
-
-        let typeStr = root.Element(x"Type").Value        
+        let typeStr = root.Element(x"Type").Value   
+        
         let objType = 
             AppDomain.CurrentDomain.GetAssemblies()
-            |> Array.filter(fun a -> 
-                let nn = a.GetName()
-                typeStr.StartsWith(a.GetName().Name))
+            |> Array.filter(fun a -> typeStr.StartsWith(a.GetName().Name))
             |> Array.map(fun assembly -> assembly.GetType(typeStr))
+            |> Array.filter(fun t -> t <> null)
             |> Array.head        
 
         {
