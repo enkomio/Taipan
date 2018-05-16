@@ -32,11 +32,14 @@ type AddOnStorageValue = {
         let typeStr = root.Element(x"Type").Value   
         
         let objType = 
-            AppDomain.CurrentDomain.GetAssemblies()
-            |> Array.filter(fun a -> typeStr.StartsWith(a.GetName().Name))
-            |> Array.map(fun assembly -> assembly.GetType(typeStr))
-            |> Array.filter(fun t -> t <> null)
-            |> Array.head        
+            match Type.GetType(typeStr) with
+            | null ->
+                AppDomain.CurrentDomain.GetAssemblies()
+                |> Array.filter(fun a -> typeStr.StartsWith(a.GetName().Name))
+                |> Array.map(fun assembly -> assembly.GetType(typeStr))
+                |> Array.filter(fun t -> t <> null)
+                |> Array.head        
+            | t -> t
 
         {
             AddOn = root.Element(x"AddOn").Value
