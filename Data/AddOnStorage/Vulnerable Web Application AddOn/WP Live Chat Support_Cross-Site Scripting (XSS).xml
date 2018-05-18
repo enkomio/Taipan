@@ -1,0 +1,16 @@
+<AddOnStorageValue>
+  <AddOn>Vulnerable Web Application AddOn</AddOn>
+  <Name>WP Live Chat Support_Cross-Site Scripting (XSS)</Name>
+  <Type>ES.Taipan.Inspector.AddOns.WebApplicationVulnerability.ApplicationVulnerabilityDescriptor</Type>
+  <Value><![CDATA[{
+  "Id": "e00ad4df-9045-4c33-b9a7-d12e6bc0a677",
+  "Application": "WP Live Chat Support",
+  "AffectedVersions": [
+    "<=8.0.07"
+  ],
+  "VulnerabilityName": "Cross-Site Scripting (XSS)",
+  "ExternalReferer": "WPVDB-ID-9085, CVE-2018-11105",
+  "Impact": "Medium",
+  "Note": "There is stored cross site scripting in the wp-live-chat-support plugin before 8.0.08 for WordPress via the "name" (aka wplc_name) and "email" (aka wplc_email) input fields whenever a malicious attacker would initiate a new chat with an administrator."
+}]]></Value>
+</AddOnStorageValue>

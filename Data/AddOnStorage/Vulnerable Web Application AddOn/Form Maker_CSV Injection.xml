@@ -1,0 +1,16 @@
+<AddOnStorageValue>
+  <AddOn>Vulnerable Web Application AddOn</AddOn>
+  <Name>Form Maker_CSV Injection</Name>
+  <Type>ES.Taipan.Inspector.AddOns.WebApplicationVulnerability.ApplicationVulnerabilityDescriptor</Type>
+  <Value><![CDATA[{
+  "Id": "3f686292-4ecb-4072-b198-eda738e5a69e",
+  "Application": "Form Maker",
+  "AffectedVersions": [
+    "<=1.12.20"
+  ],
+  "VulnerabilityName": "CSV Injection",
+  "ExternalReferer": "WPVDB-ID-9078, CVE-2018-10504",
+  "Impact": "High",
+  "Note": "Exploit: https://0day.today/exploit/30274"
+}]]></Value>
+</AddOnStorageValue>

@@ -1,0 +1,16 @@
+<AddOnStorageValue>
+  <AddOn>Vulnerable Web Application AddOn</AddOn>
+  <Name>Caldera Forms_Multiple Cross-Site Scripting (XSS)</Name>
+  <Type>ES.Taipan.Inspector.AddOns.WebApplicationVulnerability.ApplicationVulnerabilityDescriptor</Type>
+  <Value><![CDATA[{
+  "Id": "0318f906-fd81-42f3-bb24-22534ac35669",
+  "Application": "Caldera Forms",
+  "AffectedVersions": [
+    "<1.6.0"
+  ],
+  "VulnerabilityName": "Multiple Cross-Site Scripting (XSS)",
+  "ExternalReferer": "WPVDB-ID-9069, CVE-2018-7747",
+  "Impact": "Medium",
+  "Note": "Multiple cross-site scripting vulnerabilities in the Caldera Forms plugin before 1.6.0 for WordPress allow remote attackers to inject arbitrary web script or HTML via vectors involving, a greeting message, the email transaction log or an imported form."
+}]]></Value>
+</AddOnStorageValue>
