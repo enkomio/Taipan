@@ -89,9 +89,10 @@ module CrawlerPages =
         <li>TEST19: <a href="/crawler/test19/">/crawler/test19/</a></li>
         <li>TEST20: <a href="/crawler/test20/">/crawler/test20/</a> Dynamic a tag</li>
         <li>TEST21: <a href="/crawler/test21/">/crawler/test21/</a> Dynamic form</li>        
-        <li>TEST22: <a href="/crawler/test22/">/crawler/test22/</a>HTTP Basic authentication</li>
-        <li>TEST23: <a href="/crawler/test23/">/crawler/test23/</a>HTTP Digest authentication</li>
-        <li>TEST24: <a href="/crawler/test24/">/crawler/test24/</a>Bearer authentication with token value: 1234567890abcdefgh</li>
+        <li>TEST22: <a href="/crawler/test22/">/crawler/test22/</a> HTTP Basic authentication</li>
+        <li>TEST23: <a href="/crawler/test23/">/crawler/test23/</a> HTTP Digest authentication</li>
+        <li>TEST24: <a href="/crawler/test24/">/crawler/test24/</a> Bearer authentication with token value: 1234567890abcdefgh</li>
+        <li>TEST25: <a href="/crawler/test25/">/crawler/test25/</a> Redirect or page on a diffeerent port is not followed</li>
 	</ul><br/>
   </body>
 </html>""" ctx
@@ -280,7 +281,7 @@ function validateForm() {
                 path "/crawler/test23/" >=> AuthHelper.authorizeDigest (okContent "<a href='/crawler/test23/authok'>New link</a>")
                 path "/crawler/test23/authok" >=> AuthHelper.authorizeDigest ok
 
-                // Test 23
+                // Test 24
                 path "/crawler/test24/" >=> fun (ctx: HttpContext) ->
                     match ctx.request.header "authorization" with
                     | Choice1Of2 headerValue ->
@@ -299,6 +300,16 @@ function validateForm() {
                             >=> Response.response HTTP_401 (Encoding.Default.GetBytes(HTTP_401.message))
                         bearerAuth ctx
                 path "/crawler/test24/secretlink_post_auth" >=> ok
+
+                // Test 25
+                path "/crawler/test25/" >=> fun (ctx: HttpContext) ->
+                    let uriBuilder = new UriBuilder(ctx.request.url)
+                    uriBuilder.Port <- uriBuilder.Port + 1
+                    uriBuilder.Path <- "/crawler/test25/nooo"
+                    let html = String.Format("Hi, <a href='{0}'>don't follow this page!</a>", uriBuilder.Uri)
+                    OK html ctx
+                path "/crawler/test25/nooo" >=> ok
+
             ]
 
             POST >=> choose [

@@ -12,14 +12,7 @@ module WebUtility =
     let private relativeOrAbsolute(uriStr: String) =        
         if uriStr.Trim().StartsWith("/") then new Uri(uriStr, UriKind.Relative)
         else new Uri(uriStr, UriKind.RelativeOrAbsolute)
-
-    let private isWellFormedUriString(uriString: String, uriKind: UriKind) =
-        if Uri.IsWellFormedUriString(uriString, uriKind) then
-            true
-        else
-            let escapedUriString = Uri.EscapeUriString(uriString)
-            Uri.IsWellFormedUriString(escapedUriString, uriKind)
-
+        
     let composeDataFromParameters(dataParameters: (String * String) list) = 
         let composedData = new StringBuilder()
         let orderedParametersList = 
@@ -155,6 +148,22 @@ module WebUtility =
         else
             let combinedUri = new Uri(baseUri, canonicalizedUri)
             canonicalizeUri(combinedUri)
+
+    let private isSameDomain(firstUri: Uri, secondUri: Uri) =
+        let mutable firstHost = firstUri.Host
+        let mutable secondHost = secondUri.Host
+        let www = "www."
+
+        // remove www. since we consider the same domain with and without www
+        if firstHost.ToLower().StartsWith(www) 
+        then firstHost <- firstHost.Substring(www.Length)
+
+        if secondHost.ToLower().StartsWith(www) 
+        then secondHost <- secondHost.Substring(www.Length)
+        
+
+        firstHost.Equals(secondHost, StringComparison.OrdinalIgnoreCase) &&
+        firstUri.Port = secondUri.Port
         
     let getAbsoluteUriStringValueSameHost(baseUriString: String, partialUriStringRaw: String) =  
         notEmpty baseUriString "baseUriString"
@@ -173,7 +182,9 @@ module WebUtility =
                 let baseUri = new Uri(baseUriString)
                 let partialUri = relativeOrAbsolute(partialUriString.Trim())
                 let fixedUri = getAbsoluteUriValue(baseUri, partialUri)
-                if baseUri.Host.Equals(fixedUri.Host, StringComparison.OrdinalIgnoreCase) then
+
+                // check on same host
+                if isSameDomain(baseUri, fixedUri) then
                     Some <| System.Net.WebUtility.HtmlDecode(fixedUri.AbsoluteUri)
                 else 
                     None

@@ -51,6 +51,7 @@ let allTests : Expr<Uri -> unit> list = [
     <@ CrawlerTests.``Crawl a Basic HTTP Authenticated page`` @>
     <@ CrawlerTests.``Crawl a Digest HTTP Authenticated page`` @>
     <@ CrawlerTests.``Crawl a Bearer HTTP Authenticated page`` @>
+    <@ CrawlerTests.``Ensure that a redirect on another port is not followed`` @>
      
     // Inspector tests
     <@ InspectorTests.``Identify a directory listing`` @>
@@ -131,7 +132,7 @@ let runTest (grovieraUri: Uri) (testExpr: Expr<Uri -> unit>) =
 [<EntryPoint>]
 let main argv = 
     let grovieraUri = Utility.runGrovieraServer()
-    let run = runTest grovieraUri
+    let run = runTest grovieraUri    
     allTests |> List.iter(run)
     Utility.shutDownServer()
     0

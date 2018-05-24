@@ -345,3 +345,26 @@
         // run the scan
         Utility.runScan(scanContext)
         |> Utility.verifyCrawler [get("/crawler/test24/secretlink_post_auth")]
+
+    let ``Ensure that a redirect on another port is not followed``(grovieraUrl: Uri) =
+        // run anothe instance on the alternative port
+        Utility.runGrovieraServerOnPort(grovieraUrl.Port + 1) |> ignore
+
+        // now run the real instance
+        let scanContext = 
+            new ScanContext(
+                StartRequest = new WebRequest(new Uri(grovieraUrl, "/crawler/test25/")),
+                Template = Templates.``Website crawling``()
+            )
+
+        // set authentication
+        scanContext.Template.HttpRequestorSettings.AllowAutoRedirect <- true
+        
+        // run the scan
+        try
+            Utility.runScan(scanContext)
+            |> Utility.verifyCrawler [get("/crawler/test25/nooo")]
+            raise (new ApplicationException())
+        with e -> 
+            if not(e.Message.ToLower().Contains("some page wasn't found"))
+            then reraise()

@@ -135,17 +135,19 @@ let simulatePhp() =
 let stopSimulatePhp() =
     ES.Groviera.Program.stopSimulatePhpEnabledWebServer()
 
-let runGrovieraServer() = 
-    let port = (new Random()).Next(2000, 65535).ToString()
+let runGrovieraServerOnPort(port: Int32) =
     let host = "127.0.0.1"
                 
     // run the server    
     Task.Factory.StartNew(fun () -> 
-        ES.Groviera.Program.main([|host; port|])
+        ES.Groviera.Program.main([|host; string port|])
     ) |> ignore
     Thread.Sleep(6000)
-    new Uri("http://" + host + ":" + port)
+    new Uri("http://" + host + ":" + string port)
 
+let runGrovieraServer() = 
+    let port = (new Random()).Next(2000, 65535)
+    runGrovieraServerOnPort(port)
 
 let prettyPrintMetrics(metrics: ServiceMetrics) =
     Console.WriteLine("{0}Service: {1}", Environment.NewLine, metrics.ServiceName)
