@@ -346,7 +346,7 @@
         Utility.runScan(scanContext)
         |> Utility.verifyCrawler [get("/crawler/test24/secretlink_post_auth")]
 
-    let ``Ensure that a redirect on another port is not followed``(grovieraUrl: Uri) =
+    let ``Ensure that a link on another port is not followed``(grovieraUrl: Uri) =
         // run anothe instance on the alternative port
         Utility.runGrovieraServerOnPort(grovieraUrl.Port + 1) |> ignore
 
@@ -357,7 +357,7 @@
                 Template = Templates.``Website crawling``()
             )
 
-        // set authentication
+        // enable redirect
         scanContext.Template.HttpRequestorSettings.AllowAutoRedirect <- true
         
         // run the scan
