@@ -381,13 +381,6 @@ type Scan(scanContext: ScanContext, logProvider: ILogProvider) as this =
             // start the crawler but not pages will be crawled due to the settings restriction
             crawlerRunned <- crawler.Run(scanContext.StartRequest.HttpRequest)
 
-            if scanContext.Template.RunResourceDiscoverer then
-                // send initial page to discover if activated
-                _messageBroker.Value.Dispatch(this, new DiscoverRequest(scanContext.StartRequest.HttpRequest))
-
-            if scanContext.Template.RunWebAppFingerprinter then
-                // send initial page to fingerprint
-                _messageBroker.Value.Dispatch(this, new FingerprintRequest(scanContext.StartRequest.HttpRequest))
         else
             let instantiateCrawlers(authentications: AuthenticationInfo list) =
                 authentications
