@@ -11,6 +11,6 @@
   "VulnerabilityName": "Cross-Site Scripting (XSS)",
   "ExternalReferer": "WPVDB-ID-9085, CVE-2018-11105",
   "Impact": "Medium",
-  "Note": "There is stored cross site scripting in the wp-live-chat-support plugin before 8.0.08 for WordPress via the "name" (aka wplc_name) and "email" (aka wplc_email) input fields whenever a malicious attacker would initiate a new chat with an administrator."
+  "Note": "There is stored cross site scripting in the wp-live-chat-support plugin before 8.0.08 for WordPress via the 'name' (aka wplc_name) and 'email' (aka wplc_email) input fields whenever a malicious attacker would initiate a new chat with an administrator."
 }]]></Value>
 </AddOnStorageValue>
