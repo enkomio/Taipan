@@ -30,7 +30,7 @@
         createResources(resources)
         createWebApplications()
 
-        let fakeUrl = new UriBuilder(grovieraUrl, Port = grovieraUrl.Port + 1)
+        let fakeUrl = new UriBuilder(grovieraUrl, Port = grovieraUrl.Port + 5)
 
         let scanContext = 
             new ScanContext(
