@@ -7,6 +7,27 @@ open System.Net
 open System.Threading.Tasks
 
 module internal HttpRequestorUtility =
+    let private parseCookieHeaderValue(hdrValue: String, host: String) =
+        let cookies = new List<Cookie>()
+        try
+            let items = hdrValue.Split(';')
+            let cookiePart = items.[0].Split('=')                
+            let (name, value) = (cookiePart.[0], cookiePart.[1])
+            let cookie = new Cookie(name, value, "/", host)
+
+            // get flags
+            items.[1..]
+            |> Seq.map(fun item -> item.Trim())
+            |> Seq.iter(fun item ->
+                let lowerItem = item.ToLower()
+                cookie.Secure <- lowerItem.Contains("secure")
+                cookie.HttpOnly <- lowerItem.Contains("httponly")
+            )
+
+            cookies.Add(cookie)
+        with _ -> ()
+        cookies
+
     let addPostData(data: String, webRequest: HttpWebRequest) =
         try
             use streamWriter = new StreamWriter(webRequest.GetRequestStream())
@@ -18,23 +39,7 @@ module internal HttpRequestorUtility =
         let cookies = new List<Cookie>()
         if httpWebResponse.Headers.AllKeys |> Seq.contains "Set-Cookie" then
             for hdrValue in httpWebResponse.Headers.GetValues("Set-Cookie") do
-                try
-                    let items = hdrValue.Split(';')
-                    let cookiePart = items.[0].Split('=')                
-                    let (name, value) = (cookiePart.[0], cookiePart.[1])
-                    let cookie = new Cookie(name, value, "/", httpWebResponse.ResponseUri.Host)
-
-                    // get flags
-                    items.[1..]
-                    |> Seq.map(fun item -> item.Trim())
-                    |> Seq.iter(fun item ->
-                        let lowerItem = item.ToLower()
-                        cookie.Secure <- lowerItem.Contains("secure")
-                        cookie.HttpOnly <- lowerItem.Contains("httponly")
-                    )
-
-                    cookies.Add(cookie)
-                with _ -> ()
+                cookies.AddRange(parseCookieHeaderValue(hdrValue, httpWebResponse.ResponseUri.Host))
         cookies
         
     let addHttpHeader(header: HttpHeader, webRequest: HttpWebRequest) =
@@ -69,7 +74,9 @@ module internal HttpRequestorUtility =
             webRequest.SendChunked <- true
             webRequest.TransferEncoding <- header.Value
         | "cookie" ->
-            webRequest.CookieContainer.Add(new Cookie(header.Name, header.Value, "/"))
+            let cookieValue = header.Value
+            parseCookieHeaderValue(cookieValue, webRequest.RequestUri.Host)
+            |> Seq.iter(webRequest.CookieContainer.Add)
         | _ -> webRequest.Headers.[header.Name] <- header.Value
     
     let createHttpWebRequest(settings: HttpRequestorSettings, httpRequest: HttpRequest) =
