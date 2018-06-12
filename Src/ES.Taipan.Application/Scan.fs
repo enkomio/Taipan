@@ -79,9 +79,9 @@ type internal ScanLogger() =
     member this.AllServicesStarted() =        
         this.WriteLog(9, Array.empty)
 
-    [<Log(10, Message = "Unable to connect to host '{0}' port {1}. Scan aborted.", Level = LogLevel.Error)>]
-    member this.HostPortNotReachable(host: String, port: Int32) =
-        this.WriteLog(10, [|host; port|])
+    [<Log(10, Message = "Unable to connect to host '{0}' port {1}. {2}", Level = LogLevel.Error)>]
+    member this.HostPortNotReachable(host: String, port: Int32, errorMessage: String) =
+        this.WriteLog(10, [|host; port; errorMessage|])
 
     [<Log(11, Message = "Start assessment step for web site: {0}", Level = LogLevel.Informational)>]
     member this.StartAssessment(uri: String) =
@@ -432,6 +432,7 @@ type Scan(scanContext: ScanContext, logProvider: ILogProvider) as this =
     member internal this.Start() =   
         let mutable ip : IPAddress option = None 
         let mutable hostReachable = false
+        let mutable errorMessage = String.Empty
         let uri = scanContext.StartRequest.HttpRequest.Uri
             
         try
@@ -459,7 +460,7 @@ type Scan(scanContext: ScanContext, logProvider: ILogProvider) as this =
             let noNeededCrawler = scanContext.Template.RunResourceDiscoverer || scanContext.Template.RunWebAppFingerprinter
             hostReachable <- (webResponse.PageExists || noNeededCrawler) && webResponse.HttpResponse <> HttpResponse.Error
         with e -> 
-            ()
+            errorMessage <- e.Message
                         
         // if the host is reachable start the scan around a generic try/catch to avoid to crash everything :\
         match ip with
@@ -470,7 +471,7 @@ type Scan(scanContext: ScanContext, logProvider: ILogProvider) as this =
                 this.State <- ScanState.Error
                 _waitLock.Set()
         | _ ->             
-            _logger.HostPortNotReachable(uri.Host, uri.Port)
+            _logger.HostPortNotReachable(uri.Host, uri.Port, errorMessage)
             this.State <- ScanState.Error
             _waitLock.Set()            
         

@@ -236,7 +236,7 @@ module Cli =
             printColor("-= Hidden Resources =-", ConsoleColor.DarkCyan)
             hiddenResources
             |> Seq.iter(fun hiddenRes ->
-                Console.WriteLine("\t{0} {1} ({2})", hiddenRes.BaseUri.AbsolutePath.PadRight(40), hiddenRes.Response.StatusCode, int32 hiddenRes.Response.StatusCode)
+                Console.WriteLine("\t{0} {1} ({2})", hiddenRes.Resource.Path.PadRight(40), hiddenRes.Response.StatusCode, int32 hiddenRes.Response.StatusCode)
             )
             Console.WriteLine()
 
