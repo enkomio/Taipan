@@ -163,6 +163,9 @@ type DefaultWebAppFingerprinter(settings: WebAppFingerprinterSettings, webApplic
         webRequestor.HttpRequestor.Settings.UseJavascriptEngineForRequest <- false
         webRequestor.HttpRequestor.Settings.AllowAutoRedirect <- false
 
+        // disable authentication since it is not needed
+        webRequestor.HttpRequestor.Settings.Authentication.Enabled <- false
+
         // message subscription
         messageBroker.Subscribe<String>(handleControlMessage)
         messageBroker.Subscribe<FingerprintRequest>(handleFingerprintRequestMessage)

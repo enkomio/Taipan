@@ -316,6 +316,9 @@ type DefaultResourceDiscoverer(settings: ResourceDiscovererSettings, webRequesto
         webRequestor.SetPageNotFoundIdentifier(new HeuristicPageNotFoundIdentifier(webRequestor.HttpRequestor))
         webRequestor.HttpRequestor.Settings.AllowAutoRedirect <- true
         webRequestor.HttpRequestor.Settings.UseJavascriptEngineForRequest <- false
+
+        // disable authentication since it is not needed
+        webRequestor.HttpRequestor.Settings.Authentication.Enabled <- false
         
         // message subscription
         messageBroker.Subscribe<String>(handleControlMessage)
