@@ -167,8 +167,9 @@ type DefaultHttpRequestor(defaultSettings: HttpRequestorSettings, requestNotific
             |> Seq.toArray
             |> Array.sortBy(fun transaction -> transaction.Index)
             |> Array.map(sendJourneyTransaction headPath)
-            |> Array.last
-        | _ -> None
+            |> Array.filter(Option.isSome)
+            |> Array.map(Option.get)
+        | _ -> Array.empty<HttpResponse>
             
     do
         ServicePointManager.DefaultConnectionLimit <- Int32.MaxValue
@@ -304,12 +305,21 @@ type DefaultHttpRequestor(defaultSettings: HttpRequestorSettings, requestNotific
         this.SendRequestAsync(httpRequest)
         |> Async.RunSynchronously
 
+    member this.AuthenticationSuccessful(httpResponses: HttpResponse array) =
+        httpResponses
+        |> Array.exists(fun httpResponse ->
+            // re-do the check to be sure that now I'm authenticated
+            let loginPatternMatched = _settings.Authentication.LoginPattern |> Seq.exists(fun pattern -> Regex.IsMatch(httpResponse.Html, pattern))
+            let logoutPatternMatched = _settings.Authentication.LogoutPattern |> Seq.exists(fun pattern -> Regex.IsMatch(httpResponse.Html, pattern))
+            not loginPatternMatched && logoutPatternMatched
+        )
+
     member this.FollowJourneyPathNavigation() =
         if not _settings.Authentication.Enabled then
             // this is just a Journey scan, need to follows the path
             followPathNavigation()
         else
-            None
+            Array.empty<HttpResponse>
         
     member this.SendRequest(httpRequest: HttpRequest) =        
         try
@@ -338,17 +348,12 @@ type DefaultHttpRequestor(defaultSettings: HttpRequestorSettings, requestNotific
                     
                     if not loginPatternMatched && logoutPatternMatched then                   
                         // a specific logout condition was found, need to re-authenticate by following the Authentication Journey path
-                        match followPathNavigation() with
-                        | Some httpResponse ->
-                            // re-do the check to be sure that now I'm authenticated
-                            let loginPatternMatched = _settings.Authentication.LoginPattern |> Seq.exists(fun pattern -> Regex.IsMatch(httpResponse.Html, pattern))
-                            let logoutPatternMatched = _settings.Authentication.LogoutPattern |> Seq.exists(fun pattern -> Regex.IsMatch(httpResponse.Html, pattern))
-                            if not loginPatternMatched && logoutPatternMatched then
-                                _logger.AuthenticationFailed()
-                            else
-                                // finally re-do the request in an authentication context
-                                httpResponseResult := this.SendRequestDirect(httpRequest)
-                        | None -> _logger.AuthenticationFailed()
+                        if this.AuthenticationSuccessful(followPathNavigation()) then
+                            // finally re-do the request in an authentication context
+                            httpResponseResult := this.SendRequestDirect(httpRequest)
+                        else
+                            _logger.AuthenticationFailed()
+
                 | None -> _logger.SessionStateNullOnWebAuth()
             | _ -> 
                 // no authentication process needed

@@ -196,17 +196,19 @@ module ComposedPages =
                     else
                         Redirection.redirect "/composed/test12/" ctx
 
-                path "/composed/test12/setname" >=>fun (ctx: HttpContext) ->
-                    match getValueFromMemDb("/composed/test12/") with
-                    | Some v when v.Equals("OK") ->
-                        let name = 
-                            match ctx.request.formData "name" with
-                            | Choice1Of2 v -> v
-                            | _ -> String.Empty
+                path "/composed/test12/setname" >=> fun (ctx: HttpContext) ->
+                    lock ctx (fun _ ->
+                        match getValueFromMemDb("/composed/test12/") with
+                        | Some v when v.Equals("OK") ->
+                            let name = 
+                                match ctx.request.formData "name" with
+                                | Choice1Of2 v -> v
+                                | _ -> String.Empty
 
-                        addValueToMemDb("/composed/test12/name", name)
-                        Redirection.redirect "/composed/test12/dashboard" ctx
-                    | _ -> Redirection.redirect "/composed/test12/" ctx
+                            addValueToMemDb("/composed/test12/name", name)
+                            Redirection.redirect "/composed/test12/dashboard" ctx
+                        | _ -> Redirection.redirect "/composed/test12/" ctx
+                    )
             ]
         ]   
 

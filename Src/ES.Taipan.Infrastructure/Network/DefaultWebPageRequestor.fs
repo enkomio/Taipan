@@ -34,7 +34,7 @@ type DefaultWebPageRequestor(httpRequestor: IHttpRequestor) =
         // the initial request is a bit special and needs to take into account if a journey path is defined        
         match httpRequestor with
         | :? DefaultHttpRequestor as defaultHttpRequestor -> 
-            match defaultHttpRequestor.FollowJourneyPathNavigation() with
+            match defaultHttpRequestor.FollowJourneyPathNavigation() |> Array.tryLast with
             | Some httpResponse -> new WebResponse(httpResponse, PageExists = true)
             | None -> this.RequestWebPage(webRequest)
         | _ -> this.RequestWebPage(webRequest)

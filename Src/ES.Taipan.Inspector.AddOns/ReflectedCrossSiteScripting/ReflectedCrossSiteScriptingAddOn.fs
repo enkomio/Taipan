@@ -29,7 +29,17 @@ type ReflectedCrossSiteScriptingAddOn() as this =
         |> verbose "FoundXss" "Identified XSS on path '{0}' parameter: {1}"
         |> build
     
-    let reportSecurityIssue(uri: Uri, parameterName: String, attackString: String, entryPoint: EntryPoint, webRequest: WebRequest, webResponse: WebResponse, html: String) =
+    let reportSecurityIssue
+        (
+            uri: Uri, 
+            parameterName: String, 
+            attackString: String, 
+            entryPoint: EntryPoint, 
+            webRequest: WebRequest, 
+            webResponse: WebResponse, 
+            html: String,
+            identifiedPattern: String
+        ) =
         let securityIssue = 
             new SecurityIssue(
                 this.Id, 
@@ -42,6 +52,7 @@ type ReflectedCrossSiteScriptingAddOn() as this =
         securityIssue.Details.Properties.Add("Html", html)
         securityIssue.Details.Properties.Add("Parameter", parameterName)
         securityIssue.Details.Properties.Add("Attack", attackString)
+        securityIssue.Details.Properties.Add("Pattern", identifiedPattern)
         this.Context.Value.AddSecurityIssue(securityIssue)
 
     let hasForbiddenContentType(header: HttpHeader) =
@@ -132,10 +143,8 @@ type ReflectedCrossSiteScriptingAddOn() as this =
                 let (vector, checks) = (kv.Key, kv.Value |> Seq.toList)
                 if not isVulnerable then
                     match specificTest(parameter, probeRequest, vector, checks, rebuild) with
-                    | Some (foundVector, foundPaload, html) -> 
-                        _log?FoundXss(probeRequest.TestRequest.WebRequest.HttpRequest.Uri.AbsolutePath, parameter)
-
-                        let path = probeRequest.TestRequest.WebRequest.HttpRequest.Uri.AbsolutePath                        
+                    | Some (_, identifiedPattern, html) -> 
+                        _log?FoundXss(probeRequest.TestRequest.WebRequest.HttpRequest.Uri.AbsolutePath, parameter)                       
                         isVulnerable <- true
                         
                         // set this parameter as vulnerable to avoid further tests
@@ -159,7 +168,8 @@ type ReflectedCrossSiteScriptingAddOn() as this =
                             entryPoint,
                             new WebRequest(probeRequest.BuildHttpRequest()),
                             probeRequest.WebResponse.Value,
-                            html
+                            html,
+                            identifiedPattern
                         )
                     | None -> ()
         isVulnerable
