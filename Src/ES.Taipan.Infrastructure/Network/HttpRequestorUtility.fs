@@ -74,6 +74,9 @@ module internal HttpRequestorUtility =
             webRequest.SendChunked <- true
             webRequest.TransferEncoding <- header.Value
         | "cookie" ->
+            if webRequest.CookieContainer = null then
+                webRequest.CookieContainer <- new CookieContainer()
+
             let cookieValue = header.Value
             parseCookieHeaderValue(cookieValue, webRequest.RequestUri.Host)
             |> Seq.iter(webRequest.CookieContainer.Add)

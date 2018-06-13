@@ -179,7 +179,7 @@ module ComposedPages =
                     | Choice1Of2 code -> OK ("Sorry code '" + code + "' is not correct, <a href='javascript:history.back();'>try again</a>") ctx
                     | _ -> OK ("Sorry no code received, <a href='javascript:history.back();'>try again</a>") ctx
 
-                path "/composed/test12/login" >=>fun (ctx: HttpContext) ->
+                path "/composed/test12/login" >=> fun (ctx: HttpContext) ->
                     let username = 
                         match ctx.request.formData "username" with
                         | Choice1Of2 v -> v

@@ -170,7 +170,7 @@ type Journey() =
                 transaction.TemplateRequest.Uri <- req.Element(x"Uri").Value
                 
                 transaction.TemplateRequest.Headers <-
-                    req.Element(x"Headers").Elements(x"Element")
+                    req.Element(x"Headers").Elements(x"Header")
                     |> Seq.map(fun xHdr -> (xHdr.Element(x"Name").Value, xHdr.Element(x"Value").Value))
                     |> Seq.toList                          
                           
