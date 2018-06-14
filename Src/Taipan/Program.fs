@@ -5,12 +5,9 @@ open System.Collections.Generic
 open System.Threading.Tasks
 open System.Threading
 open System.IO
-open System.Collections.Concurrent
 open System.Linq
 open System.Reflection
 open System.Diagnostics
-open Newtonsoft.Json
-open Newtonsoft.Json.Serialization
 open Argu
 open Logging
 open ES.Fslog
@@ -40,10 +37,12 @@ module Cli =
                 | Version -> "display Taipan version."
                 | Verbose -> "print verbose messages."
 
-    let private getOrDefault(key: String, defaultValue: String, d: Dictionary<String, String>) =
-        if d.ContainsKey(key) 
-        then d.[key]
-        else defaultValue
+    let private getOrDefault(key: String, defaultValue: String, items: Dictionary<String, String>) =
+        items
+        |> Seq.tryFind(fun kv -> kv.Key.Equals(key, StringComparison.OrdinalIgnoreCase))
+        |> function
+            | Some v -> v.Value
+            | None -> defaultValue
 
     let printColor(msg: String, color: ConsoleColor) =
         Console.ForegroundColor <- color
@@ -257,8 +256,10 @@ module Cli =
             printColor("-= Security Issues =-", ConsoleColor.DarkCyan)
             issues
             |> Seq.iter(fun issue ->
-                let paramName = getOrDefault("parameter", "N/A", issue.Details.Properties)
-                Console.WriteLine("\t{0} Uri:{1} Parameter:{2}", issue.Name, issue.Uri.AbsoluteUri, paramName)
+                let paramName = getOrDefault("parameter", String.Empty, issue.Details.Properties)
+                if String.IsNullOrWhiteSpace(paramName)
+                then Console.WriteLine("\t{0} Uri:{1}", issue.Name, issue.Uri.AbsoluteUri)
+                else Console.WriteLine("\t{0} Uri:{1} Parameter: {2}", issue.Name, issue.Uri.AbsoluteUri, paramName)
             )
             Console.WriteLine()
 
