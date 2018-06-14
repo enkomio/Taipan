@@ -36,10 +36,6 @@ type ScanWorkflowLogger() =
     member this.AllServiceCompleted() =        
         this.WriteLog(5, [||])
 
-    [<Log(6, Message = "All services in Idle state = {0}. No pending service for completation = {1}", Level = LogLevel.Verbose)>]
-    member this.IdleAndCompletationServices(idle: Boolean, pending: Boolean) =        
-        this.WriteLog(6, [|idle; pending|])
-
     [<Log(7, Message = "Service {0} initialized", Level = LogLevel.Informational)>]
     member this.ServiceInitialized(service: IService) =        
         this.WriteLog(7, [|service.GetType().FullName|])
@@ -99,7 +95,6 @@ type ScanWorkflow(messageBroker: IMessageBroker, runAssessmentPhaseCallback: uni
     let haveToCallRunToCompletation() =
         let allProducerServicesInIdleState = _producerServices |> Seq.forall(fun srv -> srv.Diagnostics.IsIdle)
         let noPendingServiceForCompletation = _pendingServiceForCompletation |> Seq.isEmpty
-        _logger.IdleAndCompletationServices(allProducerServicesInIdleState, noPendingServiceForCompletation)
         allProducerServicesInIdleState && noPendingServiceForCompletation
         
     let manageStatuschange() =
