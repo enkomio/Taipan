@@ -12,6 +12,7 @@ open ES.Groviera.Utility
 
 module ComposedPages =
     let mutable private _journeyInSession = true
+    let mutable _counter = 1
 
     let index (ctx: HttpContext) =
         OK """<html>
@@ -197,7 +198,7 @@ module ComposedPages =
                         Redirection.redirect "/composed/test12/" ctx
 
                 path "/composed/test12/setname" >=> fun (ctx: HttpContext) ->
-                    lock ctx (fun _ ->
+                    lock ctx (fun () ->
                         match getValueFromMemDb("/composed/test12/") with
                         | Some v when v.Equals("OK") ->
                             let name = 
@@ -205,7 +206,12 @@ module ComposedPages =
                                 | Choice1Of2 v -> v
                                 | _ -> String.Empty
 
-                            addValueToMemDb("/composed/test12/name", name)
+                            let valueToSet =
+                                match getValueFromMemDb("/composed/test12/name") with
+                                | Some v -> name + "<br>" + v
+                                | None -> name
+
+                            addValueToMemDb("/composed/test12/name", valueToSet)
                             Redirection.redirect "/composed/test12/dashboard" ctx
                         | _ -> Redirection.redirect "/composed/test12/" ctx
                     )
