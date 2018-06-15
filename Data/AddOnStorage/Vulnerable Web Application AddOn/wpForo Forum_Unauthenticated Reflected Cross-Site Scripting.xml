@@ -1,0 +1,16 @@
+<AddOnStorageValue>
+  <AddOn>Vulnerable Web Application AddOn</AddOn>
+  <Name>wpForo Forum_Unauthenticated Reflected Cross-Site Scripting</Name>
+  <Type>ES.Taipan.Inspector.AddOns.WebApplicationVulnerability.ApplicationVulnerabilityDescriptor</Type>
+  <Value><![CDATA[{
+  "Id": "4f74f650-301c-4e50-a7c6-785131388ef3",
+  "Application": "wpForo Forum",
+  "AffectedVersions": [
+    "<=1.4.11"
+  ],
+  "VulnerabilityName": "Unauthenticated Reflected Cross-Site Scripting",
+  "ExternalReferer": "CVE-2018-11709, WPVDB-ID-9090",
+  "Impact": "Medium",
+  "Note": "wpforo_get_request_uri in wpf-includes/functions.php in the wpForo Forum plugin before 1.4.12 for WordPress allows Unauthenticated Reflected Cross-Site Scripting (XSS) via the URI."
+}]]></Value>
+</AddOnStorageValue>

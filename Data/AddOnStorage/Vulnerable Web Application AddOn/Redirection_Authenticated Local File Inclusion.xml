@@ -1,0 +1,16 @@
+<AddOnStorageValue>
+  <AddOn>Vulnerable Web Application AddOn</AddOn>
+  <Name>Redirection_Authenticated Local File Inclusion</Name>
+  <Type>ES.Taipan.Inspector.AddOns.WebApplicationVulnerability.ApplicationVulnerabilityDescriptor</Type>
+  <Value><![CDATA[{
+  "Id": "cbcbc0a6-f8ee-4fa7-bf2c-969c0d3eafed",
+  "Application": "Redirection",
+  "AffectedVersions": [
+    "<=2.7.3"
+  ],
+  "VulnerabilityName": "Authenticated Local File Inclusion",
+  "ExternalReferer": "WPVDB-ID-9090",
+  "Impact": "High",
+  "Note": "N/A"
+}]]></Value>
+</AddOnStorageValue>
