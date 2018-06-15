@@ -19,10 +19,10 @@ open Fake.ReleaseNotesHelper
 let project = "Taipan"
 
 // Short summary of the project
-let summary = "A web application vulnerability assessment tool."
+let summary = "A web application vulnerability scanner tool."
 
 // Longer description of the project
-let description = "A web application vulnerability assessment tool."
+let description = "A web application vulnerability scanner tool."
 
 // List of author names (for NuGet package)
 let authors = [ "Enkomio" ]
