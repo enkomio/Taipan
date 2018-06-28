@@ -96,7 +96,7 @@ let createTemplate(name: String, guid: String) =
         ])
     defaultProfile.CrawlerSettings.BlacklistedPattern.AddRange(
         [
-            "/logout.[a-z]+"
+            "/logout.[a-z]+"; "/manual/"
         ]
     )
 
