@@ -17,6 +17,8 @@ open ES.Taipan.Infrastructure.Network
 open ES.Taipan.Infrastructure.Service
 
 module Cli =    
+    open ES.Taipan.Inspector
+
     let mutable private _scanService : ScanService option = None
 
     type CLIArguments =
@@ -201,6 +203,23 @@ module Cli =
         let scanReport = new ScanReport(scanResult)
         scanReport.Save(reportFilename)
 
+    let getAdditionalIssueInfo(issue: SecurityIssue) =
+        let mutable resultString = String.Empty
+
+        [            
+            ("Application name: {0} version: {1}", ["ApplicationName"; "OutdatedVersion"])
+            ("Parameter: {0}", ["parameter"])
+        ]
+        |> List.iter(fun (formatString, parameters) ->
+            if String.IsNullOrWhiteSpace(resultString) then
+                let parametersValue = parameters |> List.map(fun pn -> getOrDefault(pn, String.Empty, issue.Details.Properties))
+                if parametersValue |> List.forall(fun s -> not(String.IsNullOrWhiteSpace(s))) then
+                    let args = parametersValue |> Seq.cast<Object> |> Array.ofSeq
+                    resultString <- String.Format(formatString, args)
+        )
+
+        resultString
+
     let printResultToConsole(scanResult: ScanResult) =
         Console.WriteLine()
         
@@ -256,10 +275,8 @@ module Cli =
             printColor("-= Security Issues =-", ConsoleColor.DarkCyan)
             issues
             |> Seq.iter(fun issue ->
-                let paramName = getOrDefault("parameter", String.Empty, issue.Details.Properties)
-                if String.IsNullOrWhiteSpace(paramName)
-                then Console.WriteLine("\t{0} Uri:{1}", issue.Name, issue.Uri.AbsoluteUri)
-                else Console.WriteLine("\t{0} Uri:{1} Parameter: {2}", issue.Name, issue.Uri.AbsoluteUri, paramName)
+                let moreInfo = getAdditionalIssueInfo(issue)                
+                Console.WriteLine("\t{0} {1}", issue.ToString(), moreInfo)
             )
             Console.WriteLine()
 
