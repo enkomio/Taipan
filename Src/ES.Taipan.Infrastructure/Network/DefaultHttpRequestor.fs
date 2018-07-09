@@ -13,6 +13,7 @@ open Microsoft.FSharp.Control.WebExtensions
 open ES.Taipan.Infrastructure.Threading
 open ES.Taipan.Infrastructure.Text
 open ES.Fslog
+open Brotli
 
 type DefaultHttpRequestor(defaultSettings: HttpRequestorSettings, requestNotificationCallback: HttpRequest * Boolean -> unit, logProvider: ILogProvider) as this =
     let _requestGateTimeout = 1000 * 60 * 60 * 10 // 10 minutes
@@ -200,11 +201,21 @@ type DefaultHttpRequestor(defaultSettings: HttpRequestorSettings, requestNotific
             // retrieve the buffer response
             use httpWebResponse = httpWebRequest.GetResponse() :?> HttpWebResponse
             use httpResponseStream = httpWebResponse.GetResponseStream()
-
-            // read all data stream
-            use destStream = new MemoryStream()
-            httpResponseStream.CopyTo(destStream)
-            destStream.ToArray()
+                        
+            if 
+                httpWebResponse.Headers.AllKeys |> Seq.exists(fun hdrName -> hdrName.Equals("Content-Encoding", StringComparison.OrdinalIgnoreCase)) &&
+                httpWebResponse.Headers.["Content-Encoding"].Equals("br", StringComparison.OrdinalIgnoreCase)
+            then                 
+                // decompress Brotli
+                use destStream = new MemoryStream()
+                use bs = new BrotliStream(httpResponseStream, System.IO.Compression.CompressionMode.Decompress)
+                bs.CopyTo(destStream)
+                destStream.ToArray()
+            else
+                // read all data stream
+                use destStream = new MemoryStream()
+                httpResponseStream.CopyTo(destStream)
+                destStream.ToArray()
         with
         | e -> 
             _logger.RequestError(httpRequest.Uri.ToString(), e.Message)

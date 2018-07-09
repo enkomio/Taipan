@@ -26,3 +26,4 @@ nuget difflib
 nuget LiteDB
 nuget Argu
 nuget FSharp.Compiler.Service
+nuget Brotli.NET
