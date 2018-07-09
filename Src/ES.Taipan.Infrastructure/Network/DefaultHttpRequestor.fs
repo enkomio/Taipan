@@ -141,7 +141,11 @@ type DefaultHttpRequestor(defaultSettings: HttpRequestorSettings, requestNotific
                     // I have to request the template Uri request and retrieve the parameter value
                     let previousTransaction = path.[transaction.Index - 1]
                     match sendJourneyTransaction path previousTransaction with
-                    | Some httpResponse -> RegexUtility.getHtmlInputValue(httpResponse.Html, parameter.Name)
+                    | Some httpResponse -> 
+                        if RegexUtility.getHtmlInputValue(httpResponse.Html, "name").Equals(parameter.Name, StringComparison.OrdinalIgnoreCase) 
+                        then RegexUtility.getHtmlInputValue(httpResponse.Html, "value")
+                        else String.Empty
+                        
                     | None -> parameter.Value
                     
             match parameter.Type with

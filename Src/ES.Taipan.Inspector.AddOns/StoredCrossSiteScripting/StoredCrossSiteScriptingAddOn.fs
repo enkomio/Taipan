@@ -193,7 +193,7 @@ type StoredCrossSiteScriptingAddOn() as this =
     default this.Initialize(context: Context, webRequestor: IWebPageRequestor, messageBroker: IMessageBroker, logProvider: ILogProvider) =
         base.Initialize(context, webRequestor, messageBroker, logProvider) |> ignore
         logProvider.AddLogSourceToLoggers(_log)
-
+        
         _messageBroker <- Some messageBroker
 
         match this.Context.Value.AddOnStorage.ReadProperty<Dictionary<String, List<String>>>("Payloads") with
@@ -202,12 +202,13 @@ type StoredCrossSiteScriptingAddOn() as this =
         
         true
 
-    override this.RunToCompletation() =
+    override this.RunToCompletation(stateController: ServiceStateController) =
         _testRequests
         |> Seq.iter(fun testRequest ->
-            match verifyProbePresence(testRequest) with
-            | Some probeId -> sendAttack(probeId, testRequest)
-            | None -> ()
+            if not stateController.IsStopped then
+                match verifyProbePresence(testRequest) with
+                | Some probeId -> sendAttack(probeId, testRequest)
+                | None -> ()
         )
 
     default this.Scan(testRequest: TestRequest, stateController: ServiceStateController) =

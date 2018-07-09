@@ -37,8 +37,8 @@ type BaseStatelessAddOn(name: String, id: String, priority: Int32) =
     member val Name = name with get
     member val Priority = priority with get
         
-    abstract RunToCompletation : unit -> unit
-    default this.RunToCompletation() =
+    abstract RunToCompletation : ServiceStateController -> unit
+    default this.RunToCompletation(stateController: ServiceStateController) =
         // do nothing
         ()
 
@@ -102,6 +102,6 @@ type BaseStatelessAddOn(name: String, id: String, priority: Int32) =
         member this.Scan(testRequest: TestRequest, stateController: ServiceStateController) =
             this.Scan(testRequest, stateController)
 
-        member this.RunToCompletation() =
-            this.RunToCompletation()
+        member this.RunToCompletation(stateController: ServiceStateController) =
+            this.RunToCompletation(stateController)
 

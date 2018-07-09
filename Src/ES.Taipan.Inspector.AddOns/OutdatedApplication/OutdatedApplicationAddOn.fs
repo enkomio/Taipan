@@ -115,7 +115,7 @@ type OutdatedApplicationAddOn() as this =
         this.MessageBroker.Value.Subscribe<AvailableApplicationVersionMessage>(handleAvailableApplicationVersionMessage)
         true
 
-    override this.RunToCompletation() =        
+    override this.RunToCompletation(stateController: ServiceStateController) =        
         // complete only when all requests are evaded
         while not(_pendingChecks.IsEmpty) do
             _waitLocker.Wait(5000) |> ignore
