@@ -9,13 +9,13 @@
 open System
 open System.IO
 
-#r "Taipan/bin/Debug/ES.Taipan.Infrastructure.dll"
-#r "Taipan/bin/Debug/ES.Taipan.Crawler.dll"
-#r "Taipan/bin/Debug/ES.Taipan.Crawler.WebScrapers.dll"
-#r "Taipan/bin/Debug/ES.Taipan.Discoverer.dll"
-#r "Taipan/bin/Debug/ES.Taipan.Fingerprinter.dll"
-#r "Taipan/bin/Debug/ES.Taipan.Inspector.dll"
-#r "Taipan/bin/Debug/ES.Taipan.Application.dll"
+#r "build/Taipan/ES.Taipan.Infrastructure.dll"
+#r "build/Taipan/ES.Taipan.Crawler.dll"
+#r "build/Taipan/ES.Taipan.Crawler.WebScrapers.dll"
+#r "build/Taipan/ES.Taipan.Discoverer.dll"
+#r "build/Taipan/ES.Taipan.Fingerprinter.dll"
+#r "build/Taipan/ES.Taipan.Inspector.dll"
+#r "build/Taipan/ES.Taipan.Application.dll"
 
 open ES.Taipan.Application
 open ES.Taipan.Crawler
