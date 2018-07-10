@@ -4,28 +4,24 @@
 
 // load the Debug version of the Assemblies
 #r "packages/FSharpLog/lib/ES.Fslog.dll"
+#r "System.Xml.Linq"
 
 open System
-open System.Reflection
 open System.IO
 
-let args = Environment.GetCommandLineArgs()
-
-#r "build/Taipan/ES.Taipan.Infrastructure.dll"
-#r "build/Taipan/ES.Taipan.Crawler.dll"
-#r "build/Taipan/ES.Taipan.Crawler.WebScrapers.dll"
-#r "build/Taipan/ES.Taipan.Discoverer.dll"
-#r "build/Taipan/ES.Taipan.Fingerprinter.dll"
-#r "build/Taipan/ES.Taipan.Inspector.dll"
-#r "build/Taipan/ES.Taipan.Application.dll"
+#r "Taipan/bin/Debug/ES.Taipan.Infrastructure.dll"
+#r "Taipan/bin/Debug/ES.Taipan.Crawler.dll"
+#r "Taipan/bin/Debug/ES.Taipan.Crawler.WebScrapers.dll"
+#r "Taipan/bin/Debug/ES.Taipan.Discoverer.dll"
+#r "Taipan/bin/Debug/ES.Taipan.Fingerprinter.dll"
+#r "Taipan/bin/Debug/ES.Taipan.Inspector.dll"
+#r "Taipan/bin/Debug/ES.Taipan.Application.dll"
 
 open ES.Taipan.Application
 open ES.Taipan.Crawler
 open ES.Taipan.Crawler.WebScrapers
 
 let createTemplate(name: String, guid: String) =
-    let uri = new Uri(Uri.UnescapeDataString("http://www.example.com"))
-
     let defaultProfile = new TemplateProfile(Id = Guid.Parse(guid), Name = name)
     defaultProfile.RunCrawler <- false  
     defaultProfile.RunResourceDiscoverer <- false
@@ -105,6 +101,13 @@ let createTemplate(name: String, guid: String) =
     defaultProfile.HttpRequestorSettings.StaticExtensions.AddRange(defaultProfile.CrawlerSettings.WebPageExtensions)
     defaultProfile.HttpRequestorSettings.StaticExtensions.AddRange([".css"; ".js"])
     defaultProfile.HttpRequestorSettings.Timeout <- 3000
+
+    // auth info
+    defaultProfile.HttpRequestorSettings.Authentication.DynamicAuthParameterPatterns.AddRange(
+        [
+            "Token"
+        ]
+    )
             
     defaultProfile
 

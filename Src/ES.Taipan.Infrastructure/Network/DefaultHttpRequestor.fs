@@ -127,6 +127,10 @@ type DefaultHttpRequestor(defaultSettings: HttpRequestorSettings, requestNotific
                 _seleniumDriver.Value.Initialize()
         )
 
+    let isDynamicParameterBySettings(parameter: JourneyTransactionParameter) =
+        _settings.Authentication.DynamicAuthParameterPatterns
+        |> Seq.exists(fun dynamicPattern -> Regex.IsMatch(parameter.Name, dynamicPattern, RegexOptions.IgnoreCase))
+
     let rec sendJourneyTransaction (path: JourneyPath) (transaction: JourneyTransaction) : HttpResponse option =
         let httpRequest = transaction.BuildBaseHttpRequest()
 
@@ -136,7 +140,8 @@ type DefaultHttpRequestor(defaultSettings: HttpRequestorSettings, requestNotific
         transaction.Parameters
         |> Seq.iter(fun parameter ->
             let parameterValue =
-                if parameter.IsStatic || transaction.Index = 0 then parameter.Value
+                if not(isDynamicParameterBySettings(parameter)) && (parameter.IsStatic || transaction.Index = 0)
+                then parameter.Value
                 else
                     // I have to request the template Uri request and retrieve the parameter value
                     let previousTransaction = path.[transaction.Index - 1]
@@ -297,8 +302,7 @@ type DefaultHttpRequestor(defaultSettings: HttpRequestorSettings, requestNotific
                 if webException.Response <> null then
                     // set the http response html
                     let httpResponse = webException.Response :?> HttpWebResponse
-
-                    use streamReader = new StreamReader(httpResponse.GetResponseStream())                                        
+                                      
                     use asyncReader = new FSharpx.Control.AsyncStreamReader(httpResponse.GetResponseStream())
                     let! html = asyncReader.ReadToEnd()
 

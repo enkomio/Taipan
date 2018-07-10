@@ -13,6 +13,7 @@ type AuthenticationInfo() =
     member val Token = String.Empty with get, set
     member val LoginPattern = new List<String>() with get
     member val LogoutPattern = new List<String>() with get
+    member val DynamicAuthParameterPatterns = new List<String>() with get
 
     member this.ToXElement() =
         let authInfo = new XElement(x"AuthenticationInfo")
@@ -32,6 +33,11 @@ type AuthenticationInfo() =
         authInfo.Add(logoutPattern)
         this.LogoutPattern
         |> Seq.iter(fun pattern -> logoutPattern.Add(new XElement(x"Pattern", pattern)))
+
+        let dynamicAuthParameterPatterns = new XElement(x"DynamicAuthParameterPatterns")
+        authInfo.Add(dynamicAuthParameterPatterns)
+        this.DynamicAuthParameterPatterns
+        |> Seq.iter(fun pattern -> dynamicAuthParameterPatterns.Add(new XElement(x"Pattern", pattern)))
         
         authInfo
 
@@ -47,3 +53,6 @@ type AuthenticationInfo() =
 
         root.Element(x"LogoutPattern").Elements(x"Pattern")
         |> Seq.iter(fun xPattern -> this.LogoutPattern.Add(xPattern.Value))
+
+        root.Element(x"DynamicAuthParameterPatterns").Elements(x"Pattern")
+        |> Seq.iter(fun xPattern -> this.DynamicAuthParameterPatterns.Add(xPattern.Value))
