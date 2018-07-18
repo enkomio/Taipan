@@ -85,11 +85,11 @@ We use [SemVer](http://semver.org/) for versioning. For the versions available, 
 * **Antonio Parata** - *Core Developer* - [s4tan](https://twitter.com/s4tan)
 * **Andrea Gulino** - *Front End Developer* - [andreagulino](https://www.linkedin.com/in/andreagulino/)
 
-See also the list of [contributors](https://github.com/taipan-scanner/Taipan/graphs/contributors) who participated in this project.
+See also the list of [contributors](https://github.com/enkomio/Taipan/graphs/contributors) who participated in this project.
 
 ## License
 
-.NET Core (including the coreclr repo) is licensed under the [MIT license](LICENSE.TXT).
+Taipan is licensed under the [MIT license](LICENSE.TXT).
 
 License: GNU General Public License, version 2 or later; see LICENSE included in this archive for details.
 
