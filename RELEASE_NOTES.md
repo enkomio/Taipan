@@ -1,6 +1,12 @@
-### 1.7.0 - XX/XX/2018
+### 1.7.0 - 06/08/2018
+* Created Vulnerability Editor in order to create application vulnerabilities
 * Improved system metrics generation
-* Improved code to load signature by decreasing the time to load them
+* Improved code to load signature by decreasing the load time
+* Added more signatures and improved discovery process
+* Fixed minor bug in Fingerprinter and Vulnerability Scanner
+* Added web vulnerabilities
+* Added support to Brotli decompression
+* Updated TestSSL AddOn
 
 ### 1.6.0 - 28/03/2018
 * Resolved resource leak in ChromeDriver usage
