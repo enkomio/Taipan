@@ -13,7 +13,6 @@ open ES.Taipan.Infrastructure.Service
 open ES.Taipan.Infrastructure.Network
 open ES.Taipan.Fingerprinter
 open ES.Taipan.Inspector
-open ES.Taipan.Fingerprinter
 open ES.Taipan.Crawler
 open ES.Taipan.Discoverer
 open ES.Fslog
@@ -123,6 +122,7 @@ type Scan(scanContext: ScanContext, logProvider: ILogProvider) as this =
     let _pageProcessedMessageList = new ConcurrentQueue<PageProcessedMessage>()
     let _pageReProcessedMessage = new ConcurrentQueue<PageReProcessedMessage>()
     let mutable _assessmentPhaseStarted = false
+    let mutable _stopRequested = false
 
     let _logger = new ScanLogger()
     let mutable _container : IContainer option = None
@@ -183,28 +183,31 @@ type Scan(scanContext: ScanContext, logProvider: ILogProvider) as this =
 
             _newResourceDiscoveredMessageList
             |> Seq.iter(fun message ->
-                // notify other components
-                if scanContext.Template.RunWebAppFingerprinter then
-                    _messageBroker.Value.Dispatch(this, convertNewResourceDiscoveredToFingerprintRequest(message))
+                if not _stopRequested then
+                    // notify other components
+                    if scanContext.Template.RunWebAppFingerprinter then
+                        _messageBroker.Value.Dispatch(this, convertNewResourceDiscoveredToFingerprintRequest(message))
 
-                if scanContext.Template.RunVulnerabilityScanner then
-                    _messageBroker.Value.Dispatch(this, convertNewResourceDiscoveredToTestRequest(message))
+                    if scanContext.Template.RunVulnerabilityScanner then
+                        _messageBroker.Value.Dispatch(this, convertNewResourceDiscoveredToTestRequest(message))
             )
 
             _pageProcessedMessageList
             |> Seq.iter(fun message ->
-                if scanContext.Template.RunWebAppFingerprinter then
-                    _messageBroker.Value.Dispatch(this, convertPageProcessedToFingerprintRequest(message))
+                if not _stopRequested then
+                    if scanContext.Template.RunWebAppFingerprinter then
+                        _messageBroker.Value.Dispatch(this, convertPageProcessedToFingerprintRequest(message))
 
-                if scanContext.Template.RunVulnerabilityScanner then
-                    _messageBroker.Value.Dispatch(this, convertPageProcessedToTestRequest(message))
+                    if scanContext.Template.RunVulnerabilityScanner then
+                        _messageBroker.Value.Dispatch(this, convertPageProcessedToTestRequest(message))
             )
 
             _pageReProcessedMessage
             |> Seq.iter(fun message ->
-                // notify other components
-                if scanContext.Template.RunVulnerabilityScanner then
-                    _messageBroker.Value.Dispatch(this, convertPageReProcessedToTestRequest(message))
+                if not _stopRequested then
+                    // notify other components
+                    if scanContext.Template.RunVulnerabilityScanner then
+                        _messageBroker.Value.Dispatch(this, convertPageReProcessedToTestRequest(message))
             )
         
     do
@@ -263,7 +266,7 @@ type Scan(scanContext: ScanContext, logProvider: ILogProvider) as this =
     default this.NewWebApplicationIdentifiedMessageHandle(sender: Object, envelope: Envelope<NewWebApplicationIdentifiedMessage>) =
         let message = envelope.Item
         _newApplicationIdentified.Trigger(message)
-
+        
         // notify other components
         if scanContext.Template.RunWebAppFingerprinter then
             _messageBroker.Value.Dispatch(this, convertWebApplicationIdentifiedToTestRequest(message))
@@ -493,6 +496,7 @@ type Scan(scanContext: ScanContext, logProvider: ILogProvider) as this =
         _logger.ScanPaused()
 
     member this.Stop() =
+        _stopRequested <- true
         _scanWorkflow.Value.Stop()
         _logger.ScanStopped()
         this.State <- ScanState.Stopped

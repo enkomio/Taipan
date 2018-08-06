@@ -144,7 +144,7 @@ type DefaultResourceDiscoverer(settings: ResourceDiscovererSettings, webRequesto
                 _serviceMetrics.CurrentState("Completed")
 
     let processDiscoverRequest(discoverRequest: DiscoverRequest) =
-        if not <| _stateController.IsStopped && not _stopRequested then            
+        if not _stateController.IsStopped && not _stopRequested && not _requestsToProcess.IsAddingCompleted then            
             this.Discover(discoverRequest) |> ignore
 
     let triggerIdleState() =

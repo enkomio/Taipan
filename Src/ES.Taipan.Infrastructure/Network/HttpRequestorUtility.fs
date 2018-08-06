@@ -4,28 +4,48 @@ open System
 open System.Collections.Generic
 open System.IO
 open System.Net
-open System.Threading.Tasks
+open Brotli
 
-module internal HttpRequestorUtility =
-    let private parseCookieHeaderValue(hdrValue: String, host: String) =
+module internal HttpRequestorUtility =    
+
+    let parseCookieHeaderValue(hdrValue: String, host: String) =
         let cookies = new List<Cookie>()
-        try
-            let items = hdrValue.Split(';')
-            let cookiePart = items.[0].Split('=')                
-            let (name, value) = (cookiePart.[0], cookiePart.[1])
-            let cookie = new Cookie(name, value, "/", host)
+        let attributes = [
+            "comment"; "domain"; "max-age"
+            "path"; "secure"; "version"; 
+            "httponly"
+        ]
+        
+        let mutable isSecure = false
+        let mutable isHttpOnly = false
 
-            // get flags
-            items.[1..]
-            |> Seq.map(fun item -> item.Trim())
-            |> Seq.iter(fun item ->
-                let lowerItem = item.ToLower()
-                cookie.Secure <- lowerItem.Contains("secure")
-                cookie.HttpOnly <- lowerItem.Contains("httponly")
-            )
+        hdrValue.Split(';')
+        |> Array.rev
+        |> Array.map(fun item ->
+            let keyValue = 
+                item.Split('=') 
+                |> Array.map(fun s -> s.Trim())
+                |> Array.map(Uri.UnescapeDataString) 
+                |> Array.map(Uri.EscapeDataString)
 
-            cookies.Add(cookie)
-        with _ -> ()
+            if keyValue.Length > 1
+            then (keyValue.[0], keyValue.[1])
+            else (item, String.Empty)
+        )
+        |> Array.iter(fun (name, value) ->
+            try
+                if attributes |> List.contains(name.Trim().ToLower()) then
+                    // it is an attribute
+                    match name.Trim().ToLower() with
+                    | "secure" -> isSecure <- true
+                    | "httponly" -> isHttpOnly <- true
+                    | _ -> ()
+                else
+                    // create a new cookie                    
+                    let cookie = new Cookie(name, value, "/", host, Secure = isSecure, HttpOnly = isHttpOnly)
+                    cookies.Add(cookie)
+            with _ -> ()
+        )
         cookies
 
     let addPostData(data: String, webRequest: HttpWebRequest) =
@@ -109,7 +129,8 @@ module internal HttpRequestorUtility =
             addHttpHeader(header, httpWebRequest)
 
         // set the cookies
-        httpWebRequest.CookieContainer <- new CookieContainer()
+        if httpWebRequest.CookieContainer = null then
+            httpWebRequest.CookieContainer <- new CookieContainer()
         for cookie in httpRequest.Cookies do
             httpWebRequest.CookieContainer.Add(cookie)
 
@@ -119,7 +140,7 @@ module internal HttpRequestorUtility =
 
         httpWebRequest
         
-    let convertToHttpResponse(httpWebResponse: HttpWebResponse, html: String) =
+    let convertToHttpResponse(httpWebResponse: HttpWebResponse) =
         let httpResponseResult = new HttpResponse(ResponseUri = Some httpWebResponse.ResponseUri)
         
         // set the http response protocol version
@@ -151,8 +172,5 @@ module internal HttpRequestorUtility =
         // for more info see: https://stackoverflow.com/questions/3716144/cookiecontainer-handling-of-paths-who-ate-my-cookie
         for cookie in getCookiesFromHeader(httpWebResponse) do
             httpResponseResult.Cookies.Add(cookie)
-
-        // set the http response html
-        httpResponseResult.Html <- html
         
         httpResponseResult

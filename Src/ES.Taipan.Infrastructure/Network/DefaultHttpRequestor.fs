@@ -134,6 +134,15 @@ type DefaultHttpRequestor(defaultSettings: HttpRequestorSettings, requestNotific
     let rec sendJourneyTransaction (path: JourneyPath) (transaction: JourneyTransaction) : HttpResponse option =
         let httpRequest = transaction.BuildBaseHttpRequest()
 
+        // add to setting also the headers of the template request
+        httpRequest.Headers
+        |> Seq.filter(fun hdr -> 
+            ["Content"] 
+            |> List.exists(fun pattern -> hdr.Name.StartsWith(pattern, StringComparison.OrdinalIgnoreCase)) 
+            |> not
+        )
+        |> Seq.iter(fun hdr -> _settings.AdditionalHttpHeaders.[hdr.Name] <- hdr.Value)
+
         // manage parameters
         let data = new StringBuilder()
         let query = new StringBuilder()
@@ -167,7 +176,13 @@ type DefaultHttpRequestor(defaultSettings: HttpRequestorSettings, requestNotific
             httpRequest.Data <- data.ToString().Substring(1)
 
         // send HttpRequest
-        this.SendRequestDirect(httpRequest)
+        let httpResponse: HttpResponse option = this.SendRequestDirect(httpRequest)
+        if httpResponse.IsSome then
+            // retrieve the session response parameters
+            if this.SessionState.IsSome then
+                this.SessionState.Value.RetrieveSessionParametersFromResponse(httpRequest, httpResponse.Value)
+            
+        httpResponse
 
     let followPathNavigation() =        
         match _settings.Journey.Paths |> Seq.tryHead with
@@ -281,33 +296,59 @@ type DefaultHttpRequestor(defaultSettings: HttpRequestorSettings, requestNotific
                 // if the request via PhantomJS fails try the standard way
                 if (!httpResponseResult).IsNone then
                     let httpWebRequest = HttpRequestorUtility.createHttpWebRequest(_settings, httpRequest)
+                    use httpWebResponse = httpWebRequest.GetResponse() :?> HttpWebResponse
 
-                    // retrieve the response Async
-                    let! httpResponse = httpWebRequest.AsyncGetResponse()
-                    use asyncReader = new FSharpx.Control.AsyncStreamReader(httpResponse.GetResponseStream(), Encoding.UTF8)                
-                    let! html = asyncReader.ReadToEnd()
-                                
-                    // convert the http response to my object    
-                    use httpWebResponse = httpResponse :?> HttpWebResponse               
-                    httpResponseResult := Some <| HttpRequestorUtility.convertToHttpResponse(httpWebResponse, html)
+                    // convert the http response to my object
+                    httpResponseResult := Some <| HttpRequestorUtility.convertToHttpResponse(httpWebResponse)
 
-                // check if is needed an authentication
-                httpResponseResult := this.VerifyIfIsNeededToAuthenticate(httpRequest, !httpResponseResult)
-                
+                    // set the http response content                    
+                    if 
+                        httpWebResponse.Headers.AllKeys |> Seq.exists(fun hdrName -> hdrName.Equals("Content-Encoding", StringComparison.OrdinalIgnoreCase)) &&
+                        httpWebResponse.Headers.["Content-Encoding"].Equals("br", StringComparison.OrdinalIgnoreCase)
+                    then                 
+                        // decompress Brotli
+                        use responseStream = httpWebResponse.GetResponseStream()
+                        use destStream = new MemoryStream()            
+                        use bs = new BrotliStream(responseStream, System.IO.Compression.CompressionMode.Decompress)
+                        bs.CopyTo(destStream)                        
+                        httpResponseResult.Value.Value.Content <- destStream.ToArray()
+
+                    else        
+                        // retrieve the response Async
+                        let! httpResponse = httpWebRequest.AsyncGetResponse()
+                        use asyncReader = new FSharpx.Control.AsyncStreamReader(httpResponse.GetResponseStream(), Encoding.UTF8)                
+                        let! html = asyncReader.ReadToEnd()
+                        httpResponseResult.Value.Value.Html <- html 
+
                 // retrieve the session response parameters
                 if this.SessionState.IsSome && (!httpResponseResult).IsSome then
                     this.SessionState.Value.RetrieveSessionParametersFromResponse(httpRequest, (!httpResponseResult).Value)
+
+                // check if is needed an authentication
+                httpResponseResult := this.VerifyIfIsNeededToAuthenticate(httpRequest, !httpResponseResult)
             with
             | :? WebException as webException ->
                 if webException.Response <> null then
                     // set the http response html
-                    let httpResponse = webException.Response :?> HttpWebResponse
-                                      
-                    use asyncReader = new FSharpx.Control.AsyncStreamReader(httpResponse.GetResponseStream())
-                    let! html = asyncReader.ReadToEnd()
+                    use httpResponse = webException.Response :?> HttpWebResponse
+                    httpResponseResult := Some <| HttpRequestorUtility.convertToHttpResponse(httpResponse)
+                                                          
+                    // set the http response content
+                    use responseStream = httpResponse.GetResponseStream()
+                    if 
+                        httpResponse.Headers.AllKeys |> Seq.exists(fun hdrName -> hdrName.Equals("Content-Encoding", StringComparison.OrdinalIgnoreCase)) &&
+                        httpResponse.Headers.["Content-Encoding"].Equals("br", StringComparison.OrdinalIgnoreCase)
+                    then                 
+                        // decompress Brotli
+                        use destStream = new MemoryStream()            
+                        use bs = new BrotliStream(responseStream, System.IO.Compression.CompressionMode.Decompress)
+                        bs.CopyTo(destStream)                        
+                        httpResponseResult.Value.Value.Content <- destStream.ToArray()
 
-                    httpResponseResult := Some <| HttpRequestorUtility.convertToHttpResponse(httpResponse, html)
-                    httpResponse.Dispose()
+                    else        
+                        use asyncReader = new FSharpx.Control.AsyncStreamReader(responseStream)
+                        let! html = asyncReader.ReadToEnd()
+                        httpResponseResult.Value.Value.Html <- html                    
 
                     // check if is needed an authentication
                     httpResponseResult := this.VerifyIfIsNeededToAuthenticate(httpRequest, !httpResponseResult)
@@ -330,7 +371,19 @@ type DefaultHttpRequestor(defaultSettings: HttpRequestorSettings, requestNotific
             // re-do the check to be sure that now I'm authenticated
             let loginPatternMatched = _settings.Authentication.LoginPattern |> Seq.exists(fun pattern -> Regex.IsMatch(httpResponse.Html, pattern))
             let logoutPatternMatched = _settings.Authentication.LogoutPattern |> Seq.exists(fun pattern -> Regex.IsMatch(httpResponse.Html, pattern))
-            not loginPatternMatched && logoutPatternMatched
+            if loginPatternMatched && not logoutPatternMatched then                
+                // retrieve the session response parameters
+                if this.SessionState.IsSome && httpResponse.ResponseUri.IsSome then
+                    let httpRequest = new HttpRequest(httpResponse.ResponseUri.Value)
+                    httpResponse.Headers 
+                    |> Seq.filter(fun hdr -> hdr.Name.Equals("set-cookie", StringComparison.Ordinal))
+                    |> Seq.iter(fun hdr ->
+                        let cookies = HttpRequestorUtility.parseCookieHeaderValue(hdr.Value, httpResponse.ResponseUri.Value.Host)
+                        this.SessionState.Value.AddCookieToSession(httpRequest, cookies)
+                    )
+
+                true
+            else false
         )
 
     member this.FollowJourneyPathNavigation() =
@@ -362,10 +415,7 @@ type DefaultHttpRequestor(defaultSettings: HttpRequestorSettings, requestNotific
             | WebForm when httpResponse.IsSome && httpResponse.Value.StatusCode = HttpStatusCode.OK ->
                 match this.SessionState with
                 | Some _ ->
-                    let loginPatternMatched = _settings.Authentication.LoginPattern |> Seq.exists(fun pattern -> Regex.IsMatch(httpResponse.Value.Html, pattern))
-                    let logoutPatternMatched = _settings.Authentication.LogoutPattern |> Seq.exists(fun pattern -> Regex.IsMatch(httpResponse.Value.Html, pattern))
-                    
-                    if not loginPatternMatched && logoutPatternMatched then                   
+                    if not(this.AuthenticationSuccessful([|httpResponse.Value|])) then                   
                         // a specific logout condition was found, need to re-authenticate by following the Authentication Journey path
                         if this.AuthenticationSuccessful(followPathNavigation()) then
                             // finally re-do the request in an authentication context

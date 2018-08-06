@@ -21,7 +21,7 @@ type MetadataLinkScraper() =
     member this.DiscoverNewLinks(sourceWebLink: WebLink, webResponse: WebResponse, logProvider: ILogProvider) =
         let identifiedLinks = new List<WebLink>()
 
-        if isValidContentType(webResponse) then
+        if isValidContent(webResponse) then
             let cleanHtml = 
                 RegexUtility.removeHtmlComments(webResponse.HttpResponse.Html)
                 |> fun (html, _) -> RegexUtility.removeScriptContent(html)

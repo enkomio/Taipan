@@ -11,14 +11,19 @@ module internal Utility =
         content.ToCharArray()
         |> Seq.forall((Char.IsControl >> not) <|> ((=) '\n') <|> ((=) '\r') <|> ((=) '\t'))
 
-    let isValidContentType(webResponse: WebResponse) =
+    let isContentType(webResponse: WebResponse, contentTypes: String list) =
         let contentTypeHeader =
             webResponse.HttpResponse.Headers
             |> Seq.tryFind (fun header -> header.Name.Equals("Content-Type", StringComparison.OrdinalIgnoreCase))
 
-        if contentTypeHeader.IsSome then
-            contentTypeHeader.Value.Value.ToLower().Contains("text/html") || 
-            isPrintableString(webResponse.HttpResponse.Html)
-        else
-            false
+        match contentTypeHeader with
+        | Some responseContentType ->
+            contentTypes
+            |> List.exists(fun contentType ->
+                responseContentType.Value.ToLower().Contains(contentType)
+            )
+        | None -> false
+
+    let isValidContent(webResponse: WebResponse) =        
+        isContentType(webResponse, ["text/html"]) || isPrintableString(webResponse.HttpResponse.Html)
 

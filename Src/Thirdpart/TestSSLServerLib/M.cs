@@ -8,13 +8,13 @@ using System.Text;
  * Clas for various methods and utility constants.
  */
 
-public class M {
+class M {
 
-    public const int SSLv20 = 0x0200;
-    public const int SSLv30 = 0x0300;
-    public const int TLSv10 = 0x0301;
-    public const int TLSv11 = 0x0302;
-    public const int TLSv12 = 0x0303;
+	internal const int SSLv20 = 0x0200;
+	internal const int SSLv30 = 0x0300;
+	internal const int TLSv10 = 0x0301;
+	internal const int TLSv11 = 0x0302;
+	internal const int TLSv12 = 0x0303;
 
 	internal const int CHANGE_CIPHER_SPEC = 20;
 	internal const int ALERT              = 21;
@@ -372,14 +372,13 @@ public class M {
 
 	internal static void WritePEM(TextWriter w, string objType, byte[] buf)
 	{
-		w.WriteLine("\t-----BEGIN {0}-----", objType.ToUpperInvariant());
+		w.WriteLine("-----BEGIN {0}-----", objType.ToUpperInvariant());
 		int n = buf.Length;
 		for (int i = 0; i < n; i += 57) {
 			int len = Math.Min(57, n - i);
-			w.WriteLine("\t" + ToBase64(buf, i, len));
-
-        }
-		w.WriteLine("\t-----END {0}-----", objType.ToUpperInvariant());
+			w.WriteLine(ToBase64(buf, i, len));
+		}
+		w.WriteLine("-----END {0}-----", objType.ToUpperInvariant());
 	}
 
 	internal static string ToPEM(string objType, byte[] buf)

@@ -9,132 +9,132 @@ using System.Text;
  * properly.
  */
 
-public class X509Chain {
+class X509Chain {
 
-    /*
+	/*
 	 * Get the end-entity certificate. This is null if that certificate
 	 * did not decode properly, or if the chain was empty.
 	 */
-    public X509Cert EE {
+	internal X509Cert EE {
 		get {
 			int n = elements.Length;
 			return (n == 0) ? null : elements[n - 1];
 		}
 	}
 
-    /*
+	/*
 	 * Get the chain elements in normal order (EE comes last).
 	 * Undecodable certificates yield null values.
 	 */
-    public X509Cert[] Elements {
+	internal X509Cert[] Elements {
 		get {
 			return elements;
 		}
 	}
 
-    /*
+	/*
 	 * Get the chain elements in reverse order (EE comes first).
 	 * Undecodable certificates yield null values.
 	 */
-    public X509Cert[] ElementsRev {
+	internal X509Cert[] ElementsRev {
 		get {
 			return elementsRev;
 		}
 	}
 
-    /*
+	/*
 	 * Set to true if the chain decoded properly (non-empty, and
 	 * all certificates were decoded).
 	 */
-    public bool Decodable {
+	internal bool Decodable {
 		get {
 			return decodable;
 		}
 	}
 
-    /*
+	/*
 	 * Set to true if all certificates were decoded and the
 	 * subject/issuer names match all along the chain.
 	 */
-    public bool NamesMatch {
+	internal bool NamesMatch {
 		get {
 			return goodNameChaining;
 		}
 	}
 
-    /*
+	/*
 	 * Set to true if the chain is not empty and starts (ends, in
 	 * reverse order) with an apparently self-issued certificate.
 	 */
-    public bool IncludesRoot {
+	internal bool IncludesRoot {
 		get {
 			return includesRoot;
 		}
 	}
 
-    /*
+	/*
 	 * Get encoded certificates in "normal" order (EE comes last).
 	 */
-    public byte[][] Encoded {
+	internal byte[][] Encoded {
 		get {
 			return encoded;
 		}
 	}
 
-    /*
+	/*
 	 * Get encoded certificates in "reverse" order (EE comes first).
 	 */
-    public byte[][] EncodedRev {
+	internal byte[][] EncodedRev {
 		get {
 			return encodedRev;
 		}
 	}
 
-    /*
+	/*
 	 * Get certificates thumbprints in normal order (EE comes last).
 	 * The thumbprint is the SHA-1 hash of the encoded certificate,
 	 * expressed in uppercase hexadecimal.
 	 */
-    public string[] Thumbprints {
+	internal string[] Thumbprints {
 		get {
 			return thumbprints;
 		}
 	}
 
-    /*
+	/*
 	 * Get certificates thumbprints in reverse order (EE comes first).
 	 * The thumbprint is the SHA-1 hash of the encoded certificate,
 	 * expressed in uppercase hexadecimal.
 	 */
-    public string[] ThumbprintsRev {
+	internal string[] ThumbprintsRev {
 		get {
 			return thumbprintsRev;
 		}
 	}
 
-    /*
+	/*
 	 * Get decoding issues (explanatory string message) for all
 	 * certificates, in normal order (EE comes last). If a certificate
 	 * decoded propery, then the corresponding string is null.
 	 */
-    public string[] DecodingIssues {
+	internal string[] DecodingIssues {
 		get {
 			return decodingIssues;
 		}
 	}
 
-    /*
+	/*
 	 * Get decoding issues (explanatory string message) for all
 	 * certificates, in reverse order (EE comes first). If a certificate
 	 * decoded propery, then the corresponding string is null.
 	 */
-    public string[] DecodingIssuesRev {
+	internal string[] DecodingIssuesRev {
 		get {
 			return decodingIssuesRev;
 		}
 	}
 
-    /*
+	/*
 	 * This returns the list of hash algorithms used for signatures
 	 * on certificates. The algorithms are returned in lexicographic
 	 * order. Self-issued certificates are skipped.
@@ -142,13 +142,13 @@ public class X509Chain {
 	 * If some certificates failed to decode, then this property is
 	 * null.
 	 */
-    public string[] SignHashes {
+	internal string[] SignHashes {
 		get {
 			return signHashes;
 		}
 	}
 
-    /*
+	/*
 	 * SHA-1 hash of the concatenation of the certificates, in reverse
 	 * order; hash value is encoded in lowercase hexadecimal.
 	 *
@@ -156,7 +156,7 @@ public class X509Chain {
 	 * ambiguous. Barring SHA-1 collisions (of which none is known
 	 * right now), the hash should uniquely identify the chain.
 	 */
-    public string Hash {
+	internal string Hash {
 		get {
 			return hash;
 		}
@@ -176,8 +176,7 @@ public class X509Chain {
 	string hash;
 	string[] signHashes;
 
-
-    public X509Chain(byte[][] encoded, byte[][] encodedRev)
+	X509Chain(byte[][] encoded, byte[][] encodedRev)
 	{
 		this.encoded = encoded;
 		this.encodedRev = encodedRev;

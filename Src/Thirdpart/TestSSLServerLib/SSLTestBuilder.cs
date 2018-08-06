@@ -422,6 +422,19 @@ class SSLTestBuilder {
 			}
 			ecdata.Write(ecl.ToArray());
 			exs.Write(ecdata.ToArray());
+
+			/*
+			 * Also send supported point format extension; it
+			 * seems to be required by some servers.
+			 */
+			M.Write2(exs, M.EXT_SUPPORTED_EC_POINTS);
+			HList epdata = new HList(0xFFFF);
+			HList epl = new HList(0xFF);
+			M.Write1(epl, 0x00);
+			M.Write1(epl, 0x01);
+			M.Write1(epl, 0x02);
+			epdata.Write(epl.ToArray());
+			exs.Write(epdata.ToArray());
 		}
 
 		if (exs.Length != 0) {

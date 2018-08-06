@@ -29,6 +29,9 @@
     <ErrorReport>prompt</ErrorReport>
     <WarningLevel>4</WarningLevel>
   </PropertyGroup>
+  <PropertyGroup>
+    <StartupObject />
+  </PropertyGroup>
   <ItemGroup>
     <Reference Include="System" />
     <Reference Include="System.Core" />
@@ -46,10 +49,13 @@
     <Compile Include="Asn1\AsnIO.cs" />
     <Compile Include="Asn1\AsnOID.cs" />
     <Compile Include="CipherSuite.cs" />
+    <Compile Include="DebugStream.cs" />
     <Compile Include="FullTest.cs" />
+    <Compile Include="FullTestWrapper.cs" />
     <Compile Include="HList.cs" />
     <Compile Include="HMParser.cs" />
     <Compile Include="HTTPProx.cs" />
+    <Compile Include="JSON.cs" />
     <Compile Include="M.cs" />
     <Compile Include="PKIXCurve.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
@@ -64,6 +70,7 @@
     <Compile Include="SSLTestBuilder.cs" />
     <Compile Include="SSLTestResult.cs" />
     <Compile Include="SupportedCipherSuites.cs" />
+    <Compile Include="TestSSLServer.cs" />
     <Compile Include="X500\DNPart.cs" />
     <Compile Include="X500\X500Name.cs" />
     <Compile Include="X509Cert.cs" />

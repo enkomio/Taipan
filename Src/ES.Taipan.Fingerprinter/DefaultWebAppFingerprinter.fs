@@ -141,7 +141,7 @@ type DefaultWebAppFingerprinter(settings: WebAppFingerprinterSettings, webApplic
         } |> Async.Start
 
     let handleFingerprintRequestMessage(sender: Object, fingerprintRequest: Envelope<FingerprintRequest>) =     
-        if not _stopRequested then   
+        if not _stateController.IsStopped && not _stopRequested && not _requestsToProcess.IsAddingCompleted then   
             _requestsToProcess.Add(fingerprintRequest.Item)
 
     let handleGetAvailableVersionsMessage(sender: Object, getAvailableVersions: Envelope<GetAvailableVersionsMessage>) =

@@ -1,9 +1,9 @@
 using System;
 using System.Collections.Generic;
 
-public class SupportedCipherSuites {
+class SupportedCipherSuites {
 
-    public int[] Suites {
+	internal int[] Suites {
 		get {
 			return suites;
 		}
@@ -12,7 +12,7 @@ public class SupportedCipherSuites {
 		}
 	}
 
-    public bool PrefClient {
+	internal bool PrefClient {
 		get {
 			return prefClient;
 		}
@@ -21,7 +21,7 @@ public class SupportedCipherSuites {
 		}
 	}
 
-    public bool PrefServer {
+	internal bool PrefServer {
 		get {
 			return prefServer;
 		}
@@ -30,7 +30,7 @@ public class SupportedCipherSuites {
 		}
 	}
 
-    public bool KXReuseDH {
+	internal bool KXReuseDH {
 		get {
 			return kxReuseDH;
 		}
@@ -39,7 +39,7 @@ public class SupportedCipherSuites {
 		}
 	}
 
-    public bool KXReuseECDH {
+	internal bool KXReuseECDH {
 		get {
 			return kxReuseECDH;
 		}
@@ -54,7 +54,7 @@ public class SupportedCipherSuites {
 	bool kxReuseDH;
 	bool kxReuseECDH;
 
-    public SupportedCipherSuites(int[] suites)
+	internal SupportedCipherSuites(int[] suites)
 	{
 		this.suites = suites;
 		prefClient = false;
@@ -63,11 +63,11 @@ public class SupportedCipherSuites {
 		kxReuseECDH = false;
 	}
 
-    /*
+	/*
 	 * Among the supported cipher suites, get the list of suites
 	 * that are known to use elliptic curves for the key exchange.
 	 */
-    public int[] GetKnownECSuites()
+	internal int[] GetKnownECSuites()
 	{
 		List<int> r = new List<int>();
 		foreach (int s in suites) {
@@ -82,7 +82,37 @@ public class SupportedCipherSuites {
 		return r.ToArray();
 	}
 
-    public bool Equals(SupportedCipherSuites scs)
+	/*
+	 * Get the supported cipher suites, with the non-EC suites
+	 * put first in the list.
+	 */
+	internal int[] GetKnownSuitesLowEC()
+	{
+		List<int>r = new List<int>();
+		for (int i = 0; i < 3; i ++) {
+			foreach (int s in suites) {
+				CipherSuite cs;
+				if (!CipherSuite.ALL.TryGetValue(s, out cs)) {
+					if (i == 2) {
+						r.Add(s);
+						continue;
+					}
+				}
+				if (cs.IsECDHE) {
+					if (i == 1) {
+						r.Add(s);
+					}
+				} else {
+					if (i == 0) {
+						r.Add(s);
+					}
+				}
+			}
+		}
+		return r.ToArray();
+	}
+
+	internal bool Equals(SupportedCipherSuites scs)
 	{
 		if (scs == null) {
 			return false;
@@ -100,7 +130,7 @@ public class SupportedCipherSuites {
 		return M.Equals(suites, scs.suites);
 	}
 
-    public static bool Equals(
+	internal static bool Equals(
 		SupportedCipherSuites scs1, SupportedCipherSuites scs2)
 	{
 		if (scs1 == scs2) {

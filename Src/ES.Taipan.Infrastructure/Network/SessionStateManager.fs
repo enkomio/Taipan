@@ -27,8 +27,8 @@ type SessionStateManager() =
                         fixCookiePath(cookie)
                         httpRequest.Cookies.Add(cookie)
         )
-        
-    member this.RetrieveSessionParametersFromResponse(httpRequestDone: HttpRequest, httpResponse: HttpResponse) =
+
+    member this.AddCookieToSession(httpRequestDone: HttpRequest, cookies: List<Cookie>) =
         let requestHost = httpRequestDone.Uri.Host
         lock _syncRoot (fun () ->
             if not <| _sessionCookies.ContainsKey(requestHost) then
@@ -37,7 +37,7 @@ type SessionStateManager() =
             // save all the new cookie setted in the response
             let cookieCollection = _sessionCookies.[requestHost]
 
-            for cookie in httpResponse.Cookies do
+            for cookie in cookies do
                 let storedCookie =
                     cookieCollection
                     |> Seq.tryFind (fun c -> c.Name.Equals(cookie.Name, StringComparison.Ordinal))
@@ -47,3 +47,6 @@ type SessionStateManager() =
                 else
                     cookieCollection.Add(cookie)
         )
+        
+    member this.RetrieveSessionParametersFromResponse(httpRequestDone: HttpRequest, httpResponse: HttpResponse) =
+        this.AddCookieToSession(httpRequestDone, httpResponse.Cookies)

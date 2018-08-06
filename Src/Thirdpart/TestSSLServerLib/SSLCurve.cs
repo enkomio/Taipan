@@ -7,24 +7,24 @@ using System.Text;
  * Helper class for named curved (by 16-bit ID, for SSL/TLS).
  */
 
-public class SSLCurve {
+class SSLCurve {
 
 	internal const int EXPLICIT_PRIME = 0xFF01;
 	internal const int EXPLICIT_CHAR2 = 0xFF02;
 
-    public int Id {
+	internal int Id {
 		get {
 			return id;
 		}
 	}
 
-    public string Name {
+	internal string Name {
 		get {
 			return name;
 		}
 	}
 
-    public int Size {
+	internal int Size {
 		get {
 			return size;
 		}
@@ -34,15 +34,14 @@ public class SSLCurve {
 	string name;
 	int size;
 
-
-    public SSLCurve(int id, string name, int size)
+	SSLCurve(int id, string name, int size)
 	{
 		this.id = id;
 		this.name = name;
 		this.size = size;
 	}
 
-    public static IDictionary<int, SSLCurve> ALL;
+	internal static IDictionary<int, SSLCurve> ALL;
 
 	static SSLCurve()
 	{

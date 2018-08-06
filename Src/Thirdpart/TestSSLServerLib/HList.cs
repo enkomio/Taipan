@@ -1,6 +1,6 @@
 using System;
 using System.IO;
- 
+
 /*
  * A helper class used to write variable-length elements in handshake
  * messages. The instance is created with the maximum length for the

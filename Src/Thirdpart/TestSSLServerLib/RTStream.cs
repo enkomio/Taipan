@@ -3,7 +3,6 @@ using System.IO;
 using System.Threading;
 
 /*
-
  * This class implements a read timeout over an arbitrary stream. The
  * actual read operation is performed in another thread.
  *

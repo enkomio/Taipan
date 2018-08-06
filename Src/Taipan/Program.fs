@@ -11,14 +11,12 @@ open System.Diagnostics
 open Argu
 open Logging
 open ES.Fslog
-open ES.Fslog.Loggers
+open ES.Taipan.Inspector
 open ES.Taipan.Application
 open ES.Taipan.Infrastructure.Network
 open ES.Taipan.Infrastructure.Service
 
-module Cli =    
-    open ES.Taipan.Inspector
-
+module Cli =
     let mutable private _scanService : ScanService option = None
 
     type CLIArguments =

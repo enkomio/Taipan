@@ -46,7 +46,11 @@ type JavascriptScraper() as this =
     member this.DiscoverNewLinks(sourceWebLink: WebLink, webResponse: WebResponse, messageBroker: IMessageBroker, logProvider: ILogProvider) =
         let identifiedLinks = new List<WebLink>()
 
-        if isValidContentType(webResponse) then            
+        let forbiddenContentType = [
+            "text/css"
+        ]
+
+        if not(isContentType(webResponse, forbiddenContentType)) then
             if webResponse.PageExists && sourceWebLink.OriginalWebLink.IsNone then
                 initialize(messageBroker, logProvider)
 
