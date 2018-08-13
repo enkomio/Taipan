@@ -1,24 +1,16 @@
-﻿namespace ES.Taipan.Inspector.AddOns.InformationLeakage
+﻿namespace ES.Taipan.Inspector.AddOns.VCSInformationDisclosure
 
 open System
-open System.Text
-open System.IO
-open System.Threading
 open System.Collections.Generic
-open System.Collections.Concurrent
-open System.Text.RegularExpressions
 open ES.Taipan.Inspector
 open ES.Taipan.Inspector.AddOns
 open ES.Taipan.Infrastructure.Service
 open ES.Taipan.Infrastructure.Messaging
 open ES.Taipan.Infrastructure.Network
-open ES.Taipan.Infrastructure.Text
-open ES.Taipan.Fingerprinter
-open ES.Taipan.Crawler
 open ES.Fslog
 
 type VCSInformationDisclosureAddOn() as this =
-    inherit BaseStatelessAddOn("Version Control System Information Disclosure AddOn", "46DAC261-3B13-4123-9AAF-22DFAF9B5E19", 1)       
+    inherit BaseStatelessAddOn("Version Control System Information Disclosure AddOn", string VCSInformationDisclosureAddOn.Id, 1)       
     let _analyzedPages = new HashSet<String>()
 
     let _log =
@@ -28,7 +20,7 @@ type VCSInformationDisclosureAddOn() as this =
                     
     let createSecurityIssue(url: String, vulName: String) =
         new SecurityIssue(
-            this.Id, 
+            VCSInformationDisclosureAddOn.Id, 
             Name = vulName, 
             Uri = new Uri(url), 
             EntryPoint = EntryPoint.UriSegment
@@ -95,6 +87,8 @@ type VCSInformationDisclosureAddOn() as this =
 
                 if securityIssue.Details.Properties.Count > 0 then
                     this.Context.Value.AddSecurityIssue(securityIssue)
+
+    static member Id = Guid.Parse("46DAC261-3B13-4123-9AAF-22DFAF9B5E19")
 
     default this.Initialize(context: Context, webRequestor: IWebPageRequestor, messageBroker: IMessageBroker, logProvider: ILogProvider) =
         logProvider.AddLogSourceToLoggers(_log)

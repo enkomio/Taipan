@@ -19,7 +19,7 @@ type private ApplicationVersionCheck = {
 }
 
 type OutdatedApplicationAddOn() as this =
-    inherit BaseStatelessAddOn("Outdated Application AddOn", "C1B47585-5961-42B8-945E-1367B9CD251C", 1)       
+    inherit BaseStatelessAddOn("Outdated Application AddOn", string OutdatedApplicationAddOn.Id, 1)       
     let _availableVersionsMessages = new BlockingCollection<AvailableApplicationVersionMessage>()
     let _waitLocker = new ManualResetEventSlim()
     let _pendingChecks = new ConcurrentDictionary<Guid, ApplicationVersionCheck>()
@@ -28,10 +28,11 @@ type OutdatedApplicationAddOn() as this =
     let reportSecurityIssue(uri: Uri, applicationName: String, outdateVersion: Version, currentVersion: Version) =        
         let securityIssue = 
             new SecurityIssue(
-                this.Id, 
+                OutdatedApplicationAddOn.Id, 
                 Name = "Outdated Application", 
                 Uri = uri, 
-                EntryPoint = EntryPoint.UriSegment
+                EntryPoint = EntryPoint.UriSegment,
+                Note = String.Format("{0} v{1}, current version: {2}", applicationName, outdateVersion, currentVersion)
             )
         securityIssue.Details.Properties.Add("ApplicationName", applicationName)
         securityIssue.Details.Properties.Add("OutdatedVersion", outdateVersion.ToString())
@@ -108,6 +109,8 @@ type OutdatedApplicationAddOn() as this =
         _pendingChecks.[getVersionsMessage.Id] <- check
         
         this.MessageBroker.Value.Dispatch(this, getVersionsMessage)
+
+    static member Id = Guid.Parse("C1B47585-5961-42B8-945E-1367B9CD251C")
 
     override this.Initialize(context: Context, webRequestor: IWebPageRequestor, messageBroker: IMessageBroker, logProvider: ILogProvider) =
         base.Initialize(context, webRequestor, messageBroker, logProvider) |> ignore

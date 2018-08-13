@@ -16,10 +16,12 @@ open System.IO
 #r "build/Taipan/ES.Taipan.Fingerprinter.dll"
 #r "build/Taipan/ES.Taipan.Inspector.dll"
 #r "build/Taipan/ES.Taipan.Application.dll"
+#r "build/Taipan/ES.Taipan.Inspector.AddOns.dll"
 
 open ES.Taipan.Application
 open ES.Taipan.Crawler
 open ES.Taipan.Crawler.WebScrapers
+open ES.Taipan.Inspector.AddOns
 
 let createTemplate(name: String, guid: String) =
     let defaultProfile = new TemplateProfile(Id = Guid.Parse(guid), Name = name)
@@ -137,8 +139,8 @@ let fingerprintWebApplication() =
     // vulnerability scanner settings enavle only Vulnerable Web Applications AddOn
     template.RunVulnerabilityScanner <- true
     template.VulnerabilityScannerSettings.ActivateAllAddOns <- false
-    template.VulnerabilityScannerSettings.AddOnIdsToActivate.Add(Guid.Parse("C1B47585-5961-42B8-945E-1367B9CD251C")) // outdated application
-    template.VulnerabilityScannerSettings.AddOnIdsToActivate.Add(Guid.Parse("864BA3EF-E9E2-4B18-AE7F-4530CEBCCBF6")) // vulnerable web application
+    template.VulnerabilityScannerSettings.AddOnIdsToActivate.Add(OutdatedApplication.OutdatedApplicationAddOn.Id)
+    template.VulnerabilityScannerSettings.AddOnIdsToActivate.Add(WebApplicationVulnerability.WebApplicationVulnerabilityAddOn.Id)
 
     // disable Javascript Engine
     template.HttpRequestorSettings.UseJavascriptEngineForRequest <- false
@@ -219,25 +221,25 @@ let notInvasive() =
     // vulnerability scanner settings
     template.RunVulnerabilityScanner <- true
     template.VulnerabilityScannerSettings.ActivateAllAddOns <- false
-    template.VulnerabilityScannerSettings.AddOnIdsToActivate.Add(Guid.Parse("FDE5F6AD-C468-4ED4-AD95-BFC393D7F1AC")) // directory listing
-    template.VulnerabilityScannerSettings.AddOnIdsToActivate.Add(Guid.Parse("C1B47585-5961-42B8-945E-1367B9CD251C")) // outdated application
-    template.VulnerabilityScannerSettings.AddOnIdsToActivate.Add(Guid.Parse("AFA1E309-2AC4-4504-86BD-35216950CEFA")) // info leak    
-    template.VulnerabilityScannerSettings.AddOnIdsToActivate.Add(Guid.Parse("864BA3EF-E9E2-4B18-AE7F-4530CEBCCBF6")) // vulnerable web application
-    template.VulnerabilityScannerSettings.AddOnIdsToActivate.Add(Guid.Parse("7D08B694-B6BB-49EF-92A5-244BD14AF836")) // X-Content-Type-Options Security Header
-    template.VulnerabilityScannerSettings.AddOnIdsToActivate.Add(Guid.Parse("4A7C1CD6-DF73-462E-AF6C-976F12B8C83C")) // X-XSS-Protection Security Header
-    template.VulnerabilityScannerSettings.AddOnIdsToActivate.Add(Guid.Parse("BDC297BC-6BA4-4A31-8F8A-097874FB4C7D")) // X-Frame-Options Security Header
-    template.VulnerabilityScannerSettings.AddOnIdsToActivate.Add(Guid.Parse("A38DE8D5-EAEC-46E0-ACF1-77050D57AC14")) // Public-Key-Pins Security Header
-    template.VulnerabilityScannerSettings.AddOnIdsToActivate.Add(Guid.Parse("F08C4737-212B-4AA1-BE40-8AEFC6FCFF92")) // Content-Security-Policy Security Header
-    template.VulnerabilityScannerSettings.AddOnIdsToActivate.Add(Guid.Parse("0C747F70-626B-4CBA-89A4-634C15FC019E")) // Strict-Transport-Security Security Header
-    template.VulnerabilityScannerSettings.AddOnIdsToActivate.Add(Guid.Parse("73EF90A2-C2A4-44AE-82DE-35349AEDFFB3")) // Error messages
-    template.VulnerabilityScannerSettings.AddOnIdsToActivate.Add(Guid.Parse("46DAC261-3B13-4123-9AAF-22DFAF9B5E19")) // Version Control System Information Disclosure
-    template.VulnerabilityScannerSettings.AddOnIdsToActivate.Add(Guid.Parse("908DF9B9-61C5-4E45-8804-3889167853BF")) // PHPInfo information disclosure
-    template.VulnerabilityScannerSettings.AddOnIdsToActivate.Add(Guid.Parse("5B4B319D-E0D8-4FBF-83B3-C8E71BA65D35")) // Password sent over HTTP
-    template.VulnerabilityScannerSettings.AddOnIdsToActivate.Add(Guid.Parse("85EF16CC-3682-4CDC-A2F5-A5FD889474FF")) // Missing Autocomplete to False
-    template.VulnerabilityScannerSettings.AddOnIdsToActivate.Add(Guid.Parse("A719DE80-32BF-4E53-BCB2-D138BF953853")) // Missing Cookie HttpOnly
-    template.VulnerabilityScannerSettings.AddOnIdsToActivate.Add(Guid.Parse("FDC3E54E-98F2-4C14-A620-9E4629CAEE0B")) // Missing Cookie Secure
-    template.VulnerabilityScannerSettings.AddOnIdsToActivate.Add(Guid.Parse("C76061B2-52AE-4C64-BD2E-71EA3AC41B93")) // Exposed Session Variables
-    template.VulnerabilityScannerSettings.AddOnIdsToActivate.Add(Guid.Parse("70786DC5-0831-463B-B8FE-A3FCED2F1AD2")) // SSL Test AddOn
+    template.VulnerabilityScannerSettings.AddOnIdsToActivate.Add(DirectoryListing.DirectoryListingAddOn.Id)
+    template.VulnerabilityScannerSettings.AddOnIdsToActivate.Add(OutdatedApplication.OutdatedApplicationAddOn.Id)
+    template.VulnerabilityScannerSettings.AddOnIdsToActivate.Add(InformationLeakage.InformationLeakageAddOn.Id)
+    template.VulnerabilityScannerSettings.AddOnIdsToActivate.Add(WebApplicationVulnerability.WebApplicationVulnerabilityAddOn.Id)
+    template.VulnerabilityScannerSettings.AddOnIdsToActivate.Add(SecurityHeaders.XContentTypeOptionsAddOn.Id)
+    template.VulnerabilityScannerSettings.AddOnIdsToActivate.Add(SecurityHeaders.XXSSProtectionAddOn.Id)
+    template.VulnerabilityScannerSettings.AddOnIdsToActivate.Add(SecurityHeaders.XFrameOptionsAddOn.Id)
+    template.VulnerabilityScannerSettings.AddOnIdsToActivate.Add(SecurityHeaders.PublicKeyPinsAddOn.Id)
+    template.VulnerabilityScannerSettings.AddOnIdsToActivate.Add(SecurityHeaders.ContentSecurityPolicyAddOn.Id)
+    template.VulnerabilityScannerSettings.AddOnIdsToActivate.Add(SecurityHeaders.StrictTransportSecurityAddOn.Id)
+    template.VulnerabilityScannerSettings.AddOnIdsToActivate.Add(ErrorMessages.ErrorMessagesAddOn.Id)
+    template.VulnerabilityScannerSettings.AddOnIdsToActivate.Add(VCSInformationDisclosure.VCSInformationDisclosureAddOn.Id)
+    template.VulnerabilityScannerSettings.AddOnIdsToActivate.Add(PhpInfoInformationDisclosure.PhpInfoInformationDisclosureAddOn.Id)
+    template.VulnerabilityScannerSettings.AddOnIdsToActivate.Add(PasswordFieldCheck.PasswordSentOverHttpAddOn.Id)
+    template.VulnerabilityScannerSettings.AddOnIdsToActivate.Add(PasswordFieldCheck.MissingAutocompleteOffAttributeAddOn.Id)
+    template.VulnerabilityScannerSettings.AddOnIdsToActivate.Add(CookieFlags.MissingHttpOnlyCookieFlagAddOn.Id)
+    template.VulnerabilityScannerSettings.AddOnIdsToActivate.Add(CookieFlags.MissingSecureCookieFlagAddOn.Id)
+    template.VulnerabilityScannerSettings.AddOnIdsToActivate.Add(ExposedSessionVariables.ExposedSessionVariablesAddOn.Id)
+    template.VulnerabilityScannerSettings.AddOnIdsToActivate.Add(SSLTest.SSLTestAddOn.Id)
         
     template
 

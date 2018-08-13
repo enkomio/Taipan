@@ -1,4 +1,4 @@
-﻿namespace ES.Taipan.Inspector.AddOns.InformationLeakage
+﻿namespace ES.Taipan.Inspector.AddOns.PhpInfoInformationDisclosure
 
 open System
 open System.Threading
@@ -16,7 +16,7 @@ open ES.Taipan.Crawler
 open ES.Fslog
 
 type PhpInfoInformationDisclosureAddOn() as this =
-    inherit BaseStatelessAddOn("PhpInfo Information Disclosure AddOn", "908DF9B9-61C5-4E45-8804-3889167853BF", 1)       
+    inherit BaseStatelessAddOn("PhpInfo Information Disclosure AddOn", string PhpInfoInformationDisclosureAddOn.Id, 1)       
     let _analyzedPages = new HashSet<String>()
     let _phpInfoRegex = [
         "<title>phpinfo()</title>"
@@ -27,7 +27,7 @@ type PhpInfoInformationDisclosureAddOn() as this =
     let createSecurityIssue(uri: Uri, webRequest: WebRequest, webResponse: WebResponse) =
         let securityIssue = 
             new SecurityIssue(
-                this.Id, 
+                PhpInfoInformationDisclosureAddOn.Id, 
                 Name = "PHPInfo Information Disclosure", 
                 Uri = uri, 
                 EntryPoint = EntryPoint.Other "Page Content"
@@ -66,6 +66,8 @@ type PhpInfoInformationDisclosureAddOn() as this =
 
             // finally add the security issue
             this.Context.Value.AddSecurityIssue(securityIssue)
+
+    static member Id = Guid.Parse("908DF9B9-61C5-4E45-8804-3889167853BF")
                         
     default this.Scan(testRequest: TestRequest, stateController: ServiceStateController) =
         if testRequest.WebResponse.PageExists && _analyzedPages.Add(testRequest.WebRequest.HttpRequest.Uri.AbsolutePath) then

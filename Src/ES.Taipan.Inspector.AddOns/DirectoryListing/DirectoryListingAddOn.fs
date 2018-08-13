@@ -10,7 +10,7 @@ open ES.Taipan.Infrastructure.Network
 open ES.Fslog
 
 type DirectoryListingAddOn() as this =
-    inherit BaseStatelessAddOn("Directory Listing AddOn", "FDE5F6AD-C468-4ED4-AD95-BFC393D7F1AC", 1)    
+    inherit BaseStatelessAddOn("Directory Listing AddOn", string DirectoryListingAddOn.Id, 1)    
     let _analyzedPath = new HashSet<String>()
 
     let _regexes = [
@@ -38,7 +38,7 @@ type DirectoryListingAddOn() as this =
     let reportSecurityIssue(uri: Uri, webRequest: WebRequest, webResponse: WebResponse, matchedValue: String) =        
         let securityIssue = 
             new SecurityIssue(
-                this.Id, 
+                DirectoryListingAddOn.Id, 
                 Name = "Directory Listing", 
                 Uri = uri, 
                 EntryPoint = EntryPoint.UriSegment
@@ -64,6 +64,8 @@ type DirectoryListingAddOn() as this =
             with
             | Some matches -> Some matches.Value
             | None -> None
+
+    static member Id = Guid.Parse("FDE5F6AD-C468-4ED4-AD95-BFC393D7F1AC")
         
     default this.Scan(testRequest: TestRequest, stateController: ServiceStateController) =
         let path = HttpUtility.getAbsolutePathDirectory(testRequest.WebRequest.HttpRequest.Uri) + "/"

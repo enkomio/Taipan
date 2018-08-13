@@ -26,6 +26,7 @@ module Cli =
         | Show_Profiles
         | Version 
         | Verbose
+        | Json
     with
         interface IArgParserTemplate with
             member s.Usage =
@@ -34,16 +35,10 @@ module Cli =
                 | Profile _ -> "profile name (or part of initial name) to use for the scan." 
                 | Output _ -> "output report filename."
                 | Show_Profiles -> "show all the currently available profiles."
+                | Json -> "save the report in Json format (.txt default)"
                 | Version -> "display Taipan version."
                 | Verbose -> "print verbose messages."
-
-    let private getOrDefault(key: String, defaultValue: String, items: Dictionary<String, String>) =
-        items
-        |> Seq.tryFind(fun kv -> kv.Key.Equals(key, StringComparison.OrdinalIgnoreCase))
-        |> function
-            | Some v -> v.Value
-            | None -> defaultValue
-
+                
     let printColor(msg: String, color: ConsoleColor) =
         Console.ForegroundColor <- color
         Console.WriteLine(msg)
@@ -197,86 +192,9 @@ module Cli =
 
             profile
 
-    let generateJsonReport(scanResult: ScanResult, reportFilename: String option) =                
-        let scanReport = new ScanReport(scanResult)
-        scanReport.Save(reportFilename)
-
-    let getAdditionalIssueInfo(issue: SecurityIssue) =
-        let mutable resultString = String.Empty
-
-        [            
-            ("Application name: {0} version: {1}", ["ApplicationName"; "OutdatedVersion"])
-            ("Parameter: {0}", ["parameter"])
-        ]
-        |> List.iter(fun (formatString, parameters) ->
-            if String.IsNullOrWhiteSpace(resultString) then
-                let parametersValue = parameters |> List.map(fun pn -> getOrDefault(pn, String.Empty, issue.Details.Properties))
-                if parametersValue |> List.forall(fun s -> not(String.IsNullOrWhiteSpace(s))) then
-                    let args = parametersValue |> Seq.cast<Object> |> Array.ofSeq
-                    resultString <- String.Format(formatString, args)
-        )
-
-        resultString
-
     let printResultToConsole(scanResult: ScanResult) =
-        Console.WriteLine()
-        
-        // print server fingerprint
-        let webServerFingerprint = scanResult.GetWebServerFingerprint()
-
-        printColor("-= Web Server =-" , ConsoleColor.DarkCyan)
-        Console.WriteLine("\t{0}", webServerFingerprint.Server)
-        Console.WriteLine()
-        
-        let frameworks = webServerFingerprint.Frameworks
-        if frameworks.Any() then
-            printColor("-= Web Frameworks =-", ConsoleColor.DarkCyan)
-            frameworks
-            |> Seq.iter(fun framework ->
-                Console.WriteLine("\t{0}", framework)
-            )
-            Console.WriteLine()
-
-        let languages = webServerFingerprint.Languages
-        if languages.Any() then
-            printColor("-= Web Programming Language =-", ConsoleColor.DarkCyan)
-            languages
-            |> Seq.iter(fun lang ->
-                Console.WriteLine("\t{0}", lang)
-            )
-            Console.WriteLine()
-        
-        // print hidden resources
-        let hiddenResources = scanResult.GetHiddenResourceDiscovered()
-        if hiddenResources.Any() then
-            printColor("-= Hidden Resources =-", ConsoleColor.DarkCyan)
-            hiddenResources
-            |> Seq.iter(fun hiddenRes ->
-                Console.WriteLine("\t{0} {1} ({2})", hiddenRes.Resource.Path.PadRight(40), hiddenRes.Response.StatusCode, int32 hiddenRes.Response.StatusCode)
-            )
-            Console.WriteLine()
-
-        // print fingerprint        
-        let webApplicationIdentified = scanResult.GetWebApplicationsIdentified()
-        if webApplicationIdentified.Any() then
-            printColor("-= Identified Web Applications =-", ConsoleColor.DarkCyan)
-            webApplicationIdentified
-            |> Seq.iter(fun webApp ->
-                let versions = String.Join(",", webApp.IdentifiedVersions |> Seq.map(fun kv -> kv.Key.Version))
-                Console.WriteLine("\t{0} v{1} {2}", webApp.WebApplicationFingerprint.Name, versions, webApp.Request.Request.Uri.AbsolutePath)
-            )
-            Console.WriteLine()
-        
-        // print security issues
-        let issues = scanResult.GetSecurityIssues()
-        if issues.Any() then
-            printColor("-= Security Issues =-", ConsoleColor.DarkCyan)
-            issues
-            |> Seq.iter(fun issue ->
-                let moreInfo = getAdditionalIssueInfo(issue)                
-                Console.WriteLine("\t{0} {1}", issue.ToString(), moreInfo)
-            )
-            Console.WriteLine()
+        let scanReport = new ScanReport(scanResult, Type=Txt)
+        Console.WriteLine(scanReport.FormatToTxt())
 
     let runScanWithTemplateName(urlToScan: String, profileName: String, isVerbose: Boolean) =
         let profile = loadProfile(profileName)
@@ -287,6 +205,16 @@ module Cli =
         | true ->             
             let (logProvider, logFile) = configureLoggers(urlToScan, profile.Name, isVerbose)
             Some(runScanWithTemplate(urlToScan, profile, logProvider), logFile)
+
+    let generateReport(jsonFormat: Boolean, scanResult: ScanResult, outputReport: String option) =
+        let scanReport = new ScanReport(scanResult)
+        
+        // decide format
+        if jsonFormat
+        then scanReport.Type <- ReportFormat.Json
+        else scanReport.Type <- Txt
+
+        scanReport.Save(outputReport)
 
     [<EntryPoint>]
     let main argv = 
@@ -306,6 +234,7 @@ module Cli =
                 let urlToScan = results.TryGetResult(<@ Uri @>)
                 let profileName = results.TryGetResult(<@ Profile @>)
                 let outputReport = results.TryGetResult(<@ Output @>)
+                let jsonReport = results.Contains(<@ Json @>)
                 
                 if showProfiles then
                     prettyPrintProfiles()
@@ -318,7 +247,7 @@ module Cli =
                         match runScanWithTemplateName(urlToScan, profileName, isVerbose) with
                         | Some (scanResult, logFile) ->
                             printResultToConsole(scanResult)                            
-                            let reportFile = generateJsonReport(scanResult, outputReport)
+                            let reportFile = generateReport(jsonReport, scanResult, outputReport)
                             programLogger.ReportSaved(reportFile)
                             programLogger.ScanCompleted(logFile)
                         | None -> ()

@@ -2,22 +2,17 @@
 
 open System
 open System.Text
-open System.Threading
 open System.Collections.Generic
-open System.Collections.Concurrent
 open System.Text.RegularExpressions
 open ES.Taipan.Inspector
 open ES.Taipan.Inspector.AddOns
 open ES.Taipan.Infrastructure.Service
-open ES.Taipan.Infrastructure.Messaging
 open ES.Taipan.Infrastructure.Network
 open ES.Taipan.Infrastructure.Text
-open ES.Taipan.Fingerprinter
 open ES.Taipan.Crawler
-open ES.Fslog
 
 type InformationLeakageAddOn() as this =
-    inherit BaseStatelessAddOn("Information Leakage AddOn", "AFA1E309-2AC4-4504-86BD-35216950CEFA", 1)       
+    inherit BaseStatelessAddOn("Information Leakage AddOn", string InformationLeakageAddOn.Id, 1)       
     let _analyzedPages = new HashSet<String>()
     let _signaledLeakage = new HashSet<String>()
 
@@ -121,7 +116,7 @@ type InformationLeakageAddOn() as this =
             if _signaledLeakage.Add(leakKey) then
                 let securityIssue = 
                     new SecurityIssue(
-                        this.Id, 
+                        InformationLeakageAddOn.Id, 
                         Name = "Information Leakage", 
                         Uri = uri, 
                         EntryPoint = EntryPoint.Other "Page Content",
@@ -138,6 +133,8 @@ type InformationLeakageAddOn() as this =
                     securityIssue.Details.Properties.Add(effectiveTagName, tagValue)
 
                 this.Context.Value.AddSecurityIssue(securityIssue)
+
+    static member Id = Guid.Parse("AFA1E309-2AC4-4504-86BD-35216950CEFA")
                         
     default this.Scan(testRequest: TestRequest, stateController: ServiceStateController) =
         if _analyzedPages.Add(testRequest.WebRequest.HttpRequest.Uri.PathAndQuery) then
@@ -159,7 +156,7 @@ type InformationLeakageAddOn() as this =
                     if _signaledLeakage.Add(hiddenLink) then
                         let securityIssue = 
                             new SecurityIssue(
-                                this.Id, 
+                                InformationLeakageAddOn.Id, 
                                 Name = "Information Leakage", 
                                 Uri = new Uri(pageWithHiddenLinkEmbedded), 
                                 EntryPoint = EntryPoint.Other "Page Content",

@@ -63,8 +63,10 @@ type ErrorBasedSqliChecker(webRequestor: IWebPageRequestor, errors: Dictionary<S
     member this.VulnName 
         with get() = "SQL Injection Error Based"
 
+    static member Id = Guid.Parse("7B55A85D-3CA6-492D-8D07-7B35A12CCEF3")
+
     member this.VulnId 
-        with get() = Guid.Parse("7B55A85D-3CA6-492D-8D07-7B35A12CCEF3")
+        with get() = ErrorBasedSqliChecker.Id
                 
     member this.Test(parameter: ProbeParameter, probeRequest: ProbeRequest) =
         let mutable result = CheckResult.NotVulnerable

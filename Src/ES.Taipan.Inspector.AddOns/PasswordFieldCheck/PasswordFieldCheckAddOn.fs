@@ -1,21 +1,13 @@
 ﻿namespace ES.Taipan.Inspector.AddOns.PasswordFieldCheck
 
 open System
-open System.Net
-open System.Threading
 open System.Collections.Generic
-open System.Collections.Concurrent
-open System.Text.RegularExpressions
 open ES.Taipan.Inspector
 open ES.Taipan.Inspector.AddOns
 open ES.Taipan.Infrastructure.Service
 open ES.Taipan.Infrastructure.Messaging
 open ES.Taipan.Infrastructure.Network
-open ES.Taipan.Fingerprinter
-open ES.Taipan.Crawler
-open ES.Taipan.Crawler.WebScrapers
 open ES.Taipan.Infrastructure.Text
-open ES.Fslog
 
 [<AutoOpen>]
 module private PasswordFieldCheck =    
@@ -25,7 +17,8 @@ module private PasswordFieldCheck =
                 id, 
                 Name = name,
                 Uri = testRequest.WebRequest.HttpRequest.Uri, 
-                EntryPoint = if testRequest.WebRequest.HttpRequest.Method = HttpMethods.Post then EntryPoint.DataString else EntryPoint.QueryString
+                EntryPoint = (if testRequest.WebRequest.HttpRequest.Method = HttpMethods.Post then EntryPoint.DataString else EntryPoint.QueryString),
+                Note = String.Format("Parameter: {0}", parameterName)
             )
         securityIssue.Details.Properties.Add("Parameter", parameterName)
         securityIssue.Details.Properties.Add("Action", action.AbsoluteUri)
@@ -46,10 +39,12 @@ module private PasswordFieldCheck =
     ]     
                 
 type PasswordSentOverHttpAddOn() =
-    inherit BaseStatelessAddOn("Password sent over HTTP AddOn", "5B4B319D-E0D8-4FBF-83B3-C8E71BA65D35", 1)
+    inherit BaseStatelessAddOn("Password sent over HTTP AddOn", string PasswordSentOverHttpAddOn.Id, 1)
     let _analyzedPages = new HashSet<String>()
     let _syncRoot = new Object()
 
+    static member Id = Guid.Parse("5B4B319D-E0D8-4FBF-83B3-C8E71BA65D35")
+    
     member this.IsPathNew(path: String) =
         lock _syncRoot (fun () ->
             _analyzedPages.Add(path)
@@ -60,14 +55,16 @@ type PasswordSentOverHttpAddOn() =
             getAllPasswordInputs(testRequest, this.MessageBroker.Value)
             |> List.iter(fun (action, tagHtml, parameterName) ->
                 if action.Scheme.Equals("http", StringComparison.Ordinal) then   
-                    let securityIssue = createSecurityIssue(action, tagHtml, testRequest, this.Id, "Sensitive Information Sent Via Unencrypted Channels", parameterName)
+                    let securityIssue = createSecurityIssue(action, tagHtml, testRequest, PasswordSentOverHttpAddOn.Id, "Sensitive Information Sent Via Unencrypted Channels", parameterName)
                     this.Context.Value.AddSecurityIssue(securityIssue)
             )
 
 type MissingAutocompleteOffAttributeAddOn() =
-    inherit BaseStatelessAddOn("Missing Autocomple Off Flag AddOn", "85EF16CC-3682-4CDC-A2F5-A5FD889474FF", 1)
+    inherit BaseStatelessAddOn("Missing Autocomple Off Flag AddOn", string MissingAutocompleteOffAttributeAddOn.Id, 1)
     let _analyzedPages = new HashSet<String>()
     let _syncRoot = new Object()
+
+    static member Id = Guid.Parse("85EF16CC-3682-4CDC-A2F5-A5FD889474FF")
 
     member this.IsPathNew(path: String) =
         lock _syncRoot (fun () ->
@@ -84,6 +81,6 @@ type MissingAutocompleteOffAttributeAddOn() =
                 | None -> isVulnerable <- true
 
                 if isVulnerable then
-                    let securityIssue = createSecurityIssue(action, tagHtml, testRequest, this.Id, "Password Field With Autocomplete Enabled", parameterName)
+                    let securityIssue = createSecurityIssue(action, tagHtml, testRequest, MissingAutocompleteOffAttributeAddOn.Id, "Password Field With Autocomplete Enabled", parameterName)
                     this.Context.Value.AddSecurityIssue(securityIssue)
             )

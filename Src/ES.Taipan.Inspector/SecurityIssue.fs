@@ -33,9 +33,9 @@ type SecurityIssue(addOnId: Guid) =
     
     override this.ToString() =
         if not <| String.IsNullOrWhiteSpace(this.Note) then
-            String.Format("{0} - {1}. Uri: {2}", this.Name, this.Note, this.Uri)
+            String.Format("{0} on {1}. {2}", this.Name, this.Uri, this.Note)
         else
-            String.Format("{0} - {1}", this.Name, this.Uri)
+            String.Format("{0} on {1}", this.Name, this.Uri)
 
     override this.GetHashCode() =
         this.Uri.GetHashCode()

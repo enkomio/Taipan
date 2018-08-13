@@ -1,4 +1,4 @@
-﻿namespace ES.Taipan.Inspector.AddOns.WebApplicationVulnerability
+﻿namespace ES.Taipan.Inspector.AddOns.SSLTest
 
 open System
 open System.Text
@@ -9,11 +9,10 @@ open ES.Taipan.Infrastructure.Service
 open ES.Taipan.Infrastructure.Messaging
 open ES.Fslog
 open TestSSLServerLib
-open Newtonsoft.Json
 open Newtonsoft.Json.Linq
 
 type SSLTestAddOn() as this =
-    inherit BaseStatelessAddOn("SSL Test AddOn", "70786DC5-0831-463B-B8FE-A3FCED2F1AD2", 1)
+    inherit BaseStatelessAddOn("SSL Test AddOn", string SSLTestAddOn.Id, 1)
     let mutable _serverTested = false
     let mutable _webProxy : String option = None
 
@@ -126,11 +125,10 @@ type SSLTestAddOn() as this =
     let createIssue(testRequest: TestRequest, jsonReport: String) =
         let securityIssue = 
             new SecurityIssue(
-                this.Id, 
+                SSLTestAddOn.Id, 
                 Name = "SSL Test", 
                 Uri = testRequest.WebRequest.HttpRequest.Uri, 
-                EntryPoint = EntryPoint.Other "Server",
-                Note = String.Empty
+                EntryPoint = EntryPoint.Other "Server"
             )
           
         let (impact, output) = parseJsonReport(jsonReport)
@@ -138,6 +136,7 @@ type SSLTestAddOn() as this =
         // add properties
         securityIssue.Details.Properties.Add("Output", output)
         securityIssue.Details.Properties.Add("Json", jsonReport)
+        securityIssue.Note <- output
 
         // set impact
         let impactString =
@@ -149,6 +148,8 @@ type SSLTestAddOn() as this =
         securityIssue.Details.Properties.Add("Impact", impactString)
 
         this.Context.Value.AddSecurityIssue(securityIssue)
+
+    static member Id = Guid.Parse("70786DC5-0831-463B-B8FE-A3FCED2F1AD2")
 
     default this.Initialize(context: Context, webRequestor: IWebPageRequestor, messageBroker: IMessageBroker, logProvider: ILogProvider) =
         base.Initialize(context, webRequestor, messageBroker, logProvider) |> ignore

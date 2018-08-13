@@ -1,17 +1,12 @@
 ﻿namespace ES.Taipan.Inspector.AddOns.SecurityHeaders
 
 open System
-open System.Threading
 open System.Collections.Generic
-open System.Collections.Concurrent
 open System.Text.RegularExpressions
 open ES.Taipan.Inspector
 open ES.Taipan.Inspector.AddOns
 open ES.Taipan.Infrastructure.Service
-open ES.Taipan.Infrastructure.Messaging
 open ES.Taipan.Infrastructure.Network
-open ES.Taipan.Fingerprinter
-open ES.Fslog
 
 [<AutoOpen>]
 module private SecurityHeadersChecks =
@@ -83,7 +78,7 @@ module private SecurityHeadersChecks =
         checkHeaderPresence(testRequest, "X-Content-Type-Options", id, name, addSecurityIssue)
                 
 type StrictTransportSecurityAddOn() as this =
-    inherit BaseStatelessAddOn("Strict-Transport-Security Security Header AddOn", "0C747F70-626B-4CBA-89A4-634C15FC019E", 1)
+    inherit BaseStatelessAddOn("Strict-Transport-Security Security Header AddOn", string StrictTransportSecurityAddOn.Id, 1)
     let mutable _vulnerabilitySignaled = false
 
     let addVulnerability(securityIssue: SecurityIssue) =
@@ -92,11 +87,13 @@ type StrictTransportSecurityAddOn() as this =
             _vulnerabilitySignaled <- true
             this.Context.Value.AddSecurityIssue(securityIssue)
 
+    static member Id = Guid.Parse("0C747F70-626B-4CBA-89A4-634C15FC019E")
+
     default this.Scan(testRequest: TestRequest, stateController: ServiceStateController) =
-        isMissingStrictTransportSecurity(testRequest, this.Id, this.Name, addVulnerability)
+        isMissingStrictTransportSecurity(testRequest, StrictTransportSecurityAddOn.Id, this.Name, addVulnerability)
 
 type ContentSecurityPolicyAddOn() as this =
-    inherit BaseStatelessAddOn("Content-Security-Policy Security Header AddOn", "F08C4737-212B-4AA1-BE40-8AEFC6FCFF92", 1)
+    inherit BaseStatelessAddOn("Content-Security-Policy Security Header AddOn", string ContentSecurityPolicyAddOn.Id, 1)
     let mutable _vulnerabilitySignaled = false
 
     let addVulnerability(securityIssue: SecurityIssue) =
@@ -105,11 +102,13 @@ type ContentSecurityPolicyAddOn() as this =
             _vulnerabilitySignaled <- true
             this.Context.Value.AddSecurityIssue(securityIssue)
 
+    static member Id = Guid.Parse("F08C4737-212B-4AA1-BE40-8AEFC6FCFF92")
+
     default this.Scan(testRequest: TestRequest, stateController: ServiceStateController) =
-        isMissingContentSecurityPolicy(testRequest, this.Id, this.Name, addVulnerability)
+        isMissingContentSecurityPolicy(testRequest, ContentSecurityPolicyAddOn.Id, this.Name, addVulnerability)
 
 type PublicKeyPinsAddOn() as this =
-    inherit BaseStatelessAddOn("Public-Key-Pins Security Header AddOn", "A38DE8D5-EAEC-46E0-ACF1-77050D57AC14", 1)
+    inherit BaseStatelessAddOn("Public-Key-Pins Security Header AddOn", string PublicKeyPinsAddOn.Id, 1)
     let mutable _vulnerabilitySignaled = false
 
     let addVulnerability(securityIssue: SecurityIssue) =
@@ -118,11 +117,13 @@ type PublicKeyPinsAddOn() as this =
             _vulnerabilitySignaled <- true
             this.Context.Value.AddSecurityIssue(securityIssue)
 
+    static member Id = Guid.Parse("A38DE8D5-EAEC-46E0-ACF1-77050D57AC14")
+
     default this.Scan(testRequest: TestRequest, stateController: ServiceStateController) =
-        isMissingPublicKeyPins(testRequest, this.Id, this.Name, addVulnerability)
+        isMissingPublicKeyPins(testRequest, PublicKeyPinsAddOn.Id, this.Name, addVulnerability)
 
 type XFrameOptionsAddOn() as this =
-    inherit BaseStatelessAddOn("X-Frame-Options Security Header AddOn", "BDC297BC-6BA4-4A31-8F8A-097874FB4C7D", 1)
+    inherit BaseStatelessAddOn("X-Frame-Options Security Header AddOn", string XFrameOptionsAddOn.Id, 1)
     let mutable _vulnerabilitySignaled = false
 
     let addVulnerability(securityIssue: SecurityIssue) =
@@ -131,11 +132,13 @@ type XFrameOptionsAddOn() as this =
             _vulnerabilitySignaled <- true
             this.Context.Value.AddSecurityIssue(securityIssue)
 
+    static member Id = Guid.Parse("BDC297BC-6BA4-4A31-8F8A-097874FB4C7D")
+
     default this.Scan(testRequest: TestRequest, stateController: ServiceStateController) =
-        isMissingXFrameOptions(testRequest, this.Id, this.Name, addVulnerability)
+        isMissingXFrameOptions(testRequest, XFrameOptionsAddOn.Id, this.Name, addVulnerability)
 
 type XXSSProtectionAddOn() as this =
-    inherit BaseStatelessAddOn("X-XSS-Protection Security Header AddOn", "4A7C1CD6-DF73-462E-AF6C-976F12B8C83C", 1)
+    inherit BaseStatelessAddOn("X-XSS-Protection Security Header AddOn", string XXSSProtectionAddOn.Id, 1)
     let mutable _vulnerabilitySignaled = false
 
     let addVulnerability(securityIssue: SecurityIssue) =
@@ -144,11 +147,13 @@ type XXSSProtectionAddOn() as this =
             _vulnerabilitySignaled <- true
             this.Context.Value.AddSecurityIssue(securityIssue)
 
+    static member Id = Guid.Parse("4A7C1CD6-DF73-462E-AF6C-976F12B8C83C")
+
     default this.Scan(testRequest: TestRequest, stateController: ServiceStateController) =
-        isMissingXXSSProtection(testRequest, this.Id, this.Name, addVulnerability)
+        isMissingXXSSProtection(testRequest, XXSSProtectionAddOn.Id, this.Name, addVulnerability)
 
 type XContentTypeOptionsAddOn() as this =
-    inherit BaseStatelessAddOn("X-Content-Type-Options Security Header AddOn", "7D08B694-B6BB-49EF-92A5-244BD14AF836", 1)
+    inherit BaseStatelessAddOn("X-Content-Type-Options Security Header AddOn", string XContentTypeOptionsAddOn.Id, 1)
     let mutable _vulnerabilitySignaled = false
 
     let addVulnerability(securityIssue: SecurityIssue) =
@@ -157,5 +162,7 @@ type XContentTypeOptionsAddOn() as this =
             _vulnerabilitySignaled <- true
             this.Context.Value.AddSecurityIssue(securityIssue)
 
+    static member Id = Guid.Parse("7D08B694-B6BB-49EF-92A5-244BD14AF836")
+
     default this.Scan(testRequest: TestRequest, stateController: ServiceStateController) =
-        isMissingXContentTypeOptions(testRequest, this.Id, this.Name, addVulnerability)
+        isMissingXContentTypeOptions(testRequest, XContentTypeOptionsAddOn.Id, this.Name, addVulnerability)

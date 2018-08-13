@@ -1,18 +1,12 @@
 ﻿namespace ES.Taipan.Inspector.AddOns.SqlInjection
 
 open System
-open System.Threading
 open System.Collections.Generic
-open System.Collections.Concurrent
-open System.Text.RegularExpressions
 open ES.Taipan.Inspector
 open ES.Taipan.Inspector.AddOns
 open ES.Taipan.Infrastructure.Service
 open ES.Taipan.Infrastructure.Messaging
 open ES.Taipan.Infrastructure.Network
-open ES.Taipan.Infrastructure.Text
-open ES.Taipan.Fingerprinter
-open ES.Taipan.Crawler
 open ES.Fslog
 
 type SqlInjectionAddOn() as this =
@@ -39,13 +33,18 @@ type SqlInjectionAddOn() as this =
             true
 
     let reportSecurityIssue(uri: Uri, entryPoint: EntryPoint, checker: ISqliChecker, attackDetails: AttackDetails) =
+        let attackString = 
+            attackDetails.Details.Keys 
+            |> Seq.tryFind(fun keyName -> keyName.Equals("Attack", StringComparison.OrdinalIgnoreCase))
+            |> fun arg -> defaultArg arg String.Empty
+
         let securityIssue = 
             new SecurityIssue(
                 checker.VulnId, 
                 Name = checker.VulnName, 
                 Uri = uri,
                 EntryPoint = entryPoint,
-                Note = String.Format("Parameter = {0}", attackDetails.ParameterName)
+                Note = String.Format("Parameter = {0} - {1}", attackDetails.ParameterName, attackString)
             )
 
         Seq.zip attackDetails.Requests attackDetails.Responses

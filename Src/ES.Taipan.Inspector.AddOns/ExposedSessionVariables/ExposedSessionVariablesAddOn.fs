@@ -1,4 +1,4 @@
-﻿namespace ES.Taipan.Inspector.AddOns.InformationLeakage
+﻿namespace ES.Taipan.Inspector.AddOns.ExposedSessionVariables
 
 open System
 open System.Text
@@ -17,7 +17,7 @@ open ES.Taipan.Crawler
 open ES.Fslog
 
 type ExposedSessionVariablesAddOn() as this =
-    inherit BaseStatelessAddOn("Exposed Session Variables AddOn", "C76061B2-52AE-4C64-BD2E-71EA3AC41B93", 1)
+    inherit BaseStatelessAddOn("Exposed Session Variables AddOn", string ExposedSessionVariablesAddOn.Id, 1)
     let _signaledLeakage = new HashSet<String>()
 
     let _sessionTokens = [
@@ -40,17 +40,19 @@ type ExposedSessionVariablesAddOn() as this =
         if _signaledLeakage.Add(testRequest.WebRequest.HttpRequest.Uri.AbsolutePath) then
             let securityIssue = 
                 new SecurityIssue(
-                    this.Id, 
+                    ExposedSessionVariablesAddOn.Id, 
                     Name = "Exposed Session Variables", 
                     Uri = testRequest.WebRequest.HttpRequest.Uri, 
                     EntryPoint = EntryPoint.QueryString,
-                    Note = String.Empty
+                    Note = String.Format("{0}={1}", name, value)
                 )
             securityIssue.Transactions.Add(testRequest.WebRequest, testRequest.WebResponse)
             securityIssue.Details.Properties.Add("tokenName", name)
             securityIssue.Details.Properties.Add("tokenValue", value)
 
             this.Context.Value.AddSecurityIssue(securityIssue)
+
+    static member Id = Guid.Parse("C76061B2-52AE-4C64-BD2E-71EA3AC41B93")
                         
     default this.Scan(testRequest: TestRequest, stateController: ServiceStateController) =
         if _signaledLeakage.Contains(testRequest.WebRequest.HttpRequest.Uri.AbsolutePath) |> not && testRequest.WebRequest.HttpRequest.Method = HttpMethods.Get then            

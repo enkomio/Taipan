@@ -1,4 +1,4 @@
-﻿namespace ES.Taipan.Inspector.AddOns.InformationLeakage
+﻿namespace ES.Taipan.Inspector.AddOns.VCSInformationDisclosure
 
 open System
 open System.IO

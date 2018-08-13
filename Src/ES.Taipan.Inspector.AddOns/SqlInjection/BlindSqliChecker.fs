@@ -2,11 +2,9 @@
 
 open System
 open System.Collections.Generic
-open System.Text.RegularExpressions
 open ES.Fslog
 open ES.Taipan.Inspector
 open ES.Taipan.Infrastructure.Network
-open ES.Taipan.Infrastructure.Network.HeuristicHelpers
 open DiffLib
 
 type BlindSqliChecker(webRequestor: IWebPageRequestor, logProvider: ILogProvider) =
@@ -99,8 +97,10 @@ type BlindSqliChecker(webRequestor: IWebPageRequestor, logProvider: ILogProvider
     member this.VulnName 
         with get() = "Blind SQL Injection"
 
+    static member Id = Guid.Parse("1DF114E2-FE1E-44CF-8CB2-612B7CFF62B1")
+
     member this.VulnId 
-        with get() = Guid.Parse("1DF114E2-FE1E-44CF-8CB2-612B7CFF62B1")
+        with get() = BlindSqliChecker.Id
         
     member this.Test(parameter: ProbeParameter, probeRequest: ProbeRequest) =
         let mutable result = CheckResult.NotVulnerable

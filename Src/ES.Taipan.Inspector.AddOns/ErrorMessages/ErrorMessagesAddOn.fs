@@ -1,42 +1,23 @@
 ﻿namespace ES.Taipan.Inspector.AddOns.ErrorMessages
 
 open System
-open System.Threading
 open System.Collections.Generic
-open System.Collections.Concurrent
 open System.Text.RegularExpressions
 open ES.Taipan.Inspector
 open ES.Taipan.Inspector.AddOns
 open ES.Taipan.Infrastructure.Service
-open ES.Taipan.Infrastructure.Messaging
 open ES.Taipan.Infrastructure.Network
-open ES.Taipan.Infrastructure.Text
-open ES.Taipan.Fingerprinter
 open ES.Taipan.Crawler
-open ES.Fslog
-
-type private ApplicationVersionCheck = {
-    IdentifiedVersions : String list
-    Uri : Uri
-}
 
 type ErrorMessagesAddOn() as this =
-    inherit BaseStatelessAddOn("Error Messages AddOn", "73EF90A2-C2A4-44AE-82DE-35349AEDFFB3", 1)       
+    inherit BaseStatelessAddOn("Error Messages AddOn", string ErrorMessagesAddOn.Id, 1)       
     let _analyzedPages = new HashSet<String>()
     let _signaledLeakage = new HashSet<String>()
-
-    let getHtmlComments(html: String) =
-        seq {
-            let mutable m = Regex.Match(html, "<!--(.+?)-->", RegexOptions.Singleline)
-            while m.Success do
-                yield m.Groups.[1].Value.Trim()
-                m <- m.NextMatch()
-        }
 
     let createSecurityIssue(uri: Uri, webRequest: WebRequest, webResponse: WebResponse) =
         let securityIssue = 
                 new SecurityIssue(
-                    this.Id, 
+                    ErrorMessagesAddOn.Id, 
                     Name = "Error Messages", 
                     Uri = uri, 
                     EntryPoint = EntryPoint.Other "Page Content"  
@@ -115,6 +96,8 @@ type ErrorMessagesAddOn() as this =
             securityIssue.Note <- "500 Internal server error"      
             securityIssue.Details.Properties.Add("Error", "<h3>There is a problem with the resource you are looking for, and it cannot be displayed.</h3>")      
             this.Context.Value.AddSecurityIssue(securityIssue) 
+
+    static member Id = Guid.Parse("73EF90A2-C2A4-44AE-82DE-35349AEDFFB3")
                                         
     default this.Scan(testRequest: TestRequest, stateController: ServiceStateController) =
         if _analyzedPages.Add(testRequest.WebRequest.HttpRequest.Uri.PathAndQuery) then

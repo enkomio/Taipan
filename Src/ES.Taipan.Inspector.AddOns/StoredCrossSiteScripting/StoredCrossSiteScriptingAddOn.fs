@@ -1,22 +1,16 @@
 ﻿namespace ES.Taipan.Inspector.AddOns.StoredCrossSiteScripting
 
 open System
-open System.Threading
-open System.Linq
 open System.Collections.Generic
-open System.Collections.Concurrent
-open System.Text.RegularExpressions
 open ES.Taipan.Inspector
 open ES.Taipan.Inspector.AddOns
 open ES.Taipan.Infrastructure.Service
 open ES.Taipan.Infrastructure.Messaging
 open ES.Taipan.Infrastructure.Network
-open ES.Taipan.Fingerprinter
-open ES.Taipan.Crawler
 open ES.Fslog
 
 type StoredCrossSiteScriptingAddOn() as this =
-    inherit BaseStatelessAddOn("Stored Cross Site Scripting AddOn", "5B9F1F2F-4A91-48A9-8615-2EA25E73E5B3", 1)    
+    inherit BaseStatelessAddOn("Stored Cross Site Scripting AddOn", string StoredCrossSiteScriptingAddOn.Id, 1)    
     let _analyzedParameters = new Dictionary<String, HashSet<String>>()
     let _testRequests = new List<TestRequest>()
     let _probes = new Dictionary<String, ProbeRequest * ProbeParameter>()
@@ -46,7 +40,7 @@ type StoredCrossSiteScriptingAddOn() as this =
 
         let securityIssue = 
             new SecurityIssue(
-                this.Id, 
+                StoredCrossSiteScriptingAddOn.Id, 
                 Name = "Stored Cross Site Scripting", 
                 Uri = uri,
                 EntryPoint = entryPoint,
@@ -130,8 +124,6 @@ type StoredCrossSiteScriptingAddOn() as this =
             | _ -> ()
         )
 
-
-
     let verifyProbePresence(testRequest: TestRequest) =
         // re-send the request
         let httpResponse = this.WebRequestor.Value.RequestWebPage(testRequest.WebRequest).HttpResponse
@@ -189,6 +181,8 @@ type StoredCrossSiteScriptingAddOn() as this =
                             outWebResponse // out web response
                         )
                     | None -> ()
+
+    static member Id = Guid.Parse("5B9F1F2F-4A91-48A9-8615-2EA25E73E5B3")
 
     default this.Initialize(context: Context, webRequestor: IWebPageRequestor, messageBroker: IMessageBroker, logProvider: ILogProvider) =
         base.Initialize(context, webRequestor, messageBroker, logProvider) |> ignore

@@ -15,7 +15,7 @@ open ES.Taipan.Crawler
 open ES.Fslog
 
 type ReflectedCrossSiteScriptingAddOn() as this =
-    inherit BaseStatelessAddOn("Reflected Cross Site Scripting AddOn", "B2D7CBCF-B458-4C33-B3EE-44606E06E949", 1)
+    inherit BaseStatelessAddOn("Reflected Cross Site Scripting AddOn", string ReflectedCrossSiteScriptingAddOn.Id, 1)
     let _analyzedParameters = new Dictionary<String, HashSet<String>>()
     let _vulnerableParameters = new Dictionary<String, List<String>>()
     let _forbiddenContentTypes = ["video/"; "audio/"; "image/"]
@@ -42,11 +42,11 @@ type ReflectedCrossSiteScriptingAddOn() as this =
         ) =
         let securityIssue = 
             new SecurityIssue(
-                this.Id, 
+                ReflectedCrossSiteScriptingAddOn.Id, 
                 Name = "Reflected Cross Site Scripting", 
                 Uri = uri,
                 EntryPoint = entryPoint,
-                Note = String.Format("Parameter = {0}", parameterName)
+                Note = String.Format("Parameter: {0}, Attack string: {1}", parameterName, attackString)
             )
         securityIssue.Transactions.Add(webRequest, webResponse)
         securityIssue.Details.Properties.Add("Html", html)
@@ -221,6 +221,8 @@ type ReflectedCrossSiteScriptingAddOn() as this =
             testWithRebuild <- testWithRebuild || (not isTestVulnerable && testRequest.WebRequest.HttpRequest.Method = HttpMethods.Post)
         
         testWithRebuild
+
+    static member Id = Guid.Parse("B2D7CBCF-B458-4C33-B3EE-44606E06E949")
 
     default this.Initialize(context: Context, webRequestor: IWebPageRequestor, messageBroker: IMessageBroker, logProvider: ILogProvider) =
         base.Initialize(context, webRequestor, messageBroker, logProvider) |> ignore
