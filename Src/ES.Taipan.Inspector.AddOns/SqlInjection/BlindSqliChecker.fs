@@ -112,7 +112,8 @@ type BlindSqliChecker(webRequestor: IWebPageRequestor, logProvider: ILogProvider
             let ratio = computeDifferenceRatio(probeRequest.TestRequest.WebResponse.HttpResponse.Html, newResponse.HttpResponse.Html)
 
             if ratio < RatioThreshold then
-                _log?TooDynamic(parameter, probeRequest)
+                if parameter.Type = ProbeParameterType.DATA || parameter.Type = ProbeParameterType.QUERY
+                then _log?TooDynamic(parameter, probeRequest)
             elif isPageContentIndependentFromParameterValue(parameter, probeRequest) then
                 // execute single test
                 getQueries()
