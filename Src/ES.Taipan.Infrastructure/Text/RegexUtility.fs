@@ -14,7 +14,20 @@ module RegexUtility =
     let (=~) (text: String) (regex: String) =
         Regex.IsMatch(text, regex, RegexOptions.Singleline ||| RegexOptions.Multiline ||| RegexOptions.IgnoreCase)
 
-    let getAllHtmlTags(html: String, tagName: String) =
+    let getAllHtmlTags(html: String) =
+        let parser = new HtmlParser()
+        parser.Parse(html).All
+
+    let getTagsAttributes(html: String) =
+        getAllHtmlTags(html)
+        |> Seq.map(fun htmlTag ->     
+            let attributes =
+                htmlTag.Attributes
+                |> Seq.map(fun tagAttribute -> (tagAttribute.Name, tagAttribute.Value))
+            (htmlTag.LocalName, attributes)
+        )
+
+    let getAllHtmlTagsWithName(html: String, tagName: String) =
         let parser = new HtmlParser()
         parser.Parse(html).All
         |> Seq.filter(fun e -> e.LocalName.Equals(tagName, StringComparison.OrdinalIgnoreCase))

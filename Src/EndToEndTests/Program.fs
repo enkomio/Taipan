@@ -75,7 +75,7 @@ let allTests : Expr<Uri -> unit> list = [
     <@ InspectorTests.``RXSS on data parameter`` @>
     <@ InspectorTests.``RXSS in User-Agent`` @>
     <@ InspectorTests.``Identify info leak in .DS_Store file`` @>
-    //<@ InspectorTests.``RXSS in filename parameter`` @> suave seems to have problem with multi-part form. verify in some other way
+    //<@ InspectorTests.``RXSS in filename parameter`` @> // suave seems to have problem with multi-part form. verify in some other way
     <@ InspectorTests.``Sqli error based in name parameter`` @>
     <@ InspectorTests.``Sqli error based in name parameter with AntiCSRF protection`` @>
     <@ InspectorTests.``RXSS on data parameter and AntiCSRF protection`` @>
@@ -91,6 +91,7 @@ let allTests : Expr<Uri -> unit> list = [
     <@ InspectorTests.``RXSS on data parameter after redirect`` @>
     <@ InspectorTests.``RXSS on query parameter in redirect page`` @>
     <@ InspectorTests.``Avoid to raise a FP when encounter an email pattern with invalid TLD`` @>
+    <@ InspectorTests.``RXSS on a user registration form with password and repassword check`` @>
     
     // Composed tests
     <@ ComposedTests.``Identify an hidden directory and discover a know web application`` @>

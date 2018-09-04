@@ -29,6 +29,9 @@ type ErrorBasedSqliChecker(webRequestor: IWebPageRequestor, errors: Dictionary<S
         // send attack vetor
         let originalValue = parameter.Value
         parameter.AlterValue(parameter.Value + payload)
+        
+        probeRequest.EnsureConsistencyOnPasswordTypeParameter(parameter)
+
         let webRequest = new WebRequest(probeRequest.BuildHttpRequest(true))
         let webResponse = webRequestor.RequestWebPage(webRequest)        
                 

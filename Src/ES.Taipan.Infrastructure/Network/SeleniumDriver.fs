@@ -136,6 +136,7 @@ type SeleniumDriver(logProvider: ILogProvider) =
                         "--disable-setuid-sandbox",
                         "--ignore-certificate-errors",
                         "--disable-web-security",
+                        "--disable-xss-auditor",
                         "--silent"
                         //"load-extension=" + _extensionDir
                     )

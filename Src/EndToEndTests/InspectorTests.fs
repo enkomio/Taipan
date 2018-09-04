@@ -609,3 +609,23 @@
         // run the scan
         Utility.runScan(scanContext) 
         |> Utility.verifyInspector []
+
+    let ``RXSS on a user registration form with password and repassword check``(grovieraUrl: Uri) =
+        let scanContext = 
+            new ScanContext(
+                 StartRequest = new WebRequest(new Uri(grovieraUrl, "/inspector/test38/")),
+                Template = Templates.``Website inspector``()
+            )
+        
+        activatePlugin(scanContext, "B2D7CBCF-B458-4C33-B3EE-44606E06E949")
+        writeXssData([
+            ("<SCRIPT>alert('XSS');</SCRIPT>", ["<SCRIPT>alert('XSS');</SCRIPT>"; "<IMG SRC=\"javascript:alert('XSS');\">"])
+        ])
+
+        // run the scan
+        Utility.runScan(scanContext) 
+        |> Utility.verifyInspector [
+            ("Reflected Cross Site Scripting", "/inspector/test38/register.php") // for username
+            ("Reflected Cross Site Scripting", "/inspector/test38/register.php") // for password1
+            ("Reflected Cross Site Scripting", "/inspector/test38/register.php") // for password2
+        ]

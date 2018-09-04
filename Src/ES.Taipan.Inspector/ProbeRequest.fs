@@ -7,6 +7,7 @@ open ES.Taipan.Infrastructure.Network
 open ES.Taipan.Infrastructure.Text
 open ES.Taipan.Infrastructure.Text
 open ES.Taipan.Crawler.WebScrapers
+open ES.Taipan.Crawler
 
 type ProbeParameterType =
     | QUERY
@@ -20,6 +21,10 @@ type ProbeParameterType =
         | HEADER -> "Header"
 
 type ProbeParameter() as this =
+    let mutable _value = String.Empty
+    let mutable _filename = None : String option
+    let mutable _stateSaved = false
+    
     member val Id = Guid.NewGuid()
     member val Name = String.Empty with get, set
     member val Value = String.Empty with get, set
@@ -28,7 +33,46 @@ type ProbeParameter() as this =
     member val Filename : String option = None with get, set
     member val AlterValue = fun (x: String) -> this.Value <- x with get, set
     member val State : Object option = None with get, set
-    
+
+    member this.SaveState() =
+        if not _stateSaved then
+            _value <- this.Value
+            _filename <- this.Filename
+            _stateSaved <- true
+
+    member this.RestoreState() =
+        if _stateSaved then
+            this.Value <- _value
+            this.Filename <- _filename
+            _stateSaved <- false
+
+    member this.IsStateSaved() =
+        _stateSaved
+
+    member this.AcquireValue(parameter: ProbeParameter) =
+        if parameter.IsStateSaved() then
+            let (savedValue, savedFilename) = (parameter.Value, parameter.Filename)
+            // copy original saved value
+            parameter.RestoreState()        
+            this.Value <- parameter.Value
+            this.Filename <- parameter.Filename
+
+            // save state again
+            parameter.SaveState()
+            this.SaveState()
+
+            // restore effective value
+            parameter.Value <- savedValue
+            this.Value <- savedValue
+            parameter.Filename <- savedFilename
+            this.Filename <- savedFilename
+        else
+            this.Value <- parameter.Value
+            this.Filename <- parameter.Filename
+
+        this.State <- parameter.State
+        
+            
     override this.ToString() =
         String.Format("[{0}] {1} = {2}", this.Type, this.Name, this.Value)
 
@@ -97,16 +141,55 @@ type ProbeRequest(testRequest: TestRequest) =
         
     member val TestRequest = testRequest with get
     member val WebResponse : WebResponse option = None with get, set
-    
+
     member this.GetParameters() =
         _parameters |> Seq.readonly
 
-    member this.AddParameter(parameter: ProbeParameter) =
-        // remove the parameter if already exists
+    member this.EnsureConsistencyOnPasswordTypeParameter(parameter: ProbeParameter) =
+        if this.TestRequest.RequestType = TestRequestType.CrawledPage then
+            let parsedHtml = this.TestRequest.GetData<WebLink>().ParsedHtmlCode
+            
+            // retrieve all the parameter names that are of type password
+            let passwordParameterNames = new List<String>()
+            RegexUtility.getTagsAttributes(parsedHtml)
+            |> Seq.iter(fun (tagName, attributes) ->
+                let mutable inputName = String.Empty
+                let mutable passwordFound = false
+                attributes
+                |> Seq.iter(fun (name, value) ->
+                    if name.Equals("name", StringComparison.OrdinalIgnoreCase)
+                    then inputName <- value
+
+                    if name.Equals("type", StringComparison.OrdinalIgnoreCase) && value.Equals("password", StringComparison.OrdinalIgnoreCase)
+                    then passwordFound <- true
+                )
+
+                if (passwordFound)
+                then passwordParameterNames.Add(inputName)
+            )
+
+            if passwordParameterNames.Contains(parameter.Name) then
+                // for all password parameters I have to set the same value
+                this.GetParameters()
+                |> Seq.iter(fun otherParameter ->
+                    if passwordParameterNames.Contains(otherParameter.Name) then
+                        // configure probe with same value
+                        otherParameter.Value <- parameter.Value
+                        otherParameter.ExpectedValues <- parameter.ExpectedValues
+                )
+
+    member this.SaveState() =
+        this.GetParameters() 
+        |> Seq.iter(fun p -> p.SaveState())
+
+    member this.RestoreState() =
+        this.GetParameters() 
+        |> Seq.iter(fun p -> p.RestoreState())    
+
+    member this.AddParameter(parameter: ProbeParameter) =        
         match this.GetParameters() |> Seq.tryFind(fun p -> p.Name.Equals(parameter.Name, StringComparison.Ordinal)) with
-        | Some storedParameter -> _parameters.Remove(storedParameter) |> ignore
-        | None -> ()            
-        _parameters.Add(parameter)       
+        | Some storedParameter -> storedParameter.AcquireValue(parameter)
+        | None -> _parameters.Add(parameter)       
 
     member this.BuildHttpRequest(copySource: Boolean) =
         let clonedRequest = HttpRequest.DeepClone(_webRequest.HttpRequest)

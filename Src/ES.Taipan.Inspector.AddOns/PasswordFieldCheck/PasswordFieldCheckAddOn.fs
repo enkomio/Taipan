@@ -29,9 +29,9 @@ module private PasswordFieldCheck =
         
     let getAllPasswordInputs(testRequest: TestRequest, messageBroker: IMessageBroker) = [
         let html = testRequest.WebResponse.HttpResponse.Html
-        for formHtml in RegexUtility.getAllHtmlTags(html, "form") do
+        for formHtml in RegexUtility.getAllHtmlTagsWithName(html, "form") do
             let action = new Uri(testRequest.WebRequest.HttpRequest.Uri, defaultArg (RegexUtility.getHtmlAttributeValueFromChunk(formHtml, "action")) String.Empty)
-            for inputHtml in RegexUtility.getAllHtmlTags(formHtml, "input") do
+            for inputHtml in RegexUtility.getAllHtmlTagsWithName(formHtml, "input") do
                     let inputType = RegexUtility.getHtmlInputValue(inputHtml, "type")
                     if inputType.Equals("password", StringComparison.Ordinal) then
                         let parameterName = defaultArg (RegexUtility.getHtmlAttributeValueFromChunk(inputHtml, "name")) "N/A"

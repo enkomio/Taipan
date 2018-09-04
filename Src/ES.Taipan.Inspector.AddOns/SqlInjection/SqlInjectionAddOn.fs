@@ -97,29 +97,26 @@ type SqlInjectionAddOn() as this =
         )
 
         // analyze all new parameters
-        for tmpParameter in parameters do
+        for tmpParameter in parameters do            
             let mutable parameter = tmpParameter
-            let originalValue = 
-                if rebuild then
-                    // re-try by rebuilding the request from the referer, this can be useful if there are anti-CSRF token
-                    probeRequest <- new ProbeRequest(this.RebuildTestRequestFromReferer(testRequest))
-                    match probeRequest.GetParameters() |> Seq.tryFind(fun p -> p.Name.Equals(parameter.Name, StringComparison.Ordinal)) with
-                    | Some newParam -> parameter <- newParam
-                    | _ -> ()
-                       
-                parameter.Value
+            if rebuild then
+                // re-try by rebuilding the request from the referer, this can be useful if there are anti-CSRF token
+                probeRequest <- new ProbeRequest(this.RebuildTestRequestFromReferer(testRequest))
+                match probeRequest.GetParameters() |> Seq.tryFind(fun p -> p.Name.Equals(parameter.Name, StringComparison.Ordinal)) with
+                | Some newParam -> parameter <- newParam
+                | _ -> ()
 
+            probeRequest.SaveState()
             let mutable isTestVulnerable = test(parameter, probeRequest)            
-            parameter.Value <- originalValue
+            probeRequest.RestoreState()
 
             // check for file parameter
             match parameter.Filename with
             | Some filename -> 
-                let originalValue = parameter.AlterValue
+                probeRequest.SaveState()
                 parameter.AlterValue <- (fun x -> parameter.Filename <- Some x)
                 isTestVulnerable <- test(parameter, probeRequest)
-                parameter.AlterValue <- originalValue
-                parameter.Filename <- Some filename
+                probeRequest.RestoreState()
             | _ -> ()
 
             if isTestVulnerable then

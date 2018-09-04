@@ -10,9 +10,9 @@ open ES.Taipan.Inspector.AddOns
 open ES.Taipan.Infrastructure.Service
 open ES.Taipan.Infrastructure.Messaging
 open ES.Taipan.Infrastructure.Network
-open ES.Taipan.Fingerprinter
 open ES.Taipan.Crawler
 open ES.Fslog
+open ES.Taipan.Infrastructure.Text
 
 type ReflectedCrossSiteScriptingAddOn() as this =
     inherit BaseStatelessAddOn("Reflected Cross Site Scripting AddOn", string ReflectedCrossSiteScriptingAddOn.Id, 1)
@@ -108,6 +108,7 @@ type ReflectedCrossSiteScriptingAddOn() as this =
         testProbeRequest(parameter, probeRequest, rebuild)
     
     let verify(parameter: ProbeParameter, probeRequest: ProbeRequest, rebuild: Boolean) =
+        probeRequest.EnsureConsistencyOnPasswordTypeParameter(parameter)
         [verifyWithOriginalParamValue; verifyWithBogusParamValue]
         |> List.exists(fun f -> f(parameter, probeRequest, rebuild))
         
@@ -198,18 +199,17 @@ type ReflectedCrossSiteScriptingAddOn() as this =
            
         // analyze all new parameters
         for parameter in parameters do
-            let originalValue = parameter.Value
+            probeRequest.SaveState()
             let mutable isTestVulnerable = test(parameter, probeRequest, rebuild)
-            parameter.Value <- originalValue
+            probeRequest.RestoreState()
 
             // check for file parameter
             match parameter.Filename with
-            | Some filename -> 
-                let originalValue = parameter.AlterValue
+            | Some _ -> 
+                probeRequest.SaveState()
                 parameter.AlterValue <- (fun x -> parameter.Filename <- Some x)
                 isTestVulnerable <- test(parameter, probeRequest, rebuild)
-                parameter.AlterValue <- originalValue
-                parameter.Filename <- Some filename
+                probeRequest.RestoreState()
             | _ -> ()
 
             if isTestVulnerable then

@@ -41,6 +41,9 @@ type BlindSqliChecker(webRequestor: IWebPageRequestor, logProvider: ILogProvider
     let testForQuery(parameter: ProbeParameter, query: String, probeRequest: ProbeRequest) =        
         let originalValue = parameter.Value
         parameter.AlterValue(query)
+
+        probeRequest.EnsureConsistencyOnPasswordTypeParameter(parameter)
+
         let webRequest = new WebRequest(probeRequest.BuildHttpRequest(true))
         let webResponse = webRequestor.RequestWebPage(webRequest)
         parameter.AlterValue(originalValue)  

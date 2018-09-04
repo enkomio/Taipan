@@ -79,6 +79,7 @@ module InspectorPages =
         <li>TEST35: <a href="/inspector/test35/">/inspector/test35/</a> RXSS on data parameter after redirect</li>
         <li>TEST36: <a href="/inspector/test36/">/inspector/test36/</a> RXSS on redirect html content</li>
         <li>TEST37: <a href="/inspector/test37/">/inspector/test37/</a> Regression: Avoid a FP when found an email with invalid TLD</li>
+        <li>TEST38: <a href="/inspector/test38/">/inspector/test38/</a> RXSS on a password type parameter which implements check on password and retype password</li>
 	</ul><br/>
   </body>
 </html>""" ctx
@@ -404,6 +405,18 @@ module InspectorPages =
                       <a href="index.html"><img src="images/logo.png" data-ot-retina="images/logo@2x.png" alt=""></a>
                     </div>
                     """
+
+                path "/inspector/test38/" >=> okContent """
+                    <html><body>
+                    <h1>RXSS on password field for user registration. Both password inputs must have the same value</h1>
+                    <form action="/inspector/test38/register.php" method="POST">
+                      <p>Username: <input type="text" name="username">
+                      <p>Password: <input type="password" name="password1">
+                      <p>Retype password: <input type="password" name="password2">
+                      <p><button type="submit">Submit</button>
+                    </form>
+                    </body></html>
+                """ 
             ]
         
             // *************************
@@ -481,6 +494,28 @@ module InspectorPages =
 
                     addValueToMemDb("/inspector/test35/name", name)
                     Redirection.redirect "/inspector/test35/" ctx
+
+                path "/inspector/test38/register.php" >=> fun (ctx: HttpContext) ->
+                    let username = 
+                        match ctx.request.formData "username" with
+                        | Choice1Of2 v -> v
+                        | _ -> String.Empty
+
+                    let password1 = 
+                        match ctx.request.formData "password1" with
+                        | Choice1Of2 v -> v
+                        | _ -> "bla"
+
+                    let password2 = 
+                        match ctx.request.formData "password2" with
+                        | Choice1Of2 v -> v
+                        | _ -> "foo"
+
+                    if password1.Equals(password2) then
+                        let data = String.Join(", ", [username; password1])
+                        OK ("Thanks for subscription, find below your details: " + data) ctx
+                    else
+                        OK "Sorry but the password that you inserted are not equals" ctx
             ]
         ]   
 
