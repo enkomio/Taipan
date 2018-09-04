@@ -49,7 +49,7 @@ let createTemplate(name: String, guid: String) =
             "manual/"; "icons/"; "icon/"
         ])
     [
-        ".tmp"
+        ".tmp"; ".zip"; ".bak"
     ] |> List.iter(fun e -> defaultProfile.ResourceDiscovererSettings.Extensions.Add(e) |> ignore)
     defaultProfile.ResourceDiscovererSettings.Dictionaries.Add("A8EF3FFE-7CCF-4D1F-AA0A-2248DE6A00DF") // common directories        
     defaultProfile.ResourceDiscovererSettings.Dictionaries.Add("8C2248F7-5D56-493F-B0BC-366904327B91") // Dirsearch dictionary    
