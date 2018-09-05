@@ -61,7 +61,7 @@ let createTemplate(name: String, guid: String) =
     defaultProfile.WebAppFingerprinterSettings.StopAtTheFirstApplicationIdentified <- false
 
     // crawler settings 
-    defaultProfile.CrawlerSettings.ReCrawlPages <- false
+    defaultProfile.CrawlerSettings.ReCrawlPages <- true
     defaultProfile.CrawlerSettings.MaxNumOfRequestsToTheSamePage <- 100
     defaultProfile.CrawlerSettings.MaxNumberOfPagesToCrawl <- 2000
     defaultProfile.CrawlerSettings.Scope <- NavigationScope.EnteredPathAndBelow            

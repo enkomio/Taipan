@@ -71,17 +71,12 @@ type StoredCrossSiteScriptingAddOn() as this =
             true
 
     let sendProbe(parameter: ProbeParameter, probeRequest: ProbeRequest, probeValue: String) =
-        // save values
-        let originalValue = parameter.Value
-        let filename = parameter.Filename
+        probeRequest.SaveState()
 
         // send probe request
         parameter.AlterValue(probeValue)
         let webResponse = sendProbeRequest(parameter, probeRequest)
-
-        // restore value
-        parameter.Value <- originalValue
-        parameter.Filename <- filename
+        probeRequest.RestoreState()
 
         webResponse
         

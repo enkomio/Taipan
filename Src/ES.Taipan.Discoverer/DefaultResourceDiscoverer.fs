@@ -411,7 +411,7 @@ type DefaultResourceDiscoverer(settings: ResourceDiscovererSettings, webRequesto
                             |> Seq.toList
                             |> List.iter(fun extension ->
                                 let extension = if extension.StartsWith(".") then extension.Substring(1) else extension
-                                let newPath = resource.Path.Replace("%EXT%", extension)
+                                let newPath = resource.Path.Replace(extensionMarker, extension)
                 
                                 // avoid to add the same extension twice
                                 if not <| newPath.Equals(resource.Path, StringComparison.Ordinal) && not(String.IsNullOrWhiteSpace(resource.Path)) then
