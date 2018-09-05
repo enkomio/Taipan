@@ -70,7 +70,7 @@ type CrawlerState(settings: CrawlerSettings, httpRequestorSettings: HttpRequesto
                 WebUtility.hasSameParametersAndData(httpRequest.Data, webLink.Request.HttpRequest.Data)
 
             if isSameLink then                
-                if webLink.OriginalWebLink.IsSome then 
+                if webLink.IsMutated() then 
                     // found via mutation, don't go further
                     true 
                 elif isStaticOrNotParameters(webLink.Request.HttpRequest) then 
@@ -94,7 +94,12 @@ type CrawlerState(settings: CrawlerSettings, httpRequestorSettings: HttpRequesto
     // define filter methods
     let isMaxNumOfPageToCrawlReached() =
         if settings.HasLinkNavigationLimit then
-            _pagesProcessed.Count >= settings.MaxNumberOfPagesToCrawl
+            // I'll consider only not mutated pages
+            let numOfProcessedPages =
+                _pagesProcessed 
+                |> Seq.map(fun webLink -> webLink.IsMutated() |> not)
+                |> Seq.length
+            numOfProcessedPages > settings.MaxNumberOfPagesToCrawl
         else false
 
     let isBlacklisted(webRequest: WebRequest) =

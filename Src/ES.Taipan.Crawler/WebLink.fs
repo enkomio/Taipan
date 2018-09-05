@@ -19,4 +19,7 @@ type WebLink(webRequest: WebRequest, htmlCode: String, sessionId: Guid) =
 
     override this.ToString() =
         this.Request.ToString()
+
+    member this.IsMutated() =
+        this.OriginalWebLink.IsSome
        

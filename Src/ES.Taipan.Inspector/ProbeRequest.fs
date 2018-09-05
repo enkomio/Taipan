@@ -23,6 +23,7 @@ type ProbeParameterType =
 type ProbeParameter() as this =
     let mutable _value = String.Empty
     let mutable _filename = None : String option
+    let mutable _isUnderTest = false
     let mutable _stateSaved = false
     
     member val Id = Guid.NewGuid()
@@ -33,17 +34,20 @@ type ProbeParameter() as this =
     member val Filename : String option = None with get, set
     member val AlterValue = fun (x: String) -> this.Value <- x with get, set
     member val State : Object option = None with get, set
-
+    member val IsUnderTest = false with get, set
+    
     member this.SaveState() =
         if not _stateSaved then
             _value <- this.Value
             _filename <- this.Filename
+            _isUnderTest <- this.IsUnderTest
             _stateSaved <- true
-
+            
     member this.RestoreState() =
         if _stateSaved then
             this.Value <- _value
             this.Filename <- _filename
+            this.IsUnderTest <- _isUnderTest
             _stateSaved <- false
 
     member this.IsStateSaved() =
@@ -172,10 +176,11 @@ type ProbeRequest(testRequest: TestRequest) =
                 // for all password parameters I have to set the same value
                 this.GetParameters()
                 |> Seq.iter(fun otherParameter ->
-                    if passwordParameterNames.Contains(otherParameter.Name) then
+                    if passwordParameterNames.Contains(otherParameter.Name) && not(otherParameter.Name.Equals(parameter.Name, StringComparison.Ordinal))then
                         // configure probe with same value
                         otherParameter.Value <- parameter.Value
                         otherParameter.ExpectedValues <- parameter.ExpectedValues
+                        otherParameter.IsUnderTest <- true
                 )
 
     member this.SaveState() =

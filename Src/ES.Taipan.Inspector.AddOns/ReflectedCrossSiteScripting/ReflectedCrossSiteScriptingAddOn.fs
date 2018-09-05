@@ -10,9 +10,7 @@ open ES.Taipan.Inspector.AddOns
 open ES.Taipan.Infrastructure.Service
 open ES.Taipan.Infrastructure.Messaging
 open ES.Taipan.Infrastructure.Network
-open ES.Taipan.Crawler
 open ES.Fslog
-open ES.Taipan.Infrastructure.Text
 
 type ReflectedCrossSiteScriptingAddOn() as this =
     inherit BaseStatelessAddOn("Reflected Cross Site Scripting AddOn", string ReflectedCrossSiteScriptingAddOn.Id, 1)
@@ -91,18 +89,18 @@ type ReflectedCrossSiteScriptingAddOn() as this =
     let testProbeRequest(parameter: ProbeParameter, inProbeRequest: ProbeRequest, rebuild: Boolean) =
         testProbeRequestWithRedirect(parameter, inProbeRequest, rebuild, false)
 
-    let verifyWithBogusParamValue(parameter: ProbeParameter, probeRequest: ProbeRequest, rebuild: Boolean) =
-        let newProbeRequest = new ProbeRequest(probeRequest.TestRequest)
-        let newParameter = getParameter(parameter, newProbeRequest)
+    let verifyWithBogusParamValue(parameter: ProbeParameter, probeRequest: ProbeRequest, rebuild: Boolean) =        
+        let newParameter = getParameter(parameter, probeRequest)
         newParameter.AlterValue(parameter.Value)
 
         // for each parameter with empty value insert a bogus value
         let bogusValue = Guid.NewGuid().ToString("N").Substring(0,6)
-        newProbeRequest.GetParameters()
+        probeRequest.GetParameters()
         |> Seq.filter(fun parameter -> String.IsNullOrEmpty(parameter.Value))
+        |> Seq.filter(fun parameter -> not parameter.IsUnderTest)
         |> Seq.iter(fun parameter -> parameter.Value <- bogusValue)
 
-        testProbeRequest(newParameter, newProbeRequest, rebuild)    
+        testProbeRequest(newParameter, probeRequest, rebuild)    
         
     let verifyWithOriginalParamValue(parameter: ProbeParameter, probeRequest: ProbeRequest, rebuild: Boolean) =
         testProbeRequest(parameter, probeRequest, rebuild)
@@ -198,27 +196,31 @@ type ReflectedCrossSiteScriptingAddOn() as this =
         )
            
         // analyze all new parameters
-        for parameter in parameters do
-            probeRequest.SaveState()
-            let mutable isTestVulnerable = test(parameter, probeRequest, rebuild)
-            probeRequest.RestoreState()
+        for parameter in parameters do   
+            if not stateController.IsStopped then
+                stateController.WaitIfPauseRequested()
 
-            // check for file parameter
-            match parameter.Filename with
-            | Some _ -> 
                 probeRequest.SaveState()
-                parameter.AlterValue <- (fun x -> parameter.Filename <- Some x)
-                isTestVulnerable <- test(parameter, probeRequest, rebuild)
+                parameter.IsUnderTest <- true
+                let mutable isTestVulnerable = test(parameter, probeRequest, rebuild)
                 probeRequest.RestoreState()
-            | _ -> ()
 
-            if isTestVulnerable then
-                // this code is necessary in order to update the list of analyzed parameters
-                lock _analyzedParameters (fun _ ->                     
-                    isRequestOkToAnalyze(parameter, probeRequest, not rebuild) |> ignore
-                )
+                // check for file parameter
+                match parameter.Filename with
+                | Some _ -> 
+                    probeRequest.SaveState()                
+                    parameter.AlterValue <- (fun x -> parameter.Filename <- Some x)
+                    isTestVulnerable <- test(parameter, probeRequest, rebuild)
+                    probeRequest.RestoreState()
+                | _ -> ()
 
-            testWithRebuild <- testWithRebuild || (not isTestVulnerable && testRequest.WebRequest.HttpRequest.Method = HttpMethods.Post)
+                if isTestVulnerable then
+                    // this code is necessary in order to update the list of analyzed parameters
+                    lock _analyzedParameters (fun _ ->                     
+                        isRequestOkToAnalyze(parameter, probeRequest, not rebuild) |> ignore
+                    )
+
+                testWithRebuild <- testWithRebuild || (not isTestVulnerable && testRequest.WebRequest.HttpRequest.Method = HttpMethods.Post)
         
         testWithRebuild
 

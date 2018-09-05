@@ -26,7 +26,7 @@ type WebLinkMutator(settings: CrawlerSettings) =
                     let uri = m1.Groups.[2].Value.Trim()
                     match WebUtility.getAbsoluteUriStringValueSameHost(webLinkTemplate.Request.HttpRequest.Uri.ToString(), uri) with
                     | Some absoluteUri -> 
-                        let webLink = new WebLink(new WebRequest(absoluteUri), comment, webLinkTemplate.SessionId, OriginalWebLink = Some webLinkTemplate)
+                        let webLink = new WebLink(new WebRequest(absoluteUri), comment, webLinkTemplate.SessionId)
                         addReferer(webLink, webLinkTemplate)
                         yield webLink
                     | None -> ()
@@ -57,7 +57,7 @@ type WebLinkMutator(settings: CrawlerSettings) =
 
                 httpRequest.Uri <- uriBuilder.Uri
                 let mutateWebRequest = new WebRequest(httpRequest)                     
-                let webLink = new WebLink(mutateWebRequest, webLinkTemplate.ParsedHtmlCode, webLinkTemplate.SessionId, OriginalWebLink = Some webLinkTemplate)
+                let webLink = new WebLink(mutateWebRequest, webLinkTemplate.ParsedHtmlCode, webLinkTemplate.SessionId)
                 addReferer(webLink, webLinkTemplate)
                 yield webLink
         }
@@ -73,13 +73,13 @@ type WebLinkMutator(settings: CrawlerSettings) =
                 uriBuilder.Query <- String.Empty
                 httpRequest.Uri <- uriBuilder.Uri
                 let mutateWebRequest = new WebRequest(httpRequest)                    
-                resultList <- [new WebLink(mutateWebRequest, webLinkTemplate.ParsedHtmlCode, webLinkTemplate.SessionId, OriginalWebLink = Some webLinkTemplate)]
+                resultList <- [new WebLink(mutateWebRequest, webLinkTemplate.ParsedHtmlCode, webLinkTemplate.SessionId)]
                 addReferer(resultList.[0], webLinkTemplate)
         | HttpMethods.Post -> 
             if not <| String.IsNullOrWhiteSpace(httpRequest.Data) then
                 httpRequest.Data <- String.Empty
                 let mutateWebRequest = new WebRequest(httpRequest)                   
-                resultList <- [new WebLink(mutateWebRequest, webLinkTemplate.ParsedHtmlCode, webLinkTemplate.SessionId, OriginalWebLink = Some webLinkTemplate)]
+                resultList <- [new WebLink(mutateWebRequest, webLinkTemplate.ParsedHtmlCode, webLinkTemplate.SessionId)]
                 addReferer(resultList.[0], webLinkTemplate)
         | _ -> ()
 
@@ -99,7 +99,7 @@ type WebLinkMutator(settings: CrawlerSettings) =
                 uriBuilder.Query <- String.Empty
                 httpRequest.Uri <- uriBuilder.Uri
                 let mutateWebRequest = new WebRequest(httpRequest)                    
-                resultList <- [new WebLink(mutateWebRequest, webLinkTemplate.ParsedHtmlCode, webLinkTemplate.SessionId, OriginalWebLink = Some webLinkTemplate)]
+                resultList <- [new WebLink(mutateWebRequest, webLinkTemplate.ParsedHtmlCode, webLinkTemplate.SessionId)]
                 addReferer(resultList.[0], webLinkTemplate)
         | HttpMethods.Post -> 
             // move data to query string and change the method to GET
@@ -110,7 +110,7 @@ type WebLinkMutator(settings: CrawlerSettings) =
                 httpRequest.Data <- String.Empty
                 httpRequest.Uri <- uriBuilder.Uri
                 let mutateWebRequest = new WebRequest(httpRequest)                    
-                resultList <- [new WebLink(mutateWebRequest, webLinkTemplate.ParsedHtmlCode, webLinkTemplate.SessionId, OriginalWebLink = Some webLinkTemplate)]
+                resultList <- [new WebLink(mutateWebRequest, webLinkTemplate.ParsedHtmlCode, webLinkTemplate.SessionId)]
                 addReferer(resultList.[0], webLinkTemplate)
         | _ -> ()
 
@@ -140,3 +140,7 @@ type WebLinkMutator(settings: CrawlerSettings) =
         |> Seq.append (getIntermediateDirectoryLink(webRequestTemplate))
         |> Seq.append (getWebPageWithParametersAndMethodInverted(webRequestTemplate))
         |> Seq.append (getInexistenWebPage(webRequestTemplate))
+        |> Seq.map(fun mutatedWebLink ->
+            mutatedWebLink.OriginalWebLink <- Some webRequestTemplate
+            mutatedWebLink
+        )

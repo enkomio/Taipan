@@ -97,35 +97,37 @@ type SqlInjectionAddOn() as this =
         )
 
         // analyze all new parameters
-        for tmpParameter in parameters do            
-            let mutable parameter = tmpParameter
-            if rebuild then
-                // re-try by rebuilding the request from the referer, this can be useful if there are anti-CSRF token
-                probeRequest <- new ProbeRequest(this.RebuildTestRequestFromReferer(testRequest))
-                match probeRequest.GetParameters() |> Seq.tryFind(fun p -> p.Name.Equals(parameter.Name, StringComparison.Ordinal)) with
-                | Some newParam -> parameter <- newParam
+        for tmpParameter in parameters do       
+            if not stateController.IsStopped then
+                stateController.WaitIfPauseRequested()
+                let mutable parameter = tmpParameter
+                if rebuild then
+                    // re-try by rebuilding the request from the referer, this can be useful if there are anti-CSRF token
+                    probeRequest <- new ProbeRequest(this.RebuildTestRequestFromReferer(testRequest))
+                    match probeRequest.GetParameters() |> Seq.tryFind(fun p -> p.Name.Equals(parameter.Name, StringComparison.Ordinal)) with
+                    | Some newParam -> parameter <- newParam
+                    | _ -> ()
+
+                probeRequest.SaveState()
+                let mutable isTestVulnerable = test(parameter, probeRequest)            
+                probeRequest.RestoreState()
+
+                // check for file parameter
+                match parameter.Filename with
+                | Some filename -> 
+                    probeRequest.SaveState()
+                    parameter.AlterValue <- (fun x -> parameter.Filename <- Some x)
+                    isTestVulnerable <- test(parameter, probeRequest)
+                    probeRequest.RestoreState()
                 | _ -> ()
 
-            probeRequest.SaveState()
-            let mutable isTestVulnerable = test(parameter, probeRequest)            
-            probeRequest.RestoreState()
+                if isTestVulnerable then
+                    // this code is necessary in order to update the list of analyzed parameters
+                    lock _analyzedParameters (fun _ ->                     
+                        isRequestOkToAnalyze(tmpParameter, probeRequest, not rebuild) |> ignore
+                    )
 
-            // check for file parameter
-            match parameter.Filename with
-            | Some filename -> 
-                probeRequest.SaveState()
-                parameter.AlterValue <- (fun x -> parameter.Filename <- Some x)
-                isTestVulnerable <- test(parameter, probeRequest)
-                probeRequest.RestoreState()
-            | _ -> ()
-
-            if isTestVulnerable then
-                // this code is necessary in order to update the list of analyzed parameters
-                lock _analyzedParameters (fun _ ->                     
-                    isRequestOkToAnalyze(tmpParameter, probeRequest, not rebuild) |> ignore
-                )
-
-            testWithRebuild <- testWithRebuild || (not isTestVulnerable && testRequest.WebRequest.HttpRequest.Method = HttpMethods.Post)
+                testWithRebuild <- testWithRebuild || (not isTestVulnerable && testRequest.WebRequest.HttpRequest.Method = HttpMethods.Post)
         
         testWithRebuild
         
