@@ -78,7 +78,7 @@ this component probes the web application and tries to identify possible vulnera
 
 ## Versioning
 
-We use [SemVer](http://semver.org/) for versioning. For the versions available, see the [tags on this repository](https://github.com/taipan-scanner/Taipan/tags). 
+We use [SemVer](http://semver.org/) for versioning. For the versions available, see the [tags on this repository](https://github.com/enkomio/Taipan/tags). 
 
 ## Authors
 
