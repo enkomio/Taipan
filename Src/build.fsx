@@ -202,7 +202,7 @@ Target "Release" (fun _ ->
         |> List.contains (Path.GetExtension(f).ToLowerInvariant())
         |> not
     )
-    |> Zip buildDir (Path.Combine(deployDir, "Taipan." + releaseVersion.AssemblyVersion + ".zip"))
+    |> Zip buildDir (Path.Combine(deployDir, "Taipan.latest.zip"))
 )
 
 // --------------------------------------------------------------------------------------
