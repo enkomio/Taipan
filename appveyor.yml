@@ -12,7 +12,7 @@ build_script:
 test: off
   
 artifacts:
-  - path: Src\deploy
+  - path: Src\deploy\Taipan.latest.zip
 
 environment:
   TSD_GITHUB_TOKEN:
