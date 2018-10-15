@@ -1,8 +1,6 @@
 ﻿namespace ES.Taipan.Infrastructure.Network
 
 open System
-open System.Text
-open ES.Taipan.Infrastructure.Text
 
 type DefaultWebPageRequestor(httpRequestor: IHttpRequestor) = 
     let _requestorSettings = httpRequestor.Settings
@@ -10,16 +8,17 @@ type DefaultWebPageRequestor(httpRequestor: IHttpRequestor) =
     let mutable _pageNotFoundIdentifier: IPageNotFoundIdentifier =
         {
             new IPageNotFoundIdentifier with
-                member this.PageExists(httpRequest: HttpRequest, httpResponse: HttpResponse option) =
-                    if httpResponse.IsNone then 
-                        false
-                    else
-                        httpResponse.Value <> HttpResponse.Empty &&
-                        ([
-                            System.Net.HttpStatusCode.OK; 
-                            System.Net.HttpStatusCode.Found; 
+                member this.PageExists(httpRequest: HttpRequest, httpResponse: HttpResponse option) =                    
+                    httpResponse.IsSome && 
+                    httpResponse.Value <> HttpResponse.Empty &&
+                    (
+                        [
+                            System.Net.HttpStatusCode.OK
+                            System.Net.HttpStatusCode.Found
                             System.Net.HttpStatusCode.Redirect
-                        ] |> List.contains httpResponse.Value.StatusCode)
+                            System.Net.HttpStatusCode.Unauthorized
+                        ] |> List.contains httpResponse.Value.StatusCode
+                    )
         }
                     
     member this.RequestWebPage(webRequest: WebRequest) =   

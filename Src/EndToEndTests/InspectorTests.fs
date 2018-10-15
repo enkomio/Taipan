@@ -9,6 +9,7 @@
     open ES.Taipan.Infrastructure.Network
     open ES.Taipan.Application
     open ES.Taipan.Inspector
+    open ES.Taipan.Inspector.AddOns
     open ES.Fslog
     open ES.Fslog.Loggers
         
@@ -211,6 +212,13 @@
     let ``Ruby On Rails error``(grovieraUrl: Uri) =  errorTests(grovieraUrl, "/inspector/test15/")
     let ``ASP.NET error``(grovieraUrl: Uri) =  errorTests(grovieraUrl, "/inspector/test16/")
     let ``500 Internal server error``(grovieraUrl: Uri) =  errorTests(grovieraUrl, "/inspector/test17/")
+
+    let writeHttpBasicBruteforceData(usernames: String list, passwords: String list, combinations: (String * String) list) =
+        let addOn = new ES.Taipan.Inspector.AddOns.HttpBruteforcer.HttpBruteforcerAddOn() :> IVulnerabilityScannerAddOn
+        let context = new ES.Taipan.Inspector.Context(new FilesystemAddOnStorage(addOn), fun _ -> ())
+        context.AddOnStorage.SaveProperty("Usernames", new List<String>(usernames))
+        context.AddOnStorage.SaveProperty("Passwords", new List<String>(passwords))
+        context.AddOnStorage.SaveProperty("Combinations", new List<String * String>(combinations))
 
     let writeXssData(data: (String * String list) list) =
         let storageData = new Dictionary<String, List<String>>()
@@ -628,4 +636,25 @@
             ("Reflected Cross Site Scripting", "/inspector/test38/register.php") // for username
             ("Reflected Cross Site Scripting", "/inspector/test38/register.php") // for password1
             ("Reflected Cross Site Scripting", "/inspector/test38/register.php") // for password2
+        ]
+
+    let ``HTTP Basic bruteforced page``(grovieraUrl: Uri) =
+        let scanContext = 
+            new ScanContext(
+                 StartRequest = new WebRequest(new Uri(grovieraUrl, "/inspector/test39/")),
+                Template = Templates.``Website inspector``()
+            )
+        
+        activatePlugin(scanContext, string HttpBruteforcer.HttpBruteforcerAddOn.Id)
+
+        // set usernames and passwords
+        let usernames = ["root"; "admin"; "Administrator"]
+        let passwords = ["password"; "123456"; "secret"; "admin"]
+        let combinations = [("root", "toor")]
+        writeHttpBasicBruteforceData(usernames, passwords, combinations)
+
+        // run the scan
+        Utility.runScan(scanContext) 
+        |> Utility.verifyInspector [
+            ("Weak HTTP Basic Credentials", "/inspector/test39/")
         ]

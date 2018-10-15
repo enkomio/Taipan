@@ -14,6 +14,7 @@ in a coherent way. The task execyted through the manager, could be paused or sto
 
 type TaskManager(statusToMonitor: ServiceStateController, releasePauseStatusMonitor: Boolean, releaseStopStatusMonitor: Boolean) as this =
     let _tasks = new ConcurrentDictionary<Guid, ServiceStateController>()
+    let _taskObjects = new List<Task>()
     let _tasksSyncRoot = new Object()
     let _lockObj = new Object()
     let _stateControlAcquisitionLock = new Object()
@@ -32,6 +33,9 @@ type TaskManager(statusToMonitor: ServiceStateController, releasePauseStatusMoni
         statusToMonitor.MethodCalled.Add(methodCalled)
 
     member val ConcurrentLimit = 5 with get, set
+
+    member this.Count() =
+        _taskObjects.Count
     
     member this.RunTask(taskMethod: ServiceStateController -> unit) =
         while(_tasks.Count > this.ConcurrentLimit) do
@@ -40,24 +44,29 @@ type TaskManager(statusToMonitor: ServiceStateController, releasePauseStatusMoni
         let serviceStateController = new ServiceStateController()
         lock _stateControlAcquisitionLock (fun () -> 
             acquireState(serviceStateController)  
-            _tasks.[serviceStateController.Id] <- serviceStateController  
+            _tasks.[serviceStateController.Id] <- serviceStateController
+            
+            let taskObject = Task.Factory.StartNew(fun () -> 
+                taskMethod(serviceStateController)
+                lock _tasksSyncRoot (fun () ->
+                    match _tasks.TryRemove(serviceStateController.Id) with
+                    | (true, _) ->            
+                        // release blocks if necessary
+                        serviceStateController.UnlockPause()
+                        serviceStateController.ReleaseStopIfNecessary()
+                        lock _lockObj (fun () -> Monitor.Pulse(_lockObj))
+                      
+                    | _ -> failwith "Unable to remove task"
+                )
+            , TaskCreationOptions.LongRunning)
+            _taskObjects.Add(taskObject)
+            taskObject
         )
         
-        Task.Factory.StartNew(fun () -> 
-            taskMethod(serviceStateController)
-            lock _tasksSyncRoot (fun () ->
-                match _tasks.TryRemove(serviceStateController.Id) with
-                | (true, _) ->            
-                    // release blocks if necessary
-                    serviceStateController.UnlockPause()
-                    serviceStateController.ReleaseStopIfNecessary()
-                    lock _lockObj (fun () -> Monitor.Pulse(_lockObj))
-                      
-                | _ -> failwith "Unable to remove task"
-            )
-        , TaskCreationOptions.LongRunning)        
-        
     member val StateController = statusToMonitor with get
+
+    member this.AreAllTaskCompleted() =
+        _taskObjects |> Seq.forall(fun task -> task.IsCompleted)
 
     member this.Pause() =
         let mutable allPaused = false

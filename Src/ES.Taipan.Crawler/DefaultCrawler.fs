@@ -99,8 +99,6 @@ type DefaultCrawler(settings: CrawlerSettings, webRequestor: IWebPageRequestor, 
             | :? UriFormatException -> ()
 
     let processWebResponse(webLink: WebLink, webResponse: WebResponse) =
-        let webRequest = webLink.Request
-                             
         _addOns
         |> Seq.sortBy(fun addOn -> addOn.Priority)
         |> Seq.iter(fun addOn ->

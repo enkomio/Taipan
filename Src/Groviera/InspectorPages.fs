@@ -80,6 +80,7 @@ module InspectorPages =
         <li>TEST36: <a href="/inspector/test36/">/inspector/test36/</a> RXSS on redirect html content</li>
         <li>TEST37: <a href="/inspector/test37/">/inspector/test37/</a> Regression: Avoid a FP when found an email with invalid TLD</li>
         <li>TEST38: <a href="/inspector/test38/">/inspector/test38/</a> RXSS on a password type parameter which implements check on password and retype password</li>
+        <li>TEST39: <a href="/inspector/test39/">/inspector/test39/</a> An HTTP Basic protected page (admin:admin)</li>
 	</ul><br/>
   </body>
 </html>""" ctx
@@ -398,13 +399,12 @@ module InspectorPages =
                     
                     redirectWithCustomContent ctx
 
-                path "/inspector/test37/" >=> 
-                    okContent """
+                path "/inspector/test37/" >=> okContent """
                     This is an example of email False Positive                     
                     <div class="header-logo">
-                      <a href="index.html"><img src="images/logo.png" data-ot-retina="images/logo@2x.png" alt=""></a>
+                        <a href="index.html"><img src="images/logo.png" data-ot-retina="images/logo@2x.png" alt=""></a>
                     </div>
-                    """
+                """
 
                 path "/inspector/test38/" >=> okContent """
                     <html><body>
@@ -416,7 +416,12 @@ module InspectorPages =
                       <p><button type="submit">Submit</button>
                     </form>
                     </body></html>
-                """ 
+                """
+
+                pathScan "/inspector/test39/%s" (fun page ->
+                    let webPart = OK "Welcome to the authenticated part of the website!!! You can also visit <a href='/inspector/test39/newPage'>this page!</h1>" 
+                    Authentication.authenticateBasic ((=) ("admin", "admin")) webPart
+                )
             ]
         
             // *************************

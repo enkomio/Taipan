@@ -92,6 +92,7 @@ let allTests : Expr<Uri -> unit> list = [
     <@ InspectorTests.``RXSS on query parameter in redirect page`` @>
     <@ InspectorTests.``Avoid to raise a FP when encounter an email pattern with invalid TLD`` @>
     <@ InspectorTests.``RXSS on a user registration form with password and repassword check`` @>
+    <@ InspectorTests.``HTTP Basic bruteforced page`` @>
     
     // Composed tests
     <@ ComposedTests.``Identify an hidden directory and discover a know web application`` @>
