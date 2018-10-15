@@ -13,3 +13,7 @@ test: off
   
 artifacts:
   - path: Src\deploy
+
+environment:
+  TSD_GITHUB_TOKEN:
+    secure: aomLg/UJoANZHNObs3xgs6lt6+LoiUtpiO9pUV4mXsRJYuWD3VvNPLQsd/hcocEf
