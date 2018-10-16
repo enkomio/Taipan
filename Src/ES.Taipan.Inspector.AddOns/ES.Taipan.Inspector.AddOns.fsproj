@@ -60,13 +60,12 @@
   </Choose>
   <ItemGroup>
     <Compile Include="AssemblyInfo.fs" />
-    <Compile Include="BaseStatelessAddOn.fs" />
     <Compile Include="CookieFlags\CookieFlagsAddOn.fs" />
     <Compile Include="CVE-2017-9805\CVE-2017-9805AddOn.fs" />
     <Compile Include="DirectoryListing\DirectoryListingAddOn.fs" />
     <Compile Include="ErrorMessages\ErrorMessagesAddOn.fs" />
     <Compile Include="ExposedSessionVariables\ExposedSessionVariablesAddOn.fs" />
-	<Compile Include="HttpBruteforcer\HttpBruteforcerAddOn.fs" />
+    <Compile Include="HttpBruteforcer\HttpBruteforcerAddOn.fs" />
     <Compile Include="InformationLeakage\TldList.fs" />
     <Compile Include="InformationLeakage\InformationLeakageAddOn.fs" />
     <Compile Include="OutdatedApplication\OutdatedApplicationAddOn.fs" />

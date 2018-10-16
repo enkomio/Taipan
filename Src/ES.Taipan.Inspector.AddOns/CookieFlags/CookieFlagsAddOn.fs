@@ -7,7 +7,6 @@ open System.Collections.Generic
 open System.Collections.Concurrent
 open System.Text.RegularExpressions
 open ES.Taipan.Inspector
-open ES.Taipan.Inspector.AddOns
 open ES.Taipan.Infrastructure.Service
 open ES.Taipan.Infrastructure.Messaging
 open ES.Taipan.Infrastructure.Network

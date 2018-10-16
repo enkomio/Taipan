@@ -71,7 +71,9 @@
     <Compile Include="IVulnerabilityScannerAddOnManager.fs" />
     <Compile Include="FilesystemVulnerabilityScannerAddOnManager.fs" />
     <Compile Include="FilesystemAddOnStorage.fs" />
+    <Compile Include="NewWebPageRequestorMessage.fs" />
     <Compile Include="DefaultVulnerabilityScanner.fs" />
+    <Compile Include="BaseStatelessAddOn.fs" />
     <None Include="paket.references" />
   </ItemGroup>
   <ItemGroup>

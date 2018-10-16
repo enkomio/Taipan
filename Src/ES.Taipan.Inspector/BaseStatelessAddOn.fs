@@ -1,4 +1,4 @@
-﻿namespace ES.Taipan.Inspector.AddOns
+﻿namespace ES.Taipan.Inspector
 
 open System
 open System.Threading
@@ -16,6 +16,7 @@ open ES.Fslog
 [<AbstractClass>]
 type BaseStatelessAddOn(name: String, id: String, priority: Int32) =      
     let _syncRoot = new Object()
+    let _serviceMetrics = new ServiceMetrics(name)
     let mutable _isInitialized = false
     let mutable _pendingMessageIds = Map.empty<Guid, ManualResetEventSlim>
     let mutable _completedRequests = Map.empty<Guid, WebLinksExtractedMessage>
@@ -27,6 +28,13 @@ type BaseStatelessAddOn(name: String, id: String, priority: Int32) =
             let waitLock = _pendingMessageIds.[id]
             _pendingMessageIds <- _pendingMessageIds.Remove(id)
             waitLock.Set()
+
+    let requestNotificationCallback(httpRequestor: IHttpRequestor, req: HttpRequest, completed: Boolean) =     
+        let prefix = name + "ScannerHttpRequestor_"
+        let httpRequestorMetrics = _serviceMetrics.GetSubMetrics(prefix + httpRequestor.Id.ToString("N"))
+        if completed 
+        then httpRequestorMetrics.AddMetric("Last HTTP request completed", req.ToString())
+        else httpRequestorMetrics.AddMetric("Last HTTP request started", req.ToString())
 
     member val Context : Context option = None with get, set
     member val MessageBroker : IMessageBroker option = None with get, set
@@ -53,6 +61,8 @@ type BaseStatelessAddOn(name: String, id: String, priority: Int32) =
             this.LogProvide <- Some logProvider
             this.MessageBroker <- Some messageBroker
             _isInitialized <- true
+
+            webRequestor.HttpRequestor.RequestNotificationCallback <- requestNotificationCallback
         )
 
         // regist to satisfy rebuild request
@@ -93,6 +103,18 @@ type BaseStatelessAddOn(name: String, id: String, priority: Int32) =
         )
 
     abstract Scan : TestRequest * ServiceStateController -> unit
+
+    member this.Dispose() =
+        // dispose web requestor, this is importance, since if we use the Javascript
+        // Engine the dispose will tear down the browser
+        if this.WebRequestor.IsSome then
+            match this.WebRequestor.Value with
+            | :? IDisposable as disposable -> disposable.Dispose()
+            | _ -> ()
+
+    interface IDisposable with
+        member this.Dispose() =
+            this.Dispose()
 
     interface IVulnerabilityScannerAddOn with
         member this.Id with get() = this.Id            

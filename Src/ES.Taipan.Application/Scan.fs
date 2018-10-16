@@ -13,6 +13,7 @@ open ES.Taipan.Inspector
 open ES.Taipan.Crawler
 open ES.Taipan.Discoverer
 open ES.Fslog
+open System.Runtime.Remoting.Messaging
 
 type ScanState =
     | Created
@@ -136,6 +137,10 @@ type Scan(scanContext: ScanContext, logProvider: ILogProvider) as this =
 
         yield! allMetrics
     ]
+
+    let handleNewWebPageRequestorMessage(sender: Object, message: Envelope<NewWebPageRequestorMessage>) =
+        let webPageRequestor = _container.Value.Resolve<IWebPageRequestor>()
+        message.Item.WebPageRequestor <- Some webPageRequestor
         
     do
         _serviceMetrics.AddMetric("Status", "created")
@@ -172,7 +177,11 @@ type Scan(scanContext: ScanContext, logProvider: ILogProvider) as this =
             builder.RegisterType<FilesystemAddOnManager>().As<ICrawlerAddOnManager>(),
             builder.RegisterType<DefaultCrawler>().As<ICrawler>()
         )
+
         _container <- Some(builder.Build())
+        
+        // resolve needed objects
+        _container.Value.Resolve<IMessageBroker>().Subscribe(handleNewWebPageRequestorMessage)
         _scanWorkflow <- Some(_container.Value.Resolve<ScanWorkflow>())
                 
     // events objects
