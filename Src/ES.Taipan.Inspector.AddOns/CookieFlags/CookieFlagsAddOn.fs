@@ -36,7 +36,7 @@ type MissingHttpOnlyCookieFlagAddOn() =
 
     static member Id = Guid.Parse("A719DE80-32BF-4E53-BCB2-D138BF953853")
     
-    default this.Scan(testRequest: TestRequest, stateController: ServiceStateController) =
+    override this.Scan(testRequest: TestRequest, stateController: ServiceStateController) =
         match testRequest.WebResponse.HttpResponse.Cookies |> Seq.tryFind(fun cookie -> not cookie.HttpOnly) with
         | Some cookie ->
             if _signaledCookies.Add(cookie.Name) then
@@ -50,7 +50,7 @@ type MissingSecureCookieFlagAddOn() =
 
     static member Id = Guid.Parse("FDC3E54E-98F2-4C14-A620-9E4629CAEE0B")
 
-    default this.Scan(testRequest: TestRequest, stateController: ServiceStateController) =
+    override this.Scan(testRequest: TestRequest, stateController: ServiceStateController) =
         if testRequest.WebRequest.HttpRequest.Uri.Scheme.Equals("https", StringComparison.Ordinal) then            
             match testRequest.WebResponse.HttpResponse.Cookies |> Seq.tryFind(fun cookie -> not cookie.Secure) with
             | Some cookie ->
@@ -58,4 +58,3 @@ type MissingSecureCookieFlagAddOn() =
                     let securityIssue = createSecurityIssue(testRequest, MissingSecureCookieFlagAddOn.Id, "Cookie Not Marked As Secure", cookie)
                     this.Context.Value.AddSecurityIssue(securityIssue)
             | None -> ()
-            

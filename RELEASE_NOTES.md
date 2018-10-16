@@ -1,3 +1,8 @@
+### 2.0.0 - XX/XX/2018
+* Improved error reporting and enabled saving a txt format of the generated report
+* Added integrity check when testing web form with password fields. If the values of the password fields is different there may be false negative
+* Added HTTP Basic bruteforce plugin
+
 ### 1.7.0 - 06/08/2018
 * Created Vulnerability Editor in order to create application vulnerabilities
 * Improved system metrics generation

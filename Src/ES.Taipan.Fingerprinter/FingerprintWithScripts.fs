@@ -40,12 +40,13 @@ type FingerprintWithScripts
             | Some webAppVerFing ->
                 (webAppFing, webAppVerFing)
             | None -> 
+                // need to create a version from scratch
                 let webAppVerFing = new WebApplicationVersionFingerprint(Version = luaSignRes.AppVersion)
                 webAppVerFing.Signatures.Add(downcast luaSignRes.Signature.Value)
                 (webAppFing, webAppVerFing)
 
         | None ->
-            // need to create them from scratch
+            // need to create an application and version from scratch
             let webAppFing = new WebApplicationFingerprint(Name = luaSignRes.AppName, AcceptanceRate = 1.0)                                
             webAppFing.ScriptSignatures.Add(downcast luaSignRes.Signature.Value)
                                     

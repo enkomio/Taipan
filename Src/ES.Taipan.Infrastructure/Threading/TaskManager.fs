@@ -31,13 +31,16 @@ type TaskManager(statusToMonitor: ServiceStateController, releasePauseStatusMoni
         
     do
         statusToMonitor.MethodCalled.Add(methodCalled)
+        if statusToMonitor.IsPaused then methodCalled(ServiceAction.Paused)
+        elif statusToMonitor.IsStopped then methodCalled(ServiceAction.Stopped)
 
     member val ConcurrentLimit = 5 with get, set
+    member val Id = Guid.NewGuid() with get
 
     member this.Count() =
         _taskObjects.Count
     
-    member this.RunTask(taskMethod: ServiceStateController -> unit) =
+    member this.RunTask(taskMethod: ServiceStateController -> unit, removeTaskAfterCompletation: Boolean) =
         while(_tasks.Count > this.ConcurrentLimit) do
             lock _lockObj (fun () -> Monitor.Wait(_lockObj) |> ignore)
         
@@ -48,16 +51,16 @@ type TaskManager(statusToMonitor: ServiceStateController, releasePauseStatusMoni
             
             let taskObject = Task.Factory.StartNew(fun () -> 
                 taskMethod(serviceStateController)
-                lock _tasksSyncRoot (fun () ->
-                    match _tasks.TryRemove(serviceStateController.Id) with
-                    | (true, _) ->            
-                        // release blocks if necessary
-                        serviceStateController.UnlockPause()
-                        serviceStateController.ReleaseStopIfNecessary()
-                        lock _lockObj (fun () -> Monitor.Pulse(_lockObj))
-                      
-                    | _ -> failwith "Unable to remove task"
-                )
+                if removeTaskAfterCompletation then
+                    lock _tasksSyncRoot (fun () ->
+                        match _tasks.TryRemove(serviceStateController.Id) with
+                        | (true, _) ->            
+                            // release blocks if necessary
+                            serviceStateController.UnlockPause()
+                            serviceStateController.ReleaseStopIfNecessary()
+                            lock _lockObj (fun () -> Monitor.Pulse(_lockObj))                      
+                        | _ -> failwith "Unable to remove task"
+                    )
             , TaskCreationOptions.LongRunning)
             _taskObjects.Add(taskObject)
             taskObject

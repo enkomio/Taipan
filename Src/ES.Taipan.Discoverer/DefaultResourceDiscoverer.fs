@@ -438,7 +438,7 @@ type DefaultResourceDiscoverer(settings: ResourceDiscovererSettings, webRequesto
                                 requestWorker(serviceStateController,discoverRequest, resourcesQueue, numOfResources, counter)
                                 |> Seq.toList
                                 |> List.iter identifiedResources.Add
-                            ) |> tasks.Add
+                            , true) |> tasks.Add
 
                     // wait for all task completed
                     let counter = ref 0

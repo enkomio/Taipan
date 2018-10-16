@@ -36,6 +36,9 @@ type BaseStatelessAddOn(name: String, id: String, priority: Int32) =
     member val Id = Guid.Parse(id) with get
     member val Name = name with get
     member val Priority = priority with get
+
+    abstract IsBackgroundService: Boolean with get
+    default val IsBackgroundService = false with get
         
     abstract RunToCompletation : ServiceStateController -> unit
     default this.RunToCompletation(stateController: ServiceStateController) =
@@ -95,7 +98,8 @@ type BaseStatelessAddOn(name: String, id: String, priority: Int32) =
         member this.Id with get() = this.Id            
         member this.Name with get() = this.Name
         member this.Priority with get() = this.Priority
-        
+        member this.IsBackgroundService with get() = this.IsBackgroundService
+
         member this.Initialize(context: Context, webRequestor: IWebPageRequestor, messageBroker: IMessageBroker, logProvider: ILogProvider) =
             this.Initialize(context, webRequestor, messageBroker, logProvider)
 

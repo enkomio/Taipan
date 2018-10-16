@@ -47,16 +47,17 @@
   </ItemGroup>
   <ItemGroup>
     <None Include="paket.references" />
+    <Compile Include="AssemblyInfo.fs">
+      <Link>AssemblyInfo.fs</Link>
+    </Compile>
     <Compile Include="TemplateProfile.fs" />
     <Compile Include="ScanContext.fs" />
     <Compile Include="ScanWorkflow.fs" />
     <Compile Include="MessageAdapters.fs" />
+    <Compile Include="ScanLogger.fs" />
     <Compile Include="Scan.fs" />
     <Compile Include="ScanResult.fs" />
     <Compile Include="ScanService.fs" />
-    <Compile Include="AssemblyInfo.fs">
-      <Link>AssemblyInfo.fs</Link>
-    </Compile>
   </ItemGroup>
   <PropertyGroup>
     <MinimumVisualStudioVersion Condition="'$(MinimumVisualStudioVersion)' == ''">11</MinimumVisualStudioVersion>

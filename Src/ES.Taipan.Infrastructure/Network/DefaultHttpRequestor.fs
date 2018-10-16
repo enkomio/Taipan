@@ -15,7 +15,7 @@ open ES.Taipan.Infrastructure.Text
 open ES.Fslog
 open Brotli
 
-type DefaultHttpRequestor(defaultSettings: HttpRequestorSettings, requestNotificationCallback: HttpRequest * Boolean -> unit, logProvider: ILogProvider) as this =
+type DefaultHttpRequestor(defaultSettings: HttpRequestorSettings, logProvider: ILogProvider) as this =
     let _requestGateTimeout = 1000 * 60 * 60 * 10 // 10 minutes
     let _maxParallelism = 100
     let _requestGate = new RequestGate(_maxParallelism)
@@ -202,15 +202,15 @@ type DefaultHttpRequestor(defaultSettings: HttpRequestorSettings, requestNotific
         ServicePointManager.Expect100Continue <- false
         ServicePointManager.ServerCertificateValidationCallback <- new RemoteCertificateValidationCallback(doCertificateValidation)
         logProvider.AddLogSourceToLoggers(_logger)
-
-    new(defaultSettings: HttpRequestorSettings, logProvider: ILogProvider) = new DefaultHttpRequestor(defaultSettings, (fun _ -> ()), logProvider)
     
     member this.CertificationValidate = _certificationValidate.Publish
     member val SessionState : SessionStateManager option = Some <| new SessionStateManager() with get, set
     member this.Settings = _settings
+    member val Id = Guid.NewGuid() with get
+    member val RequestNotificationCallback: (IHttpRequestor * HttpRequest * Boolean) -> unit = fun (_, _, _) -> () with get, set
 
     member this.DownloadData(httpRequest: HttpRequest) =
-        requestNotificationCallback(httpRequest, false)
+        this.RequestNotificationCallback(upcast this, httpRequest, false)
 
         try                
             applySettingsToRequest(httpRequest)
@@ -247,7 +247,7 @@ type DefaultHttpRequestor(defaultSettings: HttpRequestorSettings, requestNotific
 
     member private this.SendRequestAsync(httpRequest: HttpRequest) =         
         async {
-            requestNotificationCallback(httpRequest, false)
+            this.RequestNotificationCallback(upcast this, httpRequest, false)
 
             use! holder = _requestGate.AsyncAcquire(_requestGateTimeout)
             let httpResponseResult: HttpResponse option ref = ref(None)
@@ -357,7 +357,7 @@ type DefaultHttpRequestor(defaultSettings: HttpRequestorSettings, requestNotific
             | e -> 
                 _logger.RequestError(httpRequest.Uri.ToString(), e.Message)
 
-            requestNotificationCallback(httpRequest, true)
+            this.RequestNotificationCallback(upcast this, httpRequest, true)
             return !httpResponseResult
         }
 
@@ -453,6 +453,13 @@ type DefaultHttpRequestor(defaultSettings: HttpRequestorSettings, requestNotific
 
         member this.Settings 
             with get() = this.Settings
+
+        member this.Id 
+            with get() = this.Id
+
+        member this.RequestNotificationCallback
+            with get() = this.RequestNotificationCallback
+            and set(v) = this.RequestNotificationCallback <- v
 
         member this.DownloadData(httpRequest: HttpRequest) =
             this.DownloadData(httpRequest)

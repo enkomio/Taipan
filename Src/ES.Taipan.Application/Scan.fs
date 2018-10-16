@@ -1,12 +1,9 @@
 ﻿namespace ES.Taipan.Application
 
 open System
-open System.Text
 open System.Net
 open System.Threading
 open System.Collections.Concurrent
-open System.Diagnostics
-open System.Reflection
 open Autofac
 open ES.Taipan.Infrastructure.Messaging
 open ES.Taipan.Infrastructure.Service
@@ -16,75 +13,6 @@ open ES.Taipan.Inspector
 open ES.Taipan.Crawler
 open ES.Taipan.Discoverer
 open ES.Fslog
-
-type internal ScanLogger() =
-    inherit LogSource("Scan")
-                
-    [<Log(1, Message = "All services stopped", Level = LogLevel.Informational)>]
-    member this.ScanStopped() =
-        this.WriteLog(1, [||])
-
-    [<Log(2, Message = "All services paused", Level = LogLevel.Informational)>]
-    member this.ScanPaused() =
-        this.WriteLog(2, [||])
-
-    [<Log(3, Message = "All services resumed", Level = LogLevel.Informational)>]
-    member this.ScanResumed() =
-        this.WriteLog(3, [||])
-
-    [<Log(4, Message = "Start scan of: {0} [{1}]", Level = LogLevel.Informational)>]
-    member this.ScanStarted(ip: String, scanContext: ScanContext) =
-        this.WriteLog(4, [|scanContext.StartRequest.HttpRequest.Uri; ip|])
-
-    [<Log(5, Message = "Scan engine version: {0}", Level = LogLevel.Informational)>]
-    member this.ScanEngineUsed() =
-        let scanEngineVersion = FileVersionInfo.GetVersionInfo(Assembly.GetCallingAssembly().Location).ProductVersion
-        this.WriteLog(5, [|scanEngineVersion|])
-
-    [<Log(6, Message = "Completed scan of: {0} in {1} seconds", Level = LogLevel.Informational)>]
-    member this.ScanCompleted(scanContext: ScanContext, seconds: Int32) =
-        this.WriteLog(6, [|scanContext.StartRequest.HttpRequest.Uri; seconds|])
-
-    [<Log(7, Message = "Using template: {0} [{1}]", Level = LogLevel.Informational)>]
-    member this.UsedTemplate(template: TemplateProfile) =
-        this.WriteLog(7, [|template.Name; template.Id|])
-                
-    [<Log(8, Message = "{0}", Level = LogLevel.Critical)>]
-    member this.FatalScanError(e: Exception) =
-        let exceptionError = new StringBuilder()
-        let populateField(ex: Exception) =
-            ignore(
-                exceptionError.AppendLine(),
-                exceptionError.AppendLine("Exception Message=" + ex.Message),
-                exceptionError.AppendLine("Exception Source=" + ex.Source),
-                exceptionError.AppendLine("*** Exception Stack trace follow:"),
-                exceptionError.AppendLine(),
-                exceptionError.AppendLine(ex.StackTrace),
-                exceptionError.AppendLine()
-            )
-        populateField(e)
-
-        if e.InnerException <> null then
-            ignore(
-                exceptionError.AppendLine(),
-                exceptionError.AppendLine("*** Inner Exception Details"),
-                exceptionError.AppendLine()
-            )
-            populateField(e.InnerException)
-
-        this.WriteLog(8, [|exceptionError.ToString()|])
-
-    [<Log(9, Message = "All services started", Level = LogLevel.Informational)>]
-    member this.AllServicesStarted() =        
-        this.WriteLog(9, Array.empty)
-
-    [<Log(10, Message = "Unable to connect to host '{0}' port {1}. {2}", Level = LogLevel.Error)>]
-    member this.HostPortNotReachable(host: String, port: Int32, errorMessage: String) =
-        this.WriteLog(10, [|host; port; errorMessage|])
-
-    [<Log(11, Message = "Start assessment step for web site: {0}", Level = LogLevel.Informational)>]
-    member this.StartAssessment(uri: String) =
-        this.WriteLog(11, [|uri|])
 
 type ScanState =
     | Created
@@ -102,18 +30,9 @@ type ScanState =
         | Paused -> "Parsed"
         | Stopped -> "Stopped"
         | Completed -> "Completed"
-
-type ScanMetrics() =
-    inherit ServiceMetrics("Scan")
-
-    member this.LastHttpRequestStarted(req: HttpRequest) =
-        this.AddMetric("Last HTTP request started", req.ToString())
-
-    member this.LastHttpRequestCompleted(req: HttpRequest) =
-        this.AddMetric("Last HTTP request completed", req.ToString())
-
+        
 type Scan(scanContext: ScanContext, logProvider: ILogProvider) as this =        
-    let _serviceMetrics = new ScanMetrics()    
+    let _serviceMetrics = new ServiceMetrics("Scan")
     let _waitLock = new ManualResetEventSlim(false)
     let _serviceCompletedLock = new Object()
 
@@ -152,11 +71,8 @@ type Scan(scanContext: ScanContext, logProvider: ILogProvider) as this =
                 if this.State = ScanState.Running then 
                     this.State <- ScanState.Completed
                 _logger.ScanCompleted(scanContext, this.GetDuration())
+                _serviceMetrics.AddMetric("Status", "completed")
         )        
-
-    let requestNotificationCallback(req: HttpRequest, completed: Boolean) = 
-        if completed then _serviceMetrics.LastHttpRequestCompleted(req)
-        else _serviceMetrics.LastHttpRequestStarted(req)
 
     let checkForJourneyScanRequest(scanContext: ScanContext) =
         if scanContext.Template.HttpRequestorSettings.Journey.Paths |> Seq.isEmpty |> not then
@@ -178,6 +94,7 @@ type Scan(scanContext: ScanContext, logProvider: ILogProvider) as this =
 
     let runAssessmentPhase() =
         if not _assessmentPhaseStarted then
+            _serviceMetrics.AddMetric("In run assessment phase", "true")
             _assessmentPhaseStarted <- true
             _logger.StartAssessment(scanContext.StartRequest.HttpRequest.Uri.AbsoluteUri)
 
@@ -209,8 +126,19 @@ type Scan(scanContext: ScanContext, logProvider: ILogProvider) as this =
                     if scanContext.Template.RunVulnerabilityScanner then
                         _messageBroker.Value.Dispatch(this, convertPageReProcessedToTestRequest(message))
             )
+
+    let rec getAllMetrics(serviceMetrics: ServiceMetrics) = [
+        yield serviceMetrics
+        let allMetrics =
+            serviceMetrics.GetAllSubMetrics() 
+            |> Seq.map(fun kv -> getAllMetrics(kv.Value))
+            |> Seq.concat
+
+        yield! allMetrics
+    ]
         
     do
+        _serviceMetrics.AddMetric("Status", "created")
         if scanContext.Template.CrawlerSettings.Scope <> NavigationScope.WholeDomain then
             // need to adjust the discovere depth in order to avoid meaningless scan
             let absolutePath = scanContext.StartRequest.HttpRequest.Uri.AbsolutePath
@@ -221,7 +149,7 @@ type Scan(scanContext: ScanContext, logProvider: ILogProvider) as this =
         ignore(
             builder.RegisterType<ScanWorkflow>().WithParameter("runAssessmentPhaseCallback", runAssessmentPhase),
             builder.RegisterInstance(logProvider).As<ILogProvider>().SingleInstance(),
-            builder.RegisterType<DefaultHttpRequestor>().As<IHttpRequestor>().WithParameter("requestNotificationCallback", requestNotificationCallback),
+            builder.RegisterType<DefaultHttpRequestor>().As<IHttpRequestor>(),
             builder.RegisterInstance(scanContext.Template.HttpRequestorSettings).As<HttpRequestorSettings>().SingleInstance(),
             builder.RegisterType<HeuristicPageNotFoundIdentifier>().As<IPageNotFoundIdentifier>().SingleInstance(),
             builder.RegisterType<DefaultWebPageRequestor>().As<IWebPageRequestor>(),
@@ -300,10 +228,13 @@ type Scan(scanContext: ScanContext, logProvider: ILogProvider) as this =
         let metricMessage = new RequestMetricsMessage()
         _messageBroker.Value.Dispatch(this, metricMessage)        
         metricMessage.GetResults() 
-        |> Seq.map(fun kv -> kv.Value :?> ServiceMetrics)
+        |> Seq.map(fun kv -> getAllMetrics(kv.Value :?> ServiceMetrics))
+        |> Seq.concat
         |> Seq.toList
+        |> fun metrics -> _serviceMetrics::metrics
         
-    member internal this.StartScanIp(ip: String) =        
+    member internal this.StartScanIp(ip: String) =   
+        _serviceMetrics.AddMetric("Status", "running")
         _logger.ScanStarted(ip, scanContext)
         _logger.UsedTemplate(scanContext.Template)
         
@@ -439,6 +370,7 @@ type Scan(scanContext: ScanContext, logProvider: ILogProvider) as this =
         let uri = scanContext.StartRequest.HttpRequest.Uri
             
         try
+            _serviceMetrics.AddMetric("Status", "started")
             this.StartedAt <- DateTime.UtcNow
             _logger.ScanEngineUsed()
 
@@ -463,6 +395,7 @@ type Scan(scanContext: ScanContext, logProvider: ILogProvider) as this =
             let noNeededCrawler = scanContext.Template.RunResourceDiscoverer || scanContext.Template.RunWebAppFingerprinter
             hostReachable <- (webResponse.PageExists || noNeededCrawler) && webResponse.HttpResponse <> HttpResponse.Error
         with e -> 
+            _serviceMetrics.AddMetric("Status", "error")
             errorMessage <- e.Message
                         
         // if the host is reachable start the scan around a generic try/catch to avoid to crash everything :\
@@ -474,11 +407,13 @@ type Scan(scanContext: ScanContext, logProvider: ILogProvider) as this =
                 this.State <- ScanState.Error
                 _waitLock.Set()
         | _ ->             
+            _serviceMetrics.AddMetric("Status", "error")
             _logger.HostPortNotReachable(uri.Host, uri.Port, errorMessage)
             this.State <- ScanState.Error
             _waitLock.Set()            
         
     member this.WaitForcompletation() =
+        _serviceMetrics.AddMetric("Status", "wait for completation")
         _waitLock.Wait()
                     
     member val Id = Guid.NewGuid() with get
@@ -492,16 +427,19 @@ type Scan(scanContext: ScanContext, logProvider: ILogProvider) as this =
         int32 timeSpan.TotalSeconds
 
     member this.Pause() =
+        _serviceMetrics.AddMetric("Status", "paused")
         _scanWorkflow.Value.Pause()
         _logger.ScanPaused()
 
     member this.Stop() =
+        _serviceMetrics.AddMetric("Status", "stopped")
         _stopRequested <- true
         _scanWorkflow.Value.Stop()
         _logger.ScanStopped()
         this.State <- ScanState.Stopped
 
     member this.Resume() =
+        _serviceMetrics.AddMetric("Status", "running")
         _scanWorkflow.Value.Resume()
         _logger.ScanResumed()
 

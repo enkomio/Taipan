@@ -135,7 +135,7 @@ type HttpBruteforcerAddOn() as this =
         for i=0 to _numOfConcurrentTasks do
             taskManager.RunTask(fun serviceStateController -> 
                 bruteforceWoker(serviceStateController)
-            ) |> ignore
+            , true) |> ignore
 
     let bruteforcePage(testRequest: TestRequest, taskManager: TaskManager) =        
         if taskManager.Count() = 0 then
@@ -148,6 +148,7 @@ type HttpBruteforcerAddOn() as this =
         _passwords <- String.Empty::_usernames@_passwords |> List.distinct
 
     static member Id = Guid.Parse("73BC0C5B-F9BF-4453-98C0-56BBE9EE1361")
+    override this.IsBackgroundService with get() = true
 
     default this.Initialize(context: Context, webRequestor: IWebPageRequestor, messageBroker: IMessageBroker, logProvider: ILogProvider) =
         let initResult = base.Initialize(context, webRequestor, messageBroker, logProvider)

@@ -109,7 +109,7 @@ type FingerprintWithSignatures
         for _ in Enumerable.Range(0, effectiveNumOfWorkers) do
             taskManager.RunTask(fun serviceStateController -> 
                 fingeprinterWorker(serviceStateController, webApplicationsQueue, identifiedWebApplications, fingerprintRequest)
-            ) |> tasks.Add
+            , true) |> tasks.Add
 
         // wait for all task to complete
         Task.WaitAll(tasks |> Seq.toArray)

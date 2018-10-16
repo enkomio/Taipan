@@ -16,24 +16,6 @@ module private CrawlerIdGenerator =
         incr _id
         !_id
 
-type CrawlerMetrics() =
-    inherit ServiceMetrics("Crawler")
-
-    member this.LastProcessedWebPage(webLink: WebLink) =
-        this.AddMetric("Last Processed Web Page", webLink.Request.HttpRequest.Uri.ToString())
-
-    member this.LastActivatedAddOn(addOn: ICrawlerAddOn) =
-        this.AddMetric("Last activated Add On", addOn.Name)
-
-    member this.RequestPerSeconds(numReq: Int32) =
-        this.AddMetric("Page processed per seconds", numReq.ToString())
-
-    member this.CurrentState(status: String) =
-        this.AddMetric("Current status", status)
-
-    member this.InitializationCompleted() =
-        this.AddMetric("Initialization completed", "true")
-
 type DefaultCrawler(settings: CrawlerSettings, webRequestor: IWebPageRequestor, addOnManager: ICrawlerAddOnManager, messageBroker: IMessageBroker, logProvider: ILogProvider) as this =         
     let mutable _isInitialized = false
     let mutable _linkMutator: WebLinkMutator option = None
@@ -48,9 +30,16 @@ type DefaultCrawler(settings: CrawlerSettings, webRequestor: IWebPageRequestor, 
     let _logger = new CrawlerLogger()
     let _crawlerId = CrawlerIdGenerator.generateId()
     let _serviceDiagnostics = new ServiceDiagnostics()
-    let _serviceMetrics = new CrawlerMetrics()
+    let _serviceMetrics = new ServiceMetrics("Crawler")
     let _statusMonitor = new Object()
     let _runToCompletationCalledLock = new ManualResetEventSlim()
+
+    let requestNotificationCallback(httpRequestor: IHttpRequestor, req: HttpRequest, completed: Boolean) =     
+        let prefix = "CrawlerHttpRequestor_"
+        let httpRequestorMetrics = _serviceMetrics.GetSubMetrics(prefix + httpRequestor.Id.ToString("N"))
+        if completed 
+        then httpRequestorMetrics.AddMetric("Last HTTP request completed", req.ToString())
+        else httpRequestorMetrics.AddMetric("Last HTTP request started", req.ToString())
     
     let checkCrawlerState() =
         if not <| _crawlerState.HasWebRequestToProcess then            
@@ -78,7 +67,7 @@ type DefaultCrawler(settings: CrawlerSettings, webRequestor: IWebPageRequestor, 
         _addOns
         |> Seq.sortBy(fun addOn -> addOn.Priority)
         |> Seq.map(fun addOn ->
-            _serviceMetrics.LastActivatedAddOn(addOn)
+            _serviceMetrics.AddMetric("Last activated Add On", addOn.Name)
             addOn.DiscoverNewLinks(webLink, webResponse, messageBroker, logProvider)
         )        
         |> Seq.concat        
@@ -103,7 +92,7 @@ type DefaultCrawler(settings: CrawlerSettings, webRequestor: IWebPageRequestor, 
         |> Seq.sortBy(fun addOn -> addOn.Priority)
         |> Seq.iter(fun addOn ->
             // force adding only one time
-            _serviceMetrics.LastActivatedAddOn(addOn)
+            _serviceMetrics.AddMetric("Last activated Add On", addOn.Name)
             addOn.DiscoverNewLinks(webLink, webResponse, messageBroker, logProvider)
             |> Seq.sortBy(fun webLink -> webLink.Request.HttpRequest.Source.IsNone)
             |> Seq.iter (fun foundWebLink -> 
@@ -115,7 +104,7 @@ type DefaultCrawler(settings: CrawlerSettings, webRequestor: IWebPageRequestor, 
     let processWebRequest(webLink: WebLink) =
         if _crawlerState.IsCrawlerStateAvailable() && not _stateController.IsStopped && not(_crawlerState.IsStopRequested()) then
             let webResponse = webRequestor.RequestWebPage(webLink.Request)
-            _serviceMetrics.LastProcessedWebPage(webLink)
+            _serviceMetrics.AddMetric("Last Processed Web Page", webLink.Request.HttpRequest.Uri.ToString())
 
             if _crawlerState.IsWebResponseValid(webResponse) then  
                 processWebResponse(webLink, webResponse)
@@ -151,14 +140,14 @@ type DefaultCrawler(settings: CrawlerSettings, webRequestor: IWebPageRequestor, 
             _processCompleted.Trigger(this)
                         
             if _stateController.IsStopped then
-                _serviceMetrics.CurrentState("Stopped")
+                _serviceMetrics.AddMetric("Status", "Stopped")
             else
-                _serviceMetrics.CurrentState("Completed")
+                _serviceMetrics.AddMetric("Status", "Completed")
 
     let doReCrawling() =
         _logger.StartReCrawling()
         _serviceDiagnostics.Activate()
-        _serviceMetrics.CurrentState("Re-Crawling")
+        _serviceMetrics.AddMetric("Status", "Re-Crawling")
         _crawlerState.GetAllProcessedPages()
         |> Seq.iter(fun webPage ->
             if not _stateController.IsStopped && not(_crawlerState.IsStopRequested()) then   
@@ -168,27 +157,19 @@ type DefaultCrawler(settings: CrawlerSettings, webRequestor: IWebPageRequestor, 
                 _logger.PageReProcessed(webPage, webResponse.HttpResponse)
                 messageBroker.Dispatch(this, new PageReProcessedMessage(webPage, webResponse, _crawlerId))
         )
-        _serviceMetrics.CurrentState("Idle")
+        _serviceMetrics.AddMetric("Status", "Idle")
         _serviceDiagnostics.GoIdle()
 
     let doCrawling() =
-        // code to get request done per second metric
-        let numOfServicedRequests = ref 0
-        let timer = new System.Timers.Timer(1000.)                
-        timer.Elapsed.Add(fun _ -> 
-            let oldVal = Interlocked.Exchange(numOfServicedRequests, 0)
-            _serviceMetrics.RequestPerSeconds(oldVal)
-        )                
-        timer.Start()
-
         // main crawling loop 
         for webRequest in _crawlerState.GetNextWebRequest() do                                
             lock _statusMonitor (fun () ->                    
                 _serviceDiagnostics.Activate()
-                _serviceMetrics.CurrentState("Running")
-                _stateController.WaitIfPauseRequested()     
-                processWebRequest(webRequest) 
-                Interlocked.Increment(numOfServicedRequests) |> ignore
+                _serviceMetrics.AddMetric("Status", "Running")
+                _stateController.WaitIfPauseRequested()
+                
+                // process request
+                processWebRequest(webRequest)
                     
                 // check the crawler status
                 checkCrawlerState()
@@ -247,6 +228,9 @@ type DefaultCrawler(settings: CrawlerSettings, webRequestor: IWebPageRequestor, 
         let messageWebLinksExtracted = new WebLinksExtractedMessage(message.Item.Id, extractedLinks |> Seq.toList)
         messageBroker.Dispatch(this, messageWebLinksExtracted)
 
+    let handleRequestMetricsMessage(sender: Object, message: Envelope<RequestMetricsMessage>) =
+        message.Item.AddResult(this, _serviceMetrics)
+
     let filterAddOn (addOn: ICrawlerAddOn) = 
         if settings.ActivateAllAddOns || settings.AddOnIdsToActivate.Contains(addOn.Id) then 
             _logger.AddOnActivated(addOn.Name)
@@ -257,12 +241,14 @@ type DefaultCrawler(settings: CrawlerSettings, webRequestor: IWebPageRequestor, 
     do 
         // set requestor settings
         webRequestor.SetPageNotFoundIdentifier(new HeuristicPageNotFoundIdentifier(webRequestor.HttpRequestor))
+        webRequestor.HttpRequestor.RequestNotificationCallback <- requestNotificationCallback
 
+        // event subscription
         messageBroker.Subscribe<String>(handleNewMessage)
         messageBroker.Subscribe<CrawlRequest>(handleCrawlRequestMessage)
         messageBroker.Subscribe<ExtractWebLinksMessage>(handleExtractWebLinksMessage)
         messageBroker.Subscribe<GetSettingsMessage>(handleGetSettings)
-        messageBroker.Subscribe<RequestMetricsMessage>(fun (sender, msg) -> msg.Item.AddResult(this, _serviceMetrics))
+        messageBroker.Subscribe<RequestMetricsMessage>(handleRequestMetricsMessage)
         logProvider.AddLogSourceToLoggers(_logger)
 
         // load only enabled addOn
@@ -299,7 +285,7 @@ type DefaultCrawler(settings: CrawlerSettings, webRequestor: IWebPageRequestor, 
         with get() = _crawlerState
 
     member this.TriggerIdleState() =        
-        _serviceMetrics.CurrentState("Idle")
+        _serviceMetrics.AddMetric("Status", "Idle")
         _serviceDiagnostics.GoIdle()
         _logger.GoIdle()        
         _noMoreWebRequestsToProcess.Trigger(this)
@@ -311,8 +297,7 @@ type DefaultCrawler(settings: CrawlerSettings, webRequestor: IWebPageRequestor, 
         _isInitialized <- true
 
         // trigger the initialization event
-        _initializationCompleted.Trigger(this)
-        _serviceMetrics.InitializationCompleted()            
+        _initializationCompleted.Trigger(this)          
         crawlerActivated
 
     member this.CrawlRequest(webRequest: WebRequest) =  
@@ -330,11 +315,11 @@ type DefaultCrawler(settings: CrawlerSettings, webRequestor: IWebPageRequestor, 
 
         if action() then
             _logger.CrawlerPaused()
-            _serviceMetrics.CurrentState("Paused")
+            _serviceMetrics.AddMetric("Status", "Paused")
                 
     member this.Resume() = 
         if _stateController.ReleasePause() then
-            _serviceMetrics.CurrentState("Running")
+            _serviceMetrics.AddMetric("Status", "Running")
             _logger.CrawlerResumed()
             checkCrawlerState()
         
@@ -345,7 +330,7 @@ type DefaultCrawler(settings: CrawlerSettings, webRequestor: IWebPageRequestor, 
             _logger.CrawlerStopped()        
 
     member this.RunToCompletation() =
-        _serviceMetrics.CurrentState("Run to completation")
+        _serviceMetrics.AddMetric("Status", "Run to completation")
         _logger.RunToCompletation()
 
         // run the re-crawling if necessary. Actually no one use this feature,
