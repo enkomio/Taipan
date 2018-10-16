@@ -19,9 +19,9 @@ type HttpBruteforcerAddOn() as this =
     let _testRequests = new BlockingCollection<TestRequest>()
 
     let mutable _taskManager: TaskManager option = None
-    let mutable _usernames = new List<String>()
-    let mutable _passwords = new List<String>()
-    let mutable _combinations = new List<String * String>()
+    let mutable _usernames = Seq.empty<String>
+    let mutable _passwords = Seq.empty<String>
+    let mutable _combinations = Seq.empty<String * String>
 
     let reportSecurityIssue(username: String, password: String, webRequest: WebRequest, webResponse: WebResponse) =  
         let securityIssue = 
@@ -118,9 +118,9 @@ type HttpBruteforcerAddOn() as this =
 
     default this.Initialize(context: Context, webRequestor: IWebPageRequestor, messageBroker: IMessageBroker, logProvider: ILogProvider) =
         let initResult = base.Initialize(context, webRequestor, messageBroker, logProvider)
-        _usernames <- defaultArg (this.Context.Value.AddOnStorage.ReadProperty<List<String>>("Usernames")) (new List<String>())
-        _passwords <- defaultArg (this.Context.Value.AddOnStorage.ReadProperty<List<String>>("Passwords")) (new List<String>())
-        _combinations <- defaultArg (this.Context.Value.AddOnStorage.ReadProperty<List<String * String>>("Combinations")) (new List<String * String>())
+        _usernames <- defaultArg (this.Context.Value.AddOnStorage.ReadProperty<List<String>>("Usernames")) (new List<String>()) |> Seq.distinct
+        _passwords <- defaultArg (this.Context.Value.AddOnStorage.ReadProperty<List<String>>("Passwords")) (new List<String>()) |> Seq.distinct
+        _combinations <- defaultArg (this.Context.Value.AddOnStorage.ReadProperty<List<String * String>>("Combinations")) (new List<String * String>()) |> Seq.distinct
         initResult
 
     override this.RunToCompletation(stateController: ServiceStateController) =

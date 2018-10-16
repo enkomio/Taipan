@@ -21,6 +21,11 @@ type ExposedSessionVariablesAddOn() as this =
     let _signaledLeakage = new HashSet<String>()
 
     let _sessionTokens = [
+        // src: https://github.com/danielmiessler/SecLists/blob/master/Miscellaneous/web/session-id.txt        
+        "SITESERVER"
+        "SID"
+        "VIEWSTATE"
+        "ZENID"
         "JSESSIONID"
         "PHPSESSIONID"
         "JSESSIONID"

@@ -13,13 +13,12 @@ open System.IO
 open Fake
 open ES.Taipan.Inspector
 
-let writeAddOnData(addOn: IVulnerabilityScannerAddOn, data: Dictionary<String, List<String>>, propertyName: String, buildDir: String) =
-    let context = new Context(new FilesystemAddOnStorage(addOn, Path.Combine(buildDir, "Taipan")), fun _ -> ())
-    context.AddOnStorage.SaveProperty(propertyName, data)
+module Writer =
+    let writeAddOnData<'T>(addOn: IVulnerabilityScannerAddOn, data: 'T, propertyName: String, buildDir: String) =
+        let context = new Context(new FilesystemAddOnStorage(addOn, Path.Combine(buildDir, "Taipan")), fun _ -> ())
+        context.AddOnStorage.SaveProperty(propertyName, data)
 
-let createAddOnData(buildDir: String) =
-    ensureDirectory (buildDir + "/Taipan/Data")  
-    // write xss payload  
+let writeXssData(buildDir: String) =
     let xssData = new Dictionary<String, List<String>>()
     [
         // attack vector | list of payloads to search in the html    
@@ -41,9 +40,10 @@ let createAddOnData(buildDir: String) =
         new ES.Taipan.Inspector.AddOns.ReflectedCrossSiteScripting.ReflectedCrossSiteScriptingAddOn() :> ES.Taipan.Inspector.AddOns.BaseStatelessAddOn
         new ES.Taipan.Inspector.AddOns.StoredCrossSiteScripting.StoredCrossSiteScriptingAddOn() :> ES.Taipan.Inspector.AddOns.BaseStatelessAddOn
     ] 
-    |> List.iter(fun addOnId -> writeAddOnData(addOnId, xssData, "Payloads", buildDir))    
-
-    // write sql injection errors, src: sqlmap project
+    |> List.iter(fun addOnId -> Writer.writeAddOnData(addOnId, xssData, "Payloads", buildDir))  
+    
+let writeSqliData(buildDir: String) =
+    // write sql injection errors, credit: sqlmap project
     let sqliAddOn = new ES.Taipan.Inspector.AddOns.SqlInjection.SqlInjectionAddOn()
     let sqliErrors = new Dictionary<String, List<String>>()
     [
@@ -162,7 +162,81 @@ let createAddOnData(buildDir: String) =
         ]);
     ]
     |> List.iter(fun (a, b) -> sqliErrors.Add(a, new List<String>(b)))
-    writeAddOnData(sqliAddOn, sqliErrors, "Errors", buildDir)
+    Writer.writeAddOnData(sqliAddOn, sqliErrors, "Errors", buildDir)
+
+let writeUsernameAndPassword(buildDir: String) =
+    let bruteforceAddOn = new ES.Taipan.Inspector.AddOns.HttpBruteforcer.HttpBruteforcerAddOn()
+
+    // credit to: https://github.com/danielmiessler/SecLists/blob/master/Usernames/top-usernames-shortlist.txt
+    let usernames = new List<String>(["root"; "admin"; "test"; "guest"; "info"; "adm"; "mysql"; "user"; "administrator"])
+    Writer.writeAddOnData(bruteforceAddOn, usernames, "Usernames", buildDir)
+    
+    // credit to: https://github.com/danielmiessler/SecLists/blob/master/Passwords/Common-Credentials/500-worst-passwords.txt
+    let passwords = new List<String>([
+        "123456"; "password"; "12345678"; "1234"; "pussy"; "12345"; "dragon"; "qwerty"; "696969"; "mustang"; "letmein"; "baseball"; "master"; "michael"; 
+        "football"; "shadow"; "monkey"; "abc123"; "pass"; "fuckme"; "6969"; "jordan"; "harley"; "ranger"; "iwantu"; "jennifer"; "hunter"; "fuck"; "2000"; 
+        "test"; "batman"; "trustno1"; "thomas"; "tigger"; "robert"; "access"; "love"; "buster"; "1234567"; "soccer"; "hockey"; "killer"; "george"; "sexy"; 
+        "andrew"; "charlie"; "superman"; "asshole"; "fuckyou"; "dallas"; "jessica"; "panties"; "pepper"; "1111"; "austin"; "william"; "daniel"; "golfer"; 
+        "summer"; "heather"; "hammer"; "yankees"; "joshua"; "maggie"; "biteme"; "enter"; "ashley"; "thunder"; "cowboy"; "silver"; "richard"; "fucker"; "orange"; 
+        "merlin"; "michelle"; "corvette"; "bigdog"; "cheese"; "matthew"; "121212"; "patrick"; "martin"; "freedom"; "ginger"; "blowjob"; "nicole"; "sparky"; 
+        "yellow"; "camaro"; "secret"; "dick"; "falcon"; "taylor"; "111111"; "131313"; "123123"; "bitch"; "hello"; "scooter"; "please"; "porsche"; "guitar"; 
+        "chelsea"; "black"; "diamond"; "nascar"; "jackson"; "cameron"; "654321"; "computer"; "amanda"; "wizard"; "xxxxxxxx"; "money"; "phoenix"; "mickey"; 
+        "bailey"; "knight"; "iceman"; "tigers"; "purple"; "andrea"; "horny"; "dakota"; "aaaaaa"; "player"; "sunshine"; "morgan"; "starwars"; "boomer"; 
+        "cowboys"; "edward"; "charles"; "girls"; "booboo"; "coffee"; "xxxxxx"; "bulldog"; "ncc1701"; "rabbit"; "peanut"; "john"; "johnny"; "gandalf"; 
+        "spanky"; "winter"; "brandy"; "compaq"; "carlos"; "tennis"; "james"; "mike"; "brandon"; "fender"; "anthony"; "blowme"; "ferrari"; "cookie"; 
+        "chicken"; "maverick"; "chicago"; "joseph"; "diablo"; "sexsex"; "hardcore"; "666666"; "willie"; "welcome"; "chris"; "panther"; "yamaha"; "justin"; 
+        "banana"; "driver"; "marine"; "angels"; "fishing"; "david"; "maddog"; "hooters"; "wilson"; "butthead"; "dennis"; "fucking"; "captain"; "bigdick"; 
+        "chester"; "smokey"; "xavier"; "steven"; "viking"; "snoopy"; "blue"; "eagles"; "winner"; "samantha"; "house"; "miller"; "flower"; "jack"; "firebird"; 
+        "butter"; "united"; "turtle"; "steelers"; "tiffany"; "zxcvbn"; "tomcat"; "golf"; "bond007"; "bear"; "tiger"; "doctor"; "gateway"; "gators"; "angel"; 
+        "junior"; "thx1138"; "porno"; "badboy"; "debbie"; "spider"; "melissa"; "booger"; "1212"; "flyers"; "fish"; "porn"; "matrix"; "teens"; "scooby"; "jason"; 
+        "walter"; "cumshot"; "boston"; "braves"; "yankee"; "lover"; "barney"; "victor"; "tucker"; "princess"; "mercedes"; "5150"; "doggie"; "zzzzzz"; "gunner"; 
+        "horney"; "bubba"; "2112"; "fred"; "johnson"; "xxxxx"; "tits"; "member"; "boobs"; "donald"; "bigdaddy"; "bronco"; "penis"; "voyager"; "rangers"; 
+        "birdie"; "trouble"; "white"; "topgun"; "bigtits"; "bitches"; "green"; "super"; "qazwsx"; "magic"; "lakers"; "rachel"; "slayer"; "scott"; "2222"; "asdf"; 
+        "video"; "london"; "7777"; "marlboro"; "srinivas"; "internet"; "action"; "carter"; "jasper"; "monster"; "teresa"; "jeremy"; "11111111"; "bill"; 
+        "crystal"; "peter"; "pussies"; "cock"; "beer"; "rocket"; "theman"; "oliver"; "prince"; "beach"; "amateur"; "7777777"; "muffin"; "redsox"; "star"; 
+        "testing"; "shannon"; "murphy"; "frank"; "hannah"; "dave"; "eagle1"; "11111"; "mother"; "nathan"; "raiders"; "steve"; "forever"; "angela"; "viper"; 
+        "ou812"; "jake"; "lovers"; "suckit"; "gregory"; "buddy"; "whatever"; "young"; "nicholas"; "lucky"; "helpme"; "jackie"; "monica"; "midnight"; "college"; 
+        "baby"; "cunt"; "brian"; "mark"; "startrek"; "sierra"; "leather"; "232323"; "4444"; "beavis"; "bigcock"; "happy"; "sophie"; "ladies"; "naughty"; 
+        "giants"; "booty"; "blonde"; "fucked"; "golden"; "0"; "fire"; "sandra"; "pookie"; "packers"; "einstein"; "dolphins"; "chevy"; "winston"; "warrior"; 
+        "sammy"; "slut"; "8675309"; "zxcvbnm"; "nipples"; "power"; "victoria"; "asdfgh"; "vagina"; "toyota"; "travis"; "hotdog"; "paris"; "rock"; "xxxx"; 
+        "extreme"; "redskins"; "erotic"; "dirty"; "ford"; "freddy"; "arsenal"; "access14"; "wolf"; "nipple"; "iloveyou"; "alex"; "florida"; "eric"; "legend"; 
+        "movie"; "success"; "rosebud"; "jaguar"; "great"; "cool"; "cooper"; "1313"; "scorpio"; "mountain"; "madison"; "987654"; "brazil"; "lauren"; "japan"; 
+        "naked"; "squirt"; "stars"; "apple"; "alexis"; "aaaa"; "bonnie"; "peaches"; "jasmine"; "kevin"; "matt"; "qwertyui"; "danielle"; "beaver"; "4321"; "4128"; 
+        "runner"; "swimming"; "dolphin"; "gordon"; "casper"; "stupid"; "shit"; "saturn"; "gemini"; "apples"; "august"; "3333"; "canada"; "blazer"; "cumming"; 
+        "hunting"; "kitty"; "rainbow"; "112233"; "arthur"; "cream"; "calvin"; "shaved"; "surfer"; "samson"; "kelly"; "paul"; "mine"; "king"; "racing"; "5555"; 
+        "eagle"; "hentai"; "newyork"; "little"; "redwings"; "smith"; "sticky"; "cocacola"; "animal"; "broncos"; "private"; "skippy"; "marvin"; "blondes"; 
+        "enjoy"; "girl"; "apollo"; "parker"; "qwert"; "time"; "sydney"; "women"; "voodoo"; "magnum"; "juice"; "abgrtyu"; "777777"; "dreams"; "maxwell"; "music"; 
+        "rush2112"; "russia"; "scorpion"; "rebecca"; "tester"; "mistress"; "phantom"; "billy"; "6666"; "albert"
+    ])
+    Writer.writeAddOnData(bruteforceAddOn, passwords, "Passwords", buildDir)
+
+    let combinations = new List<String * String>([
+        ("admin", "1"); ("admin", "123"); ("admin", "0000"); ("admin", "00000000"); ("admin", "12345"); ("admin", "123456"); ("admin", "1234567"); 
+        ("admin", "12345678"); ("admin", "123456789"); ("admin", "1234567890"); ("admin", "12admin"); ("admin", "qwerty"); ("admin", "qwerty12345"); 
+        ("admin", "beeline"); ("admin", "beeline2013"); ("admin", "ghbdtn"); ("admin", "admin225"); ("admin", "rombik1"); ("admin", "ho4uku6at"); 
+        ("admin", "t3mp0Pa55"); ("fuck3g1", "t3mp0Pa55"); ("fuck3g1", "Wf@b9?hJ"); ("admin", "juklop"); ("admin", "superheslo"); ("admin", "362729"); 
+        ("admin", "free"); ("admin", "inet"); ("admin", "internet"); ("admin", "sysadmin"); ("admin", "router"); ("admin", "asus"); ("admin", "root"); 
+        ("admin", "ADMIN"); ("admin", "adsl"); ("admin", "adslroot"); ("admin", "adsladmin"); ("admin", "Ferum"); ("admin", "Ferrum"); ("admin", "FERUM"); 
+        ("admin", "FERRUM"); ("admin", "Kendalf9"); ("admin", "263297"); ("admin", "590152"); ("admin", "21232"); ("admin", "adn8pzszk"); ("admin", "amvqnekk"); 
+        ("admin", "biyshs9eq"); ("admin", "e2b81d_1"); ("admin", "Dkdk8e89"); ("admin", "flvbyctnb"); ("admin", "qweasdOP"); ("admin", "EbS2P8"); 
+        ("admin", "FhF8WS"); ("admin", "ZmqVfo"); ("admin", "ZmqVfo1"); ("admin", "ZmqVfo2"); ("admin", "ZmqVfo3"); ("admin", "ZmqVfo4"); ("admin", "ZmqVfoVPN"); 
+        ("admin", "ZmqVfoSIP"); ("admin", "ZmqVfoN1"); ("admin", "ZmqVfoN2"); ("admin", "ZmqVfoN3"); ("admin", "ZmqVfoN4"); ("admin", "9f4r5r79//"); 
+        ("admin", "airocon"); ("admin", "zyxel"); ("admin", "rjynhjkm"); ("admin", "rjyabuehfwbz"); ("admin", "pc77club"); ("admin", "mordor"); 
+        ("admin", "rthaoudinf81"); ("supervisor", "zyad1234"); ("admin", "EbS3P12"); ("admin", "m4f6h3"); ("admin", "gddrjbv"); ("admin", "13579"); 
+        ("admin", "a1103"); ("admin", "dfzcsoah4"); ("admin", "a35ctsorg"); ("admin", "ateladmin"); ("admin", "rle6mitfw"); ("admin", "jqeni66np"); 
+        ("admin", "J396cb0157a6a"); ("admin", "9r3qr2tph"); ("admin", "admroutepassw"); ("admin", "muwrh1j8m"); ("admin", "jwfbwpn1s"); 
+        ("admin", "Afce1b92c8804"); ("admin", "J4f1984527a6a"); ("admin", "I5ea544606cd0"); ("admin", "dtythf77"); ("admin", "xy3ow4mn0y"); 
+        ("admin", "FLBYLDFNHB"); ("admin", "B852541841t"); ("admin", "cipiripi"); ("admin", "ghjcnbnenrj1"); ("admin", "adslhakeryuga"); ("admin", "aq1sw2de3"); 
+        ("admin", "lord"); ("admin", "fdpm0r"); ("admin", "15011974"); ("admin", "s15011974"); ("admin", "vr10vr10tajn1pa55"); ("admin", "Polkilo44"); 
+        ("admin", "celkirulyat")
+    ])
+    Writer.writeAddOnData(bruteforceAddOn, combinations, "Combinations", buildDir)
+
+let createAddOnData(buildDir: String) =
+    ensureDirectory (buildDir + "/Taipan/Data")  
+    writeXssData(buildDir)
+    writeSqliData(buildDir)   
+    writeUsernameAndPassword(buildDir)
 
 let deployToDirectory(buildDir: String) =
     createAddOnData(buildDir)
