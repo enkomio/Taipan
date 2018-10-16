@@ -13,15 +13,24 @@ open ES.Taipan.Infrastructure.Threading
 open ES.Taipan.Infrastructure.Text
 
 type HttpBruteforcerAddOn() as this =
-    inherit BaseStatelessAddOn("Http Bruteforcer AddOn", string HttpBruteforcerAddOn.Id, 1)
+    inherit BaseStatelessAddOn("Http Bruteforcer AddOn", string HttpBruteforcerAddOn.Id, 1)    
+    let _progressIndexes = new Dictionary<String, String * Int32 * Int32 * Int32>()
+
     let _numOfConcurrentTasks = 5
     let _analyzedPages = new HashSet<String>()
     let _testRequests = new BlockingCollection<TestRequest>()
 
     let mutable _taskManager: TaskManager option = None
-    let mutable _usernames = Seq.empty<String>
-    let mutable _passwords = Seq.empty<String>
-    let mutable _combinations = Seq.empty<String * String>
+    let mutable _usernames = List.empty<String>
+    let mutable _passwords = List.empty<String>
+    let mutable _combinations = List.empty<String * String>
+
+    let _logger =
+        log "HttpBruteforcerAddOn"
+        |> info "BruteforceUsername" "Start to identify password for username: {0}"
+        |> info "UpdateStatus" "Bruteforce of {0}, username {1} at {2}% [{3}/{4}]"
+        |> info "TestForCombination" "Test for combination on directory: {0}"
+        |> build
 
     let reportSecurityIssue(username: String, password: String, webRequest: WebRequest, webResponse: WebResponse) =  
         let securityIssue = 
@@ -36,7 +45,6 @@ type HttpBruteforcerAddOn() as this =
         securityIssue.Transactions.Add(webRequest, webResponse)
         securityIssue.Details.Properties.Add("Username", username)
         securityIssue.Details.Properties.Add("Password", password)
-
         this.Context.Value.AddSecurityIssue(securityIssue)
         
     let authenticationRequired(statusCode: System.Net.HttpStatusCode) =
@@ -52,6 +60,21 @@ type HttpBruteforcerAddOn() as this =
         let authHeader = new HttpHeader(Name="Authorization", Value=String.Format("Basic {0}", toAsciiBase64(token)))
         request.Headers.Add(authHeader)
 
+    let initLogStatus(directory: String, username: String, totalReq: Int32) =
+        lock _progressIndexes (fun _ -> _progressIndexes.[directory] <- (username, 0, totalReq, 0))
+
+    let logStatus(directory: String) =
+        lock _progressIndexes (fun _ ->
+            if _progressIndexes.ContainsKey(directory) then
+                let (username, currentIndex, totalCount, lastPercentage) = _progressIndexes.[directory]
+                let percentage = (float currentIndex / float totalCount) * 100. |> int32
+                _progressIndexes.[directory] <- (username, currentIndex+1, totalCount, lastPercentage)
+
+                if lastPercentage < percentage && percentage % 5 = 0 then
+                    _progressIndexes.[directory] <- (username, currentIndex, totalCount, percentage)    
+                    _logger?UpdateStatus(directory, username, percentage, currentIndex, totalCount)
+        )   
+
     let testUsernameAndPassword(username: String, password: String, testRequest: TestRequest, serviceStateController: ServiceStateController) =
         if not serviceStateController.IsStopped then
             serviceStateController.WaitIfPauseRequested()
@@ -61,6 +84,7 @@ type HttpBruteforcerAddOn() as this =
             let webRequest = new WebRequest(probeRequest.BuildHttpRequest(true))
             addAuthorizationHeader(username, password, webRequest.HttpRequest)
             probeRequest.WebResponse <- Some <| sendRequest(webRequest)
+            logStatus(testRequest.WebRequest.HttpRequest.Uri.AbsolutePath)
 
             // verify test
             let accountBruteforced =
@@ -80,14 +104,19 @@ type HttpBruteforcerAddOn() as this =
 
     let bruteforceUriWithUsernameAndPassword(testRequest: TestRequest, serviceStateController: ServiceStateController) =
         _usernames
-        |> Seq.iter(fun username ->
+        |> List.iter(fun username ->
+            _logger?BruteforceUsername(username)
+            initLogStatus(testRequest.WebRequest.HttpRequest.Uri.AbsolutePath, username, _passwords.Length)
             _passwords
-            |> Seq.iter(fun password -> testUsernameAndPassword(username, password, testRequest, serviceStateController) |> ignore)
+            |> List.exists(fun password -> testUsernameAndPassword(username, password, testRequest, serviceStateController))
+            |> ignore
+            logStatus(testRequest.WebRequest.HttpRequest.Uri.AbsolutePath)
         )
 
     let bruteforceUriWithCombinations(testRequest: TestRequest, serviceStateController: ServiceStateController) =
+        _logger?TestForCombination(testRequest.WebRequest.HttpRequest.Uri.AbsolutePath)
         _combinations
-        |> Seq.exists(fun (username, password) -> testUsernameAndPassword(username, password, testRequest, serviceStateController))
+        |> List.exists(fun (username, password) -> testUsernameAndPassword(username, password, testRequest, serviceStateController))
 
     let bruteforceWoker(serviceStateController: ServiceStateController) =
         for testRequest in _testRequests.GetConsumingEnumerable() do
@@ -112,15 +141,21 @@ type HttpBruteforcerAddOn() as this =
         if taskManager.Count() = 0 then
             // no worker running, instantiace all workers
             runAllWorkers(taskManager)
-        _testRequests.Add(testRequest)        
+        _testRequests.Add(testRequest)
+
+    let completePasswordList() =
+        // all the usernames also as passowrd and the empty string
+        _passwords <- String.Empty::_usernames@_passwords |> List.distinct
 
     static member Id = Guid.Parse("73BC0C5B-F9BF-4453-98C0-56BBE9EE1361")
 
     default this.Initialize(context: Context, webRequestor: IWebPageRequestor, messageBroker: IMessageBroker, logProvider: ILogProvider) =
         let initResult = base.Initialize(context, webRequestor, messageBroker, logProvider)
-        _usernames <- defaultArg (this.Context.Value.AddOnStorage.ReadProperty<List<String>>("Usernames")) (new List<String>()) |> Seq.distinct
-        _passwords <- defaultArg (this.Context.Value.AddOnStorage.ReadProperty<List<String>>("Passwords")) (new List<String>()) |> Seq.distinct
-        _combinations <- defaultArg (this.Context.Value.AddOnStorage.ReadProperty<List<String * String>>("Combinations")) (new List<String * String>()) |> Seq.distinct
+        logProvider.AddLogSourceToLoggers(_logger)
+        _usernames <- defaultArg (this.Context.Value.AddOnStorage.ReadProperty<List<String>>("Usernames")) (new List<String>()) |> Seq.distinct |> Seq.toList
+        _passwords <- defaultArg (this.Context.Value.AddOnStorage.ReadProperty<List<String>>("Passwords")) (new List<String>()) |> Seq.distinct |> Seq.toList
+        _combinations <- defaultArg (this.Context.Value.AddOnStorage.ReadProperty<List<String * String>>("Combinations")) (new List<String * String>()) |> Seq.distinct |> Seq.toList
+        completePasswordList()
         initResult
 
     override this.RunToCompletation(stateController: ServiceStateController) =
