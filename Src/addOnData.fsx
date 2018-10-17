@@ -12,10 +12,11 @@ open System.Collections.Generic
 open System.IO
 open Fake
 open ES.Taipan.Inspector
+open ES.Taipan.Infrastructure.Service
 
 module Writer =
     let writeAddOnData<'T>(addOn: IVulnerabilityScannerAddOn, data: 'T, propertyName: String, buildDir: String) =
-        let context = new Context(new FilesystemAddOnStorage(addOn, Path.Combine(buildDir, "Taipan")), fun _ -> ())
+        let context = new Context(new FilesystemAddOnStorage(addOn, Path.Combine(buildDir, "Taipan")), new ServiceMetrics(String.Empty), fun _ -> ())
         context.AddOnStorage.SaveProperty(propertyName, data)
 
 let writeXssData(buildDir: String) =
@@ -37,8 +38,8 @@ let writeXssData(buildDir: String) =
     |> List.iter(fun (a, b) -> xssData.Add(a, new List<String>(b)))
 
     [
-        new ES.Taipan.Inspector.AddOns.ReflectedCrossSiteScripting.ReflectedCrossSiteScriptingAddOn() :> ES.Taipan.Inspector.AddOns.BaseStatelessAddOn
-        new ES.Taipan.Inspector.AddOns.StoredCrossSiteScripting.StoredCrossSiteScriptingAddOn() :> ES.Taipan.Inspector.AddOns.BaseStatelessAddOn
+        new ES.Taipan.Inspector.AddOns.ReflectedCrossSiteScripting.ReflectedCrossSiteScriptingAddOn() :> ES.Taipan.Inspector.BaseStatelessAddOn
+        new ES.Taipan.Inspector.AddOns.StoredCrossSiteScripting.StoredCrossSiteScriptingAddOn() :> ES.Taipan.Inspector.BaseStatelessAddOn
     ] 
     |> List.iter(fun addOnId -> Writer.writeAddOnData(addOnId, xssData, "Payloads", buildDir))  
     
