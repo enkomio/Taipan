@@ -27,14 +27,7 @@ type BaseStatelessAddOn(name: String, id: String, priority: Int32) =
             _completedRequests <- _completedRequests.Add(id, message.Item)
             let waitLock = _pendingMessageIds.[id]
             _pendingMessageIds <- _pendingMessageIds.Remove(id)
-            waitLock.Set()
-
-    let requestNotificationCallback(httpRequestor: IHttpRequestor, req: HttpRequest, completed: Boolean) =     
-        let prefix = name + "ScannerHttpRequestor_"
-        let httpRequestorMetrics = _serviceMetrics.GetSubMetrics(prefix + httpRequestor.Id.ToString("N"))
-        if completed 
-        then httpRequestorMetrics.AddMetric("Last HTTP request completed", req.ToString())
-        else httpRequestorMetrics.AddMetric("Last HTTP request started", req.ToString())
+            waitLock.Set()    
 
     member val Context : Context option = None with get, set
     member val MessageBroker : IMessageBroker option = None with get, set
@@ -62,8 +55,8 @@ type BaseStatelessAddOn(name: String, id: String, priority: Int32) =
             this.MessageBroker <- Some messageBroker
             _isInitialized <- true
 
-            _serviceMetrics <- context.ServiceMetrics
-            webRequestor.HttpRequestor.RequestNotificationCallback <- requestNotificationCallback
+            _serviceMetrics <- context.ServiceMetrics            
+            webRequestor.HttpRequestor.Metrics <- _serviceMetrics.GetSubMetrics(this.Name + "AddOnHttpRequestor_" + webRequestor.HttpRequestor.Id.ToString("N"))
         )
 
         // regist to satisfy rebuild request

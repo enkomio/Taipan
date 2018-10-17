@@ -86,15 +86,6 @@ type DefaultWebAppFingerprinter(settings: WebAppFingerprinterSettings, webApplic
             triggerIdleState()
 
     let webAppFingerprinterLoop() = Async.Start <| async {
-        // code to get request done per second metric
-        let numOfServicedRequests = ref 0
-        let timer = new System.Timers.Timer(1000. * 60.)
-        timer.Elapsed.Add(fun _ -> 
-            let oldVal = Interlocked.Exchange(numOfServicedRequests, 0)                
-            _serviceMetrics.AddMetric("Request per seconds", oldVal.ToString())
-        )                
-        timer.Start()
-
         // main process loop
         _initializationCompleted.Trigger(this)
         _serviceMetrics.AddMetric("Last fingerprinted directory", "<no one>")
@@ -105,7 +96,6 @@ type DefaultWebAppFingerprinter(settings: WebAppFingerprinterSettings, webApplic
                     _serviceMetrics.AddMetric("Status", "Running")
                     processFingerprintRequest(fingerprintRequest)
                     _serviceMetrics.RequestProcessed()
-                    Interlocked.Increment(numOfServicedRequests) |> ignore
                     checkFingerprinterState()
                 )
 
@@ -145,6 +135,7 @@ type DefaultWebAppFingerprinter(settings: WebAppFingerprinterSettings, webApplic
 
     do 
         logProvider.AddLogSourceToLoggers(_logger)
+        webRequestor.HttpRequestor.Metrics <- _serviceMetrics.GetSubMetrics("DefaultWebAppFingerprinterHttpRequestor_" + webRequestor.HttpRequestor.Id.ToString("N"))
 
         // the requests done don't need Javascript engine
         webRequestor.HttpRequestor.Settings.UseJavascriptEngineForRequest <- false

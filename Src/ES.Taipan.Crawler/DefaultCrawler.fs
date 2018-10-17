@@ -33,13 +33,6 @@ type DefaultCrawler(settings: CrawlerSettings, webRequestor: IWebPageRequestor, 
     let _serviceMetrics = new ServiceMetrics("Crawler")
     let _statusMonitor = new Object()
     let _runToCompletationCalledLock = new ManualResetEventSlim()
-
-    let requestNotificationCallback(httpRequestor: IHttpRequestor, req: HttpRequest, completed: Boolean) =     
-        let prefix = "CrawlerHttpRequestor_"
-        let httpRequestorMetrics = _serviceMetrics.GetSubMetrics(prefix + httpRequestor.Id.ToString("N"))
-        if completed 
-        then httpRequestorMetrics.AddMetric("Last HTTP request completed", req.ToString())
-        else httpRequestorMetrics.AddMetric("Last HTTP request started", req.ToString())
     
     let checkCrawlerState() =
         if not <| _crawlerState.HasWebRequestToProcess then            
@@ -52,8 +45,7 @@ type DefaultCrawler(settings: CrawlerSettings, webRequestor: IWebPageRequestor, 
         let webRequest = wl.Request
         replaceParameterValue(webRequest.HttpRequest, settings.DefaultParameters)
                 
-        let addPageToCrawlResult = _crawlerState.AddPageToCrawl(wl)
-        if addPageToCrawlResult = CrawlerStateAddPageStatusResult.Success then
+        if _crawlerState.AddPageToCrawl(wl) = CrawlerStateAddPageStatusResult.Success then
             success <- true
             messageBroker.Dispatch(this, new NewPageAddedMessage(wl, _crawlerId))
             _logger.NewPageAdded(wl)
@@ -239,9 +231,10 @@ type DefaultCrawler(settings: CrawlerSettings, webRequestor: IWebPageRequestor, 
             false 
 
     do 
-        // set requestor settings
+        // set requestor settings and metrics
         webRequestor.SetPageNotFoundIdentifier(new HeuristicPageNotFoundIdentifier(webRequestor.HttpRequestor))
-        webRequestor.HttpRequestor.RequestNotificationCallback <- requestNotificationCallback
+        let metricsName = String.Format("CrawlerHttpRequestor_{0}_{1}", webRequestor.HttpRequestor.Id.ToString("N"), _crawlerId)
+        webRequestor.HttpRequestor.Metrics <- _serviceMetrics.GetSubMetrics(metricsName)
 
         // event subscription
         messageBroker.Subscribe<String>(handleNewMessage)

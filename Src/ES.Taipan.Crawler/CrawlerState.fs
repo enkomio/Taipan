@@ -16,6 +16,7 @@ type CrawlerState(settings: CrawlerSettings, httpRequestorSettings: HttpRequesto
     let _pagesToProcess = new BlockingCollection<WebLink>()
     let _pagesInProcess = new List<WebLink>()
     let _pagesProcessed = new List<WebLink>()
+    let _md5pages = new HashSet<String>()
     let _requestsPerPage = new ConcurrentDictionary<String, Int32>()
     let mutable _pathRoot = "/"
     let mutable _stopRequested = false
@@ -174,7 +175,7 @@ type CrawlerState(settings: CrawlerSettings, httpRequestorSettings: HttpRequesto
         | EnteredPathAndBelow -> _pathRoot <- HttpUtility.getAbsolutePathDirectory(startUri)        
 
     member this.IsWebResponseValid(webResponse: WebResponse) =
-       isContentTypeAllowed(webResponse)
+        isContentTypeAllowed(webResponse) && _md5pages.Add(toCleanTextMd5(webResponse.HttpResponse.Html))
         
     member this.GetStatus() =
         if isMaxNumOfPageToCrawlReached() then

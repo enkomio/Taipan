@@ -1,13 +1,14 @@
 ﻿namespace ES.Taipan.Infrastructure.Network
 
 open System
+open ES.Taipan.Infrastructure.Service
 
 type IHttpRequestor = 
     interface
         abstract Id: Guid with get
         abstract Settings: HttpRequestorSettings with get        
-        abstract CertificationValidate: IEvent<CertificationValidateEventArgs> with get
-        abstract RequestNotificationCallback: (IHttpRequestor * HttpRequest * Boolean -> unit) with get, set
+        abstract Metrics: ServiceMetrics with get, set
+        abstract CertificationValidate: IEvent<CertificationValidateEventArgs> with get        
         abstract DownloadData: HttpRequest -> Byte array
         abstract SendRequest: HttpRequest -> HttpResponse option
         abstract SessionState: SessionStateManager option with get, set        

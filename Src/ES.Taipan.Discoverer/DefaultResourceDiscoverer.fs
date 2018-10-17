@@ -228,6 +228,8 @@ type DefaultResourceDiscoverer(settings: ResourceDiscovererSettings, webRequesto
     do 
         logProvider.AddLogSourceToLoggers(_logger)
 
+        webRequestor.HttpRequestor.Metrics <- _serviceMetrics.GetSubMetrics("DiscovererHttpRequestor_" + webRequestor.HttpRequestor.Id.ToString("N"))
+
         // set the page not found identifier to the heuristic base in order to have a great accurancy in the the resource discovery
         webRequestor.SetPageNotFoundIdentifier(new HeuristicPageNotFoundIdentifier(webRequestor.HttpRequestor))
         webRequestor.HttpRequestor.Settings.AllowAutoRedirect <- true

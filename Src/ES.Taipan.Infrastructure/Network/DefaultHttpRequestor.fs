@@ -14,6 +14,8 @@ open ES.Taipan.Infrastructure.Threading
 open ES.Taipan.Infrastructure.Text
 open ES.Fslog
 open Brotli
+open ES.Taipan.Infrastructure.Service
+open System.Timers
 
 type DefaultHttpRequestor(defaultSettings: HttpRequestorSettings, logProvider: ILogProvider) as this =
     let _requestGateTimeout = 1000 * 60 * 60 * 10 // 10 minutes
@@ -22,15 +24,14 @@ type DefaultHttpRequestor(defaultSettings: HttpRequestorSettings, logProvider: I
     let _certificationValidate = new Event<CertificationValidateEventArgs>()
     let _logger = new HttpRequestorLogger()
     let _seleniumDriverSyncRoot = new Object()
+    let _settings = new HttpRequestorSettings()
+    let _metricsTimer = new Timer(10000.)
+    let _numOfRequests = ref 0
     let mutable _httpAuthenticationToken: String option = None
     let mutable _httpDigestInfo: DigestAuthenticationInfo option = None
     let mutable _skipAuthenticationProcess = false
     let mutable _seleniumDriver: SeleniumDriver option = None
-
-    // do this trick to have a depth copy of the settings in order to be modified in a safe way for each instance
-    let _settings = new HttpRequestorSettings()
-    do _settings.AcquireSettingsFromXml(defaultSettings.ToXml())
-
+    
     let doCertificateValidation (sender: Object) (certificate: X509Certificate) (chain: X509Chain) (policy:SslPolicyErrors) =
         _certificationValidate.Trigger(new CertificationValidateEventArgs(certificate, chain, policy))
         true
@@ -202,15 +203,26 @@ type DefaultHttpRequestor(defaultSettings: HttpRequestorSettings, logProvider: I
         ServicePointManager.Expect100Continue <- false
         ServicePointManager.ServerCertificateValidationCallback <- new RemoteCertificateValidationCallback(doCertificateValidation)
         logProvider.AddLogSourceToLoggers(_logger)
+
+        // do this trick to have a depth copy of the settings in order to be modified in a safe way for each instance
+        _settings.AcquireSettingsFromXml(defaultSettings.ToXml())
+        
+        // configure timer for metrics
+        _metricsTimer.Elapsed.Add(fun t -> 
+            (this.Metrics :> ServiceMetrics).AddMetric("Requests per 10 seconds", string !_numOfRequests)
+            System.Threading.Interlocked.Exchange(_numOfRequests, 0) |> ignore
+        )
+        _metricsTimer.Start()
+        
     
     member this.CertificationValidate = _certificationValidate.Publish
     member val SessionState : SessionStateManager option = Some <| new SessionStateManager() with get, set
     member this.Settings = _settings
     member val Id = Guid.NewGuid() with get
-    member val RequestNotificationCallback: (IHttpRequestor * HttpRequest * Boolean) -> unit = fun (_, _, _) -> () with get, set
+    member val Metrics = new ServiceMetrics("DefaultHttpRequestor") with get, set
 
     member this.DownloadData(httpRequest: HttpRequest) =
-        this.RequestNotificationCallback(upcast this, httpRequest, false)
+        this.Metrics.AddMetric("Last HTTP request started", httpRequest.ToString())
 
         try                
             applySettingsToRequest(httpRequest)
@@ -234,11 +246,13 @@ type DefaultHttpRequestor(defaultSettings: HttpRequestorSettings, logProvider: I
                 use destStream = new MemoryStream()
                 use bs = new BrotliStream(httpResponseStream, System.IO.Compression.CompressionMode.Decompress)
                 bs.CopyTo(destStream)
+                System.Threading.Interlocked.Increment(_numOfRequests) |> ignore
                 destStream.ToArray()
             else
                 // read all data stream
                 use destStream = new MemoryStream()
                 httpResponseStream.CopyTo(destStream)
+                System.Threading.Interlocked.Increment(_numOfRequests) |> ignore
                 destStream.ToArray()
         with
         | e -> 
@@ -247,7 +261,7 @@ type DefaultHttpRequestor(defaultSettings: HttpRequestorSettings, logProvider: I
 
     member private this.SendRequestAsync(httpRequest: HttpRequest) =         
         async {
-            this.RequestNotificationCallback(upcast this, httpRequest, false)
+            this.Metrics.AddMetric("Last HTTP request started", httpRequest.ToString())
 
             use! holder = _requestGate.AsyncAcquire(_requestGateTimeout)
             let httpResponseResult: HttpResponse option ref = ref(None)
@@ -357,7 +371,8 @@ type DefaultHttpRequestor(defaultSettings: HttpRequestorSettings, logProvider: I
             | e -> 
                 _logger.RequestError(httpRequest.Uri.ToString(), e.Message)
 
-            this.RequestNotificationCallback(upcast this, httpRequest, true)
+            this.Metrics.AddMetric("Last HTTP request completed", httpRequest.ToString())
+            System.Threading.Interlocked.Increment(_numOfRequests) |> ignore
             return !httpResponseResult
         }
 
@@ -436,6 +451,7 @@ type DefaultHttpRequestor(defaultSettings: HttpRequestorSettings, logProvider: I
             httpResponse
 
     member this.Dispose() =
+        _metricsTimer.Stop()
         if _seleniumDriver.IsSome then
             _seleniumDriver.Value.Dispose()
 
@@ -451,15 +467,15 @@ type DefaultHttpRequestor(defaultSettings: HttpRequestorSettings, logProvider: I
             with get() = this.SessionState
             and set(v) = this.SessionState <- v
 
+        member this.Metrics
+            with get() = this.Metrics
+            and set(v) = this.Metrics <- v
+
         member this.Settings 
             with get() = this.Settings
 
         member this.Id 
             with get() = this.Id
-
-        member this.RequestNotificationCallback
-            with get() = this.RequestNotificationCallback
-            and set(v) = this.RequestNotificationCallback <- v
 
         member this.DownloadData(httpRequest: HttpRequest) =
             this.DownloadData(httpRequest)
