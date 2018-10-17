@@ -14,6 +14,7 @@ module MockData
     open ES.Taipan.Crawler.WebScrapers
     open ES.Taipan.Infrastructure.Text
     open ES.Taipan.Inspector.AddOns.WebApplicationVulnerability
+    open ES.Taipan.Infrastructure.Service
         
     [<AutoOpen>]
     module Templates =
@@ -219,7 +220,7 @@ module MockData
                 Directory.Delete(storageDir, true)
             
             let addOn = new WebApplicationVulnerabilityAddOn()
-            let context = new ES.Taipan.Inspector.Context(ES.Taipan.Inspector.FilesystemAddOnStorage(addOn), fun _ -> ())
+            let context = new ES.Taipan.Inspector.Context(ES.Taipan.Inspector.FilesystemAddOnStorage(addOn), new ServiceMetrics(String.Empty), fun _ -> ())
                         
             let vuln = {Id = Guid.NewGuid(); Application = "Joomla"; AffectedVersions = ["3.0.0 - 3.4.5"]; VulnerabilityName = "Joomla 3.4.4 RXSS"; Impact = "Low"; ExternalReferer = "CVE-1.2.3"; Note=""}
             context.AddOnStorage.SaveProperty("Joomla_V0001", vuln)

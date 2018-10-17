@@ -12,6 +12,7 @@
     open ES.Taipan.Inspector.AddOns
     open ES.Fslog
     open ES.Fslog.Loggers
+    open ES.Taipan.Infrastructure.Service
         
     let ``Identify a directory listing``(grovieraUrl: Uri) =   
         let scanContext = 
@@ -215,7 +216,7 @@
 
     let writeHttpBasicBruteforceData(usernames: String list, passwords: String list, combinations: (String * String) list) =
         let addOn = new ES.Taipan.Inspector.AddOns.HttpBruteforcer.HttpBruteforcerAddOn() :> IVulnerabilityScannerAddOn
-        let context = new ES.Taipan.Inspector.Context(new FilesystemAddOnStorage(addOn), fun _ -> ())
+        let context = new ES.Taipan.Inspector.Context(new FilesystemAddOnStorage(addOn), new ServiceMetrics(String.Empty), fun _ -> ())
         context.AddOnStorage.SaveProperty("Usernames", new List<String>(usernames))
         context.AddOnStorage.SaveProperty("Passwords", new List<String>(passwords))
         context.AddOnStorage.SaveProperty("Combinations", new List<String * String>(combinations))
@@ -230,7 +231,7 @@
             new ES.Taipan.Inspector.AddOns.StoredCrossSiteScripting.StoredCrossSiteScriptingAddOn() :> IVulnerabilityScannerAddOn
         ]
         |> List.iter(fun addOn ->
-            let context = new ES.Taipan.Inspector.Context(ES.Taipan.Inspector.FilesystemAddOnStorage(addOn), fun _ -> ())
+            let context = new ES.Taipan.Inspector.Context(ES.Taipan.Inspector.FilesystemAddOnStorage(addOn), new ServiceMetrics(String.Empty), fun _ -> ())
             context.AddOnStorage.SaveProperty("Payloads", storageData)
         )        
 
@@ -240,7 +241,7 @@
         |> List.iter(fun (a, b) -> storageData.Add(a, new List<String>(b)))
 
         let addOn = new ES.Taipan.Inspector.AddOns.SqlInjection.SqlInjectionAddOn()
-        let context = new ES.Taipan.Inspector.Context(ES.Taipan.Inspector.FilesystemAddOnStorage(addOn), fun _ -> ())
+        let context = new ES.Taipan.Inspector.Context(ES.Taipan.Inspector.FilesystemAddOnStorage(addOn), new ServiceMetrics(String.Empty), fun _ -> ())
         context.AddOnStorage.SaveProperty("Errors", storageData)
 
     let ``RXSS in query parameter``(grovieraUrl: Uri) =
