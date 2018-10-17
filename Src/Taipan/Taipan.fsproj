@@ -26,7 +26,7 @@
     <PlatformTarget>x86</PlatformTarget>
     <DocumentationFile>bin\Debug\Taipan.XML</DocumentationFile>
     <Prefer32Bit>false</Prefer32Bit>
-    <StartArguments>-p Full -u http://127.0.0.1/inspector/test39/</StartArguments>
+    <StartArguments>-u https://taipan-owasp-juice.herokuapp.com/#/search -p j</StartArguments>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
     <DebugType>pdbonly</DebugType>

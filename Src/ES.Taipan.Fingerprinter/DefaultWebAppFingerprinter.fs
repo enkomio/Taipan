@@ -27,9 +27,7 @@ type DefaultWebAppFingerprinter(settings: WebAppFingerprinterSettings, webApplic
     let mutable _processCompletedInvoked = false
     let mutable _stopRequested = false
     let _numOfParallelRequestWorkers = 20
-    let _tokenSource = new CancellationTokenSource()
-    let _requestsToProcess = new BlockingCollection<FingerprintRequest>()
-    let _getVersionMessagesToProcess = new BlockingCollection<GetAvailableVersionsMessage>()        
+    let _requestsToProcess = new BlockingCollection<FingerprintRequest>()       
     let _stateController = new ServiceStateController()
     let _taskManager = new TaskManager(_stateController, true, false, ConcurrentLimit = _numOfParallelRequestWorkers)
     let _processCompleted = new Event<IService>()
@@ -87,65 +85,54 @@ type DefaultWebAppFingerprinter(settings: WebAppFingerprinterSettings, webApplic
         if _requestsToProcess |> Seq.isEmpty then
             triggerIdleState()
 
-    let webAppFingerprinterLoop() =
-        async {
-            // code to get request done per second metric
-            let numOfServicedRequests = ref 0
-            let timer = new System.Timers.Timer(1000. * 60.)
-            timer.Elapsed.Add(fun _ -> 
-                let oldVal = Interlocked.Exchange(numOfServicedRequests, 0)                
-                _serviceMetrics.AddMetric("Request per seconds", oldVal.ToString())
-            )                
-            timer.Start()
+    let webAppFingerprinterLoop() = Async.Start <| async {
+        // code to get request done per second metric
+        let numOfServicedRequests = ref 0
+        let timer = new System.Timers.Timer(1000. * 60.)
+        timer.Elapsed.Add(fun _ -> 
+            let oldVal = Interlocked.Exchange(numOfServicedRequests, 0)                
+            _serviceMetrics.AddMetric("Request per seconds", oldVal.ToString())
+        )                
+        timer.Start()
 
-            // main process loop
-            _initializationCompleted.Trigger(this)
-            _serviceMetrics.AddMetric("Last fingerprinted directory", "<no one>")
-            for fingerprintRequest in _requestsToProcess.GetConsumingEnumerable() do
-                if not _stateController.IsStopped && not _stopRequested then
-                    lock _statusMonitor (fun () ->
-                        _serviceDiagnostics.Activate()
-                        _serviceMetrics.AddMetric("Status", "Running")
-                        processFingerprintRequest(fingerprintRequest)
-                        _serviceMetrics.RequestProcessed()
-                        Interlocked.Increment(numOfServicedRequests) |> ignore
-                        checkFingerprinterState()
-                    )
+        // main process loop
+        _initializationCompleted.Trigger(this)
+        _serviceMetrics.AddMetric("Last fingerprinted directory", "<no one>")
+        for fingerprintRequest in _requestsToProcess.GetConsumingEnumerable() do
+            if not _stateController.IsStopped && not _stopRequested then
+                lock _statusMonitor (fun () ->
+                    _serviceDiagnostics.Activate()
+                    _serviceMetrics.AddMetric("Status", "Running")
+                    processFingerprintRequest(fingerprintRequest)
+                    _serviceMetrics.RequestProcessed()
+                    Interlocked.Increment(numOfServicedRequests) |> ignore
+                    checkFingerprinterState()
+                )
 
-            if _stopRequested then
-                // wait until the run to completation is called
-                checkFingerprinterState()
-                _stateController.ReleaseStopIfNecessary()
-                _logger.WaitRunToCompletation()
-                _runToCompletationCalledLock.Wait()  
+        if _stopRequested then
+            // wait until the run to completation is called
+            checkFingerprinterState()
+            _stateController.ReleaseStopIfNecessary()
+            _logger.WaitRunToCompletation()
+            _runToCompletationCalledLock.Wait()  
 
-            // no more fingerprint requests to process
-            completeProcess()
-        } |> Async.Start
-
-    // This loop is used in order to manage message that are request information on a specific web application 
-    let messageHandlingLoop() =
-        async {
-            try
-                for getVersionsMessage in _getVersionMessagesToProcess.GetConsumingEnumerable(_tokenSource.Token) do
-                    match webApplicationFingerprintRepository.GetAllWebApplications() |> Seq.tryFind(fun app -> app.Name.Equals(getVersionsMessage.Application, StringComparison.OrdinalIgnoreCase)) with
-                    | Some webApp -> 
-                        let versionStrings = webApp.Versions |> Seq.map(fun ver -> ver.Version) |> Seq.toList
-                        let applicationVersionMessage = new AvailableApplicationVersionMessage(webApp.Name, versionStrings, getVersionsMessage.Id)
-                        messageBroker.Dispatch(this, applicationVersionMessage)
-                    | None -> ()
-                    
-            with
-            | :? OperationCanceledException ->  ()
-            
-        } |> Async.Start
-
+        // no more fingerprint requests to process
+        completeProcess()
+    } 
+        
     let handleFingerprintRequestMessage(sender: Object, fingerprintRequest: Envelope<FingerprintRequest>) =     
         if not _stateController.IsStopped && not _stopRequested && not _requestsToProcess.IsAddingCompleted then   
             _requestsToProcess.Add(fingerprintRequest.Item)
 
-    let handleGetAvailableVersionsMessage(sender: Object, getAvailableVersions: Envelope<GetAvailableVersionsMessage>) =
-        _getVersionMessagesToProcess.Add(getAvailableVersions.Item)
+    let handleGetAvailableVersionsMessage(sender: Object, getAvailableVersions: Envelope<GetAvailableVersionsMessage>) =  
+        let message = getAvailableVersions.Item
+        match webApplicationFingerprintRepository.GetAllWebApplications() |> Seq.tryFind(fun app -> app.Name.Equals(message.Application, StringComparison.OrdinalIgnoreCase)) with
+        | Some webApp -> 
+            message.Versions <- 
+                webApp.Versions 
+                |> Seq.map(fun ver -> ver.Version) 
+                |> Seq.toList
+        | None -> ()
         
     let isValidForFingerprint =
         let alreadyAnalyzedPath = new HashSet<String>()
@@ -202,8 +189,7 @@ type DefaultWebAppFingerprinter(settings: WebAppFingerprinterSettings, webApplic
     member this.Stop() = 
         _logger.StopRequested() 
         _stopRequested <- true  
-        _tokenSource.Cancel()
-        _requestsToProcess.CompleteAdding()  
+        _requestsToProcess.CompleteAdding()
 
         if _stateController.Stop() then
             _logger.WebAppFingerprinterStopped()     
@@ -214,7 +200,7 @@ type DefaultWebAppFingerprinter(settings: WebAppFingerprinterSettings, webApplic
         _logger.RunToCompletation()
 
         // must verify that all the plugins completed their work before to invoke the completeProcess method
-        _requestsToProcess.CompleteAdding()    
+        _requestsToProcess.CompleteAdding()
 
         // unlock if locked by stop request
         _runToCompletationCalledLock.Set()
@@ -228,9 +214,6 @@ type DefaultWebAppFingerprinter(settings: WebAppFingerprinterSettings, webApplic
         webApplicationFound
 
     member this.Activate() =
-        // run message handling loop
-        messageHandlingLoop()
-
         // run the main loop
         webAppFingerprinterLoop()
 

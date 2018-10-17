@@ -28,11 +28,15 @@ type TaskManager(statusToMonitor: ServiceStateController, releasePauseStatusMoni
     let acquireState(dependantStateController: ServiceStateController) =        
         dependantStateController.isPauseRequest <- statusToMonitor.isPauseRequest || statusToMonitor.IsPaused        
         dependantStateController.isStopped <- statusToMonitor.IsStopped
-        
+
+    let checkConsistency(serviceStateController: ServiceStateController) =
+        if statusToMonitor.IsPaused then 
+            serviceStateController.Pause() |> ignore
+        elif statusToMonitor.IsStopped then 
+            serviceStateController.Stop() |> ignore
+
     do
-        statusToMonitor.MethodCalled.Add(methodCalled)
-        if statusToMonitor.IsPaused then methodCalled(ServiceAction.Paused)
-        elif statusToMonitor.IsStopped then methodCalled(ServiceAction.Stopped)
+        statusToMonitor.MethodCalled.Add(methodCalled)        
 
     member val ConcurrentLimit = 5 with get, set
     member val Id = Guid.NewGuid() with get
@@ -62,6 +66,8 @@ type TaskManager(statusToMonitor: ServiceStateController, releasePauseStatusMoni
                         | _ -> failwith "Unable to remove task"
                     )
             , TaskCreationOptions.LongRunning)
+            checkConsistency(serviceStateController) |> ignore
+
             _taskObjects.Add(taskObject)
             taskObject
         )

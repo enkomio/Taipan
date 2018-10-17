@@ -142,6 +142,8 @@
     <Content Include="Lua\Php\vBulletin\vbulletin.xml" />
     <Content Include="Lua\Php\OroCRM\OroCRM.lua" />
     <Content Include="Lua\Php\OroCRM\OroCRM.xml" />
+    <Content Include="Lua\Php\Typo3\typo3.lua" />
+    <Content Include="Lua\Php\Typo3\typo3.xml" />
     <None Include="runner.lua" />
   </ItemGroup>
   <ItemGroup>
