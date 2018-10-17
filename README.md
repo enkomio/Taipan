@@ -31,6 +31,12 @@ If you want to try the dev version of Taipan without to wait for an official rel
 
 You can download it from the [Artifacts Directory](https://ci.appveyor.com/project/enkomio/taipan/build/artifacts).
 
+## Run on docker 
+- git clone https://github.com/enkomio/Taipan.git 
+- cd Docker 
+- docker build -t taipan  
+- docker run -it taipan:latest /bin/sh
+
 ## Using Taipan
 _Taipan_ can run on both Windows (natively) and Linux (with mono). To run it in Linux you have to install **mono in version >= 4.8.0**. You can track the implementation of the new features in the related <a href="https://github.com/taipan-scanner/Taipan/projects/1">Kanban board</a>.
 
