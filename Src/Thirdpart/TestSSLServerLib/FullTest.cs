@@ -608,14 +608,14 @@ class FullTest {
 		}
 
 		if (proxName == null) {
-			TcpClient tc = new TcpClient(serverName, serverPort);
+			TcpClient tc = new TcpClient(serverName, serverPort) { ReceiveTimeout = 1000 };
 			return tc.GetStream();
 		}
 
 		Stream ns = null;
 		try {
-			TcpClient tc = new TcpClient(proxName, proxPort);
-			ns = tc.GetStream();
+			TcpClient tc = new TcpClient(proxName, proxPort) { ReceiveTimeout = 1000 };
+            ns = tc.GetStream();
 			if (proxSSL) {
 				SslStream ss = new SslStream(ns, true);
 				ss.AuthenticateAsClient(proxName);
