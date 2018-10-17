@@ -15,89 +15,6 @@ open ES.Taipan.Infrastructure.Service
 open ES.Taipan.Infrastructure.Threading
 open ES.Fslog
 
-type internal ResourceDiscovererLogger() =
-    inherit LogSource("DefaultResourceDiscoverer")
-
-    let _syncLock = new Object()
-    let _progress = new ConcurrentDictionary<String, Int32>()
-
-    member this.ResetCounter() =
-        _progress.Clear()
-    
-    [<Log(1, Message = "Start discover of: {0}", Level = LogLevel.Informational)>]
-    member this.DiscoverRequest(discoverRequest: DiscoverRequest) = 
-        this.WriteLog(1, [|discoverRequest.Request.Uri.ToString()|])
-        
-    [<Log(2, Message = "Resource Discoverer Stopped", Level = LogLevel.Informational)>]
-    member this.DiscovererStopped() =
-        this.WriteLog(2, [||])
-
-    [<Log(3, Message = "Resource Discoverer Paused", Level = LogLevel.Informational)>]
-    member this.DiscovererPaused() =
-        this.WriteLog(3, [||])
-
-    [<Log(4, Message = "Resource Discoverer Resumed", Level = LogLevel.Informational)>]
-    member this.DiscovererResumed() =
-        this.WriteLog(4, [||])
-
-    [<Log(5, Message = "Identified resource at: {0} => {1} {2} #Bytes: {3}", Level = LogLevel.Informational)>]
-    member this.ResourceFound(resourceDiscovered: ResourceDiscovered) = 
-        this.WriteLog(5, [|resourceDiscovered.Request.Uri.ToString(); int resourceDiscovered.Response.StatusCode; resourceDiscovered.Response.ReasonPhrase; resourceDiscovered.Response.Html.Length|])
-
-    [<Log(6, Message = "Use dictionary '{0}', len = {1}", Level = LogLevel.Informational)>]
-    member this.UseDictionary(dictionaryName: String, count: Int32) = 
-        this.WriteLog(6, [|dictionaryName; count|])
-
-    [<Log(7, Message = "Discovery of {0} at {1}% [{2}/{3}]", Level = LogLevel.Informational)>]
-    member this.ScanProgress(directory: String, totalReq: Int32, curReq: Int32) = 
-        lock _syncLock (fun _ ->
-            let percentage = (float curReq / float totalReq) * 100. |> int32
-            if not <| _progress.ContainsKey(directory) then
-                _progress.[directory] <- percentage
-
-            let storedPercentage = ref 0
-            if _progress.TryGetValue(directory, storedPercentage) && !storedPercentage < percentage && percentage % 5 = 0 then
-                _progress.[directory] <- percentage
-                this.WriteLog(7, [|directory; percentage; curReq; totalReq|])
-        )   
-
-    [<Log(8, Message = "Stop requested", Level = LogLevel.Verbose)>]
-    member this.StopRequested() =
-        this.WriteLog(8, [||])
-
-    [<Log(9, Message = "Stop requested and wait for RunToCompletation message", Level = LogLevel.Verbose)>]
-    member this.WaitRunToCompletation() =
-        this.WriteLog(9, [||])
-
-    [<Log(10, Message = "RunToCompletation message received", Level = LogLevel.Verbose)>]
-    member this.RunToCompletation() =
-        this.WriteLog(10, [||])
-
-    [<Log(11, Message = "Go in Idle state", Level = LogLevel.Verbose)>]
-    member this.GoIdle() =
-        this.WriteLog(11, [||])
-        
-type DiscovererMetrics() =
-    inherit ServiceMetrics("Discoverer")
-    
-    member this.CurrentState(status: String) =
-        this.AddMetric("Current status", status)     
-
-    member this.CurrentDictionary(dictionary: String) =
-        this.AddMetric("Current used dictionary", dictionary)
-
-    member this.LastRequestedResources(resource: String) =
-        this.AddMetric("Last requested resource", resource)
-
-    member this.RequestPerSeconds(numReq: Int32) =
-        this.AddMetric("Request processed per seconds", numReq.ToString())
-
-    member this.WaitForTasksFingerprintCompletation(counter: Int32) =
-        this.AddMetric("Wait for tasks completation. Seconds passed", counter.ToString())
-
-    member this.InitializationCompleted() =
-        this.AddMetric("Initialization completed", "true")
-
 type DefaultResourceDiscoverer(settings: ResourceDiscovererSettings, webRequestor: IWebPageRequestor, messageBroker: IMessageBroker, resourceRepository: IResourceRepository, logProvider: ILogProvider) as this =
     let mutable _requestsToProcess = new BlockingCollection<DiscoverRequest>()
     let mutable _processCompletedInvoked = false
@@ -114,7 +31,7 @@ type DefaultResourceDiscoverer(settings: ResourceDiscovererSettings, webRequesto
     let _noMoreWebRequestsToProcess = new Event<IResourceDiscoverer>()
     let _logger = new ResourceDiscovererLogger()
     let _serviceDiagnostics = new ServiceDiagnostics()    
-    let _serviceMetrics = new DiscovererMetrics()
+    let _serviceMetrics = new ServiceMetrics("Discoverer")
     let _statusMonitor = new Object()
     let _runToCompletationCalledLock = new ManualResetEventSlim()
 
@@ -139,16 +56,16 @@ type DefaultResourceDiscoverer(settings: ResourceDiscovererSettings, webRequesto
             _processCompleted.Trigger(this)
             
             if _stateController.IsStopped then
-                _serviceMetrics.CurrentState("Stopped")
+                _serviceMetrics.AddMetric("Status", "Stopped")
             else
-                _serviceMetrics.CurrentState("Completed")
+                _serviceMetrics.AddMetric("Status", "Completed")
 
     let processDiscoverRequest(discoverRequest: DiscoverRequest) =
         if not _stateController.IsStopped && not _stopRequested && not _requestsToProcess.IsAddingCompleted then            
             this.Discover(discoverRequest) |> ignore
 
     let triggerIdleState() =
-        _serviceMetrics.CurrentState("Idle")
+        _serviceMetrics.AddMetric("Status", "Idle")
         _serviceDiagnostics.GoIdle()
         _logger.GoIdle()
         _noMoreWebRequestsToProcess.Trigger(this)
@@ -161,13 +78,12 @@ type DefaultResourceDiscoverer(settings: ResourceDiscovererSettings, webRequesto
         // main process loop
         let completed = ref false
         _initializationCompleted.Trigger(this)
-        _serviceMetrics.InitializationCompleted()
         while(not !completed) do
             for discoverRequest in _requestsToProcess.GetConsumingEnumerable() do
                 if not _stateController.IsStopped && not _stopRequested then
                     lock _statusMonitor (fun () ->
                         _serviceDiagnostics.Activate()
-                        _serviceMetrics.CurrentState("Running")
+                        _serviceMetrics.AddMetric("Status", "Running")
                         processDiscoverRequest(discoverRequest)
                         checkResourceDiscovererState()
                     )
@@ -286,7 +202,7 @@ type DefaultResourceDiscoverer(settings: ResourceDiscovererSettings, webRequesto
             //for resource in resources do
             let resource = ref (new Resource(String.Empty))
             while resources.TryDequeue(resource) do
-                _serviceMetrics.LastRequestedResources((!resource).Path)
+                _serviceMetrics.AddMetric("Last requested resource", (!resource).Path)
 
                 if not serviceStateController.IsStopped && not _stopRequested then   
                     serviceStateController.WaitIfPauseRequested()
@@ -330,14 +246,6 @@ type DefaultResourceDiscoverer(settings: ResourceDiscovererSettings, webRequesto
         |> Seq.append(resourceRepository.GetForbiddenDirectories())
         |> _forbiddenDirectories.AddRange
 
-        // code to get request done per second metric
-        let timer = new System.Timers.Timer(1000.)                
-        timer.Elapsed.Add(fun _ -> 
-            let oldVal = Interlocked.Exchange(_numOfServicedRequests, 0)
-            _serviceMetrics.RequestPerSeconds(oldVal)
-        )                
-        timer.Start()
-
     static member ResourceDiscovererId = Guid.Parse("8DD36C46-8FEB-455F-A1BA-C14363339318")
     member val ServiceId = DefaultResourceDiscoverer.ResourceDiscovererId with get
     member this.NoMoreWebRequestsToProcess = _noMoreWebRequestsToProcess.Publish
@@ -354,12 +262,12 @@ type DefaultResourceDiscoverer(settings: ResourceDiscovererSettings, webRequesto
 
         if action() then
             _logger.DiscovererPaused()
-            _serviceMetrics.CurrentState("Paused")
+            _serviceMetrics.AddMetric("Status", "Paused")
                 
     member this.Resume() = 
         if _stateController.ReleasePause() then
             _logger.DiscovererResumed()
-            _serviceMetrics.CurrentState("Running")
+            _serviceMetrics.AddMetric("Status", "Running")
             checkResourceDiscovererState()
 
     member this.Stop() =        
@@ -369,10 +277,10 @@ type DefaultResourceDiscoverer(settings: ResourceDiscovererSettings, webRequesto
                
         if _stateController.Stop() then
             _logger.DiscovererStopped()
-            _serviceMetrics.CurrentState("Stopped")
+            _serviceMetrics.AddMetric("Status", "Stopped")
 
     member this.RunToCompletation() =
-        _serviceMetrics.CurrentState("Run to completation")
+        _serviceMetrics.AddMetric("Status", "Run to completation")
         _logger.RunToCompletation()
         _requestsToProcess.CompleteAdding()  
 
@@ -397,7 +305,7 @@ type DefaultResourceDiscoverer(settings: ResourceDiscovererSettings, webRequesto
             // this hash set is used in order to disallow to ask for duplicate resource from different dictionaries
             let requestedResources = new HashSet<String>()
             for dictionary in _dictionaries do
-                _serviceMetrics.CurrentDictionary(dictionary.Name)
+                _serviceMetrics.AddMetric("Current used dictionary", dictionary.Name)
 
                 if not _stateController.IsStopped && not _stopRequested then
                     let counter = ref 0                
@@ -444,7 +352,6 @@ type DefaultResourceDiscoverer(settings: ResourceDiscovererSettings, webRequesto
                     let counter = ref 0
                     while not(Task.WaitAll(tasks |> Seq.toArray, 1000)) do
                         incr counter
-                        _serviceMetrics.WaitForTasksFingerprintCompletation(!counter)
 
                     // update list
                     identifiedResources 

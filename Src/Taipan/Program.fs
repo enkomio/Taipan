@@ -83,13 +83,12 @@ module Cli =
 
         Console.WriteLine(separator)
 
-    let prettyPrintMetrics(serviceMetrics: ServiceMetrics) =
-        Console.WriteLine("{0}Service: {1}", Environment.NewLine, serviceMetrics.ServiceName)
-        match serviceMetrics.GetAll() with
-        | [] -> Console.WriteLine("N/A")
-        | metrics ->
+    let prettyPrintMetrics(serviceMetrics: ServiceMetrics) =        
+        let metrics = serviceMetrics.GetAll()
+        if metrics.Any() then
+            Console.WriteLine("{0}Service: {1}", Environment.NewLine, serviceMetrics.ServiceName)
             metrics
-            |> List.iter(fun metric -> Console.WriteLine("[{0}] {1} = {2}", metric.TimeStamp, metric.Name, metric.Value))
+            |> List.iter(fun metric -> Console.WriteLine("[{0}] {1} = {2}", metric.TimeStamp, metric.Name, metric.Value))        
             
     let replLoop() =
         Task.Factory.StartNew(fun () ->            

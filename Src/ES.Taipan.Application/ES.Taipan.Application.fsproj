@@ -52,6 +52,7 @@
     </Compile>
     <Compile Include="TemplateProfile.fs" />
     <Compile Include="ScanContext.fs" />
+    <Compile Include="ScanWorkflowLogger.fs" />
     <Compile Include="ScanWorkflow.fs" />
     <Compile Include="MessageAdapters.fs" />
     <Compile Include="ScanLogger.fs" />

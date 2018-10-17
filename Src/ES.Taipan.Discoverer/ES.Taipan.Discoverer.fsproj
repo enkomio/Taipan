@@ -60,6 +60,7 @@
     <Compile Include="ResourceDiscovererSettings.fs" />
     <Compile Include="IResourceRepository.fs" />
     <Compile Include="NewResourceDiscoveredMessage.fs" />
+    <Compile Include="ResourceDiscovererLogger.fs" />
     <Compile Include="DefaultResourceDiscoverer.fs" />
     <Compile Include="FilesystemResourceRepository.fs" />
     <Compile Include="AssemblyInfo.fs">

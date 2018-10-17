@@ -3,58 +3,17 @@
 open System
 open System.Collections.Generic
 open System.Threading
-open System.Collections.Generic
 open ES.Taipan.Infrastructure.Service
 open ES.Taipan.Crawler
 open ES.Taipan.Inspector
 open ES.Taipan.Fingerprinter
 open ES.Taipan.Discoverer
-open ES.Taipan.Infrastructure.Service
 open ES.Fslog
 open ES.Taipan.Infrastructure.Messaging
 
-type ScanWorkflowLogger() =
-    inherit LogSource("ScanWorkflow")
-    
-    [<Log(1, Message = "Requested: {0}", Level = LogLevel.Informational)>]
-    member this.ActionRequested(action: String) =
-        this.WriteLog(1, [|action|])
-
-    [<Log(2, Message = "Service completed: {0}", Level = LogLevel.Informational)>]
-    member this.ServiceCompleted(service: IService) =        
-        this.WriteLog(2, [|service.GetType().Name|])
-
-    [<Log(3, Message = "Run service to completation: {0}", Level = LogLevel.Informational)>]
-    member this.RunServiceToCompletation(service: IService) =        
-        this.WriteLog(3, [|service.GetType().Name|])
-
-    [<Log(4, Message = "Service in Idle state: {0}", Level = LogLevel.Verbose)>]
-    member this.ServiceIdle(service: IService) =        
-        this.WriteLog(4, [|service.GetType().Name|])
-
-    [<Log(5, Message = "All workflow services completed", Level = LogLevel.Informational)>]
-    member this.AllServiceCompleted() =        
-        this.WriteLog(5, [||])
-
-    [<Log(7, Message = "Service {0} initialized", Level = LogLevel.Informational)>]
-    member this.ServiceInitialized(service: IService) =        
-        this.WriteLog(7, [|service.GetType().FullName|])
-        
-type ScanWorkflowMetrics() =
-    inherit ServiceMetrics("Scan Workflow")
-
-    member this.LastIdleProcess(service: IService) =
-        this.AddMetric("Last idle service", service.GetType().Name)
-
-    member this.LastCompletedProcess(service: IService) =
-        this.AddMetric("Last completed service", service.GetType().Name)
-
-    member this.LastRunToCompletationProcess(service: IService) =
-        this.AddMetric("Last run to completation service", service.GetType().Name)
-
 type ScanWorkflow(messageBroker: IMessageBroker, runAssessmentPhaseCallback: unit -> unit, logProvider: ILogProvider) as this =  
     let _logger = new ScanWorkflowLogger()  
-    let _serviceMetrics = new ScanWorkflowMetrics()
+    let _serviceMetrics = new ServiceMetrics("Scan Workflow")
     let _statusQueue = new Queue<String>()
     let _serviceStatusChangeSyncRoot = new Object()
     let _producerServices = new List<IService>()
@@ -65,7 +24,8 @@ type ScanWorkflow(messageBroker: IMessageBroker, runAssessmentPhaseCallback: uni
     let _currentRunToCompletationServiceLevel = ref Int32.MaxValue
     let _maxServiceLevelPriority = 4
     let mutable _scanCompleted = false  
-    let mutable _scanInitializationCompleted = false 
+    let mutable _scanInitializationCompleted = false
+
     do 
         logProvider.AddLogSourceToLoggers(_logger)
         messageBroker.Subscribe<RequestMetricsMessage>(fun (sender, msg) -> msg.Item.AddResult(this, _serviceMetrics))
@@ -124,7 +84,7 @@ type ScanWorkflow(messageBroker: IMessageBroker, runAssessmentPhaseCallback: uni
 
     let runToCompletation(srv: IService) =
         _logger.RunServiceToCompletation(srv)  
-        _serviceMetrics.LastRunToCompletationProcess(srv)
+        _serviceMetrics.AddMetric("Last run to completation service", srv.GetType().Name)
         _pendingServiceForCompletation.Add(srv.ServiceId)   
         _completedServices.[srv] <- false
 
@@ -182,7 +142,7 @@ type ScanWorkflow(messageBroker: IMessageBroker, runAssessmentPhaseCallback: uni
                 // the service really completed, not more work for it
                 _completedServices.[service] <- true
                 _logger.ServiceCompleted(service)
-                _serviceMetrics.LastCompletedProcess(service)
+                _serviceMetrics.AddMetric("Last completed service", service.GetType().Name)
                                 
                 tryIdentifyServiceAndRunToCompletation(inIdleState)
             

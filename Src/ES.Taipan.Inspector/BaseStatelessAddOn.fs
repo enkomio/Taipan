@@ -16,7 +16,7 @@ open ES.Fslog
 [<AbstractClass>]
 type BaseStatelessAddOn(name: String, id: String, priority: Int32) =      
     let _syncRoot = new Object()
-    let _serviceMetrics = new ServiceMetrics(name)
+    let mutable _serviceMetrics = new ServiceMetrics(name)
     let mutable _isInitialized = false
     let mutable _pendingMessageIds = Map.empty<Guid, ManualResetEventSlim>
     let mutable _completedRequests = Map.empty<Guid, WebLinksExtractedMessage>
@@ -62,6 +62,7 @@ type BaseStatelessAddOn(name: String, id: String, priority: Int32) =
             this.MessageBroker <- Some messageBroker
             _isInitialized <- true
 
+            _serviceMetrics <- context.ServiceMetrics
             webRequestor.HttpRequestor.RequestNotificationCallback <- requestNotificationCallback
         )
 
