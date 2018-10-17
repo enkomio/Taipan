@@ -160,19 +160,20 @@ type SSLTestAddOn() as this =
         if testRequest.RequestType = TestRequestType.CrawledPage && not _serverTested then            
             if testRequest.WebRequest.HttpRequest.Uri.Scheme.Equals("https", StringComparison.OrdinalIgnoreCase) then
                 _serverTested <- true
+                try
+                    // start test
+                    let ft = new FullTestWrapper()
+                    ft.AllSuites <- true
+                    ft.ServerName <- testRequest.WebRequest.HttpRequest.Uri.Host
+                    ft.ServerPort <- testRequest.WebRequest.HttpRequest.Uri.Port
 
-                // start test
-                let ft = new FullTestWrapper()
-                ft.AllSuites <- true
-                ft.ServerName <- testRequest.WebRequest.HttpRequest.Uri.Host
-                ft.ServerPort <- testRequest.WebRequest.HttpRequest.Uri.Port
-
-                match _webProxy with
-                | Some proxy when not(String.IsNullOrWhiteSpace(proxy)) -> 
-                    let proxyUri = new Uri(proxy)
-                    ft.ProxName <- proxyUri.Host
-                    ft.ProxPort <- proxyUri.Port
-                | _ -> ()
-
-                let jsonReport = ft.Run()
-                createIssue(testRequest, jsonReport)
+                    match _webProxy with
+                    | Some proxy when not(String.IsNullOrWhiteSpace(proxy)) -> 
+                        let proxyUri = new Uri(proxy)
+                        ft.ProxName <- proxyUri.Host
+                        ft.ProxPort <- proxyUri.Port
+                    | _ -> ()
+                
+                    let jsonReport = ft.Run()
+                    createIssue(testRequest, jsonReport)
+                with _ -> ()
