@@ -1,0 +1,16 @@
+<AddOnStorageValue>
+  <AddOn>Vulnerable Web Application AddOn</AddOn>
+  <Name>Wordfence_Username Enumeration Prevention Bypass</Name>
+  <Type>ES.Taipan.Inspector.AddOns.WebApplicationVulnerability.ApplicationVulnerabilityDescriptor</Type>
+  <Value><![CDATA[{
+  "Id": "c72416b8-5ef7-4b2f-b0fe-cdd67232edb1",
+  "Application": "Wordfence",
+  "AffectedVersions": [
+    "<=7.1.12"
+  ],
+  "VulnerabilityName": "Username Enumeration Prevention Bypass",
+  "ExternalReferer": "WPVDB-ID-9135",
+  "Impact": "Low",
+  "Note": "N/A"
+}]]></Value>
+</AddOnStorageValue>
