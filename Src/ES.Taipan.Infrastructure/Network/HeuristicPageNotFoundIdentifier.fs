@@ -37,8 +37,8 @@ module HeuristicHelpers =
             // This check is based on the fact that if the text has in common many words with that of
             // an un-existent page, than the page is considered not found.
             // Leviathan was too inefficient.
-            let intersect = Set.intersect (htmlTokens |> Set.ofSeq) htmlToCheckTokensSet
-            let percentageOfWordsFound = float(intersect.Count) / float(htmlTokens.Length)
+            let intersectNotExistingWords = Set.intersect (htmlTokens |> Set.ofSeq) htmlToCheckTokensSet
+            let percentageOfWordsFound = float(intersectNotExistingWords.Count) / float(htmlTokens.Length)
             percentageOfWordsFound > percentageOfHtmlSimilarity
         )
 
@@ -133,36 +133,35 @@ type HeuristicPageNotFoundIdentifier(httpRequestor: IHttpRequestor, percentageOf
 
         // finally create the matching function, return true if the page exists
         fun (req: HttpRequest, resp: HttpResponse) ->            
+            let mutable pageNotExist = true
+
             // create decision logic properties            
             let statusCodeMatchNotExistentPage = statusCodes.Contains(resp.StatusCode)
             let contentTypeMatchNotExistentPage = matchNotExistentContentType(resp.Headers, contentTypes)
             let isRedirectToNotExistent = verifyIfRedirectDueToNotExistance(req, resp, redirects)
-
-            let pageNotExist = 
-                match resp.Headers |> Seq.tryFind(fun hdr -> hdr.Name.Equals("Content-Type")) with
-                | Some contentType when not(contentType.Value.ToLower().Contains("image")) -> 
-                    let currentHtml = resp.Html
-                    let htmlToCheckTokens = HeuristicHelpers.tokenize(currentHtml)
-                
-                    let htmlMatchNotExistentPage = HeuristicHelpers.htmlMatch(htmls, htmlToCheckTokens, percentageOfHtmlSimilarity)
-                    let wordsLengthMatchNotExistentPage = HeuristicHelpers.matchWordsLength(htmls, htmlToCheckTokens, percentageOfHtmlSimilarity)
-                    let matchLengthsOfUnexistenPages = matchUnexistendContentLength(htmlLengths, currentHtml.Length)
-                    let matchStatusCodeNotExistenPagesIsEqualsForAll = statusCodeIsEqualsForAll(statusCodes, resp.StatusCode)
-
-                    matchStatusCodeNotExistenPagesIsEqualsForAll ||
-                    (
-                        statusCodeMatchNotExistentPage && 
-                        contentTypeMatchNotExistentPage &&
                         
-                        // if the words count is compatible with the number of a not existend page checks also HTML
-                        wordsLengthMatchNotExistentPage && 
-                        htmlMatchNotExistentPage
-                    ) || 
-                    matchLengthsOfUnexistenPages ||                    
-                    isRedirectToNotExistent
+            // if the status code is not in the list of the page not existing, then page exists
+            if resp.StatusCode <>  HttpStatusCode.NotFound && not statusCodeMatchNotExistentPage then
+                pageNotExist <- false
+            else
+                pageNotExist <-
+                    match resp.Headers |> Seq.tryFind(fun hdr -> hdr.Name.Equals("Content-Type")) with
+                    | Some contentType when not(contentType.Value.ToLower().Contains("image")) -> 
+                        let currentHtml = resp.Html
+                        let htmlToCheckTokens = HeuristicHelpers.tokenize(currentHtml)
+                
+                        let htmlMatchNotExistentPage = HeuristicHelpers.htmlMatch(htmls, htmlToCheckTokens, percentageOfHtmlSimilarity)
+                        let wordsLengthMatchNotExistentPage = HeuristicHelpers.matchWordsLength(htmls, htmlToCheckTokens, percentageOfHtmlSimilarity)
+                        let matchLengthsOfUnexistenPages = matchUnexistendContentLength(htmlLengths, currentHtml.Length)
+                        let matchStatusCodeNotExistenPagesIsEqualsForAll = statusCodeIsEqualsForAll(statusCodes, resp.StatusCode)
 
-                | _ -> 
-                    isRedirectToNotExistent
+                        matchStatusCodeNotExistenPagesIsEqualsForAll ||
+                        (contentTypeMatchNotExistentPage && wordsLengthMatchNotExistentPage && htmlMatchNotExistentPage) || 
+                        matchLengthsOfUnexistenPages ||                    
+                        isRedirectToNotExistent
+
+                    | _ -> 
+                        isRedirectToNotExistent
 
             not pageNotExist
 
