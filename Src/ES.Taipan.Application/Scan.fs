@@ -302,11 +302,14 @@ type Scan(scanContext: ScanContext, logProvider: ILogProvider) as this =
         // launch crawler, this is a core service. Launch a different crawler for each authentication provided     
         let mutable crawlerRunned = true   
         if not <| scanContext.Template.RunCrawler then     
-            // fake a page processed message in order to continue with all the possible services available. This message 
-            // must be sent before to instantiace the crawler in order to avoid race condition with the other services
-            let fakeWebLink = new WebLink(scanContext.StartRequest, new Guid())
-            let noContentResponse = new WebResponse(new HttpResponse())
-            this.PageProcessedMessageHandler(this, envelopWithDefaults <| new PageProcessedMessage(fakeWebLink, noContentResponse, 0))
+            // request only the input page in order to continue with all the possible services available.
+            let webRequestor = _container.Value.Resolve<IWebPageRequestor>()            
+            let webResponse = webRequestor.RequestInitialWebPage(scanContext.StartRequest)
+
+            // send the initial message. This message must be sent before to instantiace the crawler 
+            // in order to avoid race condition with the other services
+            let entryWebLink = new WebLink(scanContext.StartRequest, Guid.NewGuid())
+            this.PageProcessedMessageHandler(this, envelopWithDefaults <| new PageProcessedMessage(entryWebLink, webResponse, 0))
             
             // this ensure that the crawler will not do any work
             scanContext.Template.CrawlerSettings.AllowedHosts.Clear()
@@ -385,8 +388,7 @@ type Scan(scanContext: ScanContext, logProvider: ILogProvider) as this =
 
             // try to get the IP and verify if the host is reachable
             ip <- Some(Dns.GetHostAddresses(uri.Host) |> Seq.head)
-            let webRequestor = _container.Value.Resolve<IWebPageRequestor>()
-            
+            let webRequestor = _container.Value.Resolve<IWebPageRequestor>()            
             let mutable webResponse = webRequestor.RequestInitialWebPage(new WebRequest(uri))
 
             // check for redirect

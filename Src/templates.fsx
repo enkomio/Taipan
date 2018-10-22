@@ -243,12 +243,27 @@ let notInvasive() =
         
     template
 
+let bruteforce() = 
+    let template = createTemplate("Http Auth Bruteforce", "876C650C-D864-4EDF-B3DC-901945CE49C8")        
+    template.Description <- "Perform an HTTP bruteforce if an authentication request is found"
+
+    template.RunVulnerabilityScanner <- true    
+    template.VulnerabilityScannerSettings.ActivateAllAddOns <- false
+    template.VulnerabilityScannerSettings.AddOnIdsToActivate.Clear()
+    template.VulnerabilityScannerSettings.AddOnIdsToActivate.Add(HttpBruteforcer.HttpBruteforcerAddOn.Id)
+
+    // disable Javascript for request
+    template.HttpRequestorSettings.UseJavascriptEngineForRequest <- false    
+
+    template
+
 let templates = [
     discoverHiddenResourceNotRecursive()
     fingerprintWebApplication()    
     notInvasive()
     fullScan()
     fullScanNoJavascript()
+    bruteforce()
 ]
 
 let dumpTemplate(template: TemplateProfile) =

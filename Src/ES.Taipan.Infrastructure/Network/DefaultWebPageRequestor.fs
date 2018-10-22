@@ -17,6 +17,7 @@ type DefaultWebPageRequestor(httpRequestor: IHttpRequestor) =
                             System.Net.HttpStatusCode.Found
                             System.Net.HttpStatusCode.Redirect
                             System.Net.HttpStatusCode.Unauthorized
+                            System.Net.HttpStatusCode.Forbidden
                         ] |> List.contains httpResponse.Value.StatusCode
                     )
         }
