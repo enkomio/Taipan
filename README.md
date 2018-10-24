@@ -1,8 +1,9 @@
 # Taipan - Web Application Security Scanner
  
  <p align="center">
-    <a href="https://github.com/taipan-scanner/Taipan/releases/latest"><img alt="Release" src="https://img.shields.io/github/release/taipan-scanner/Taipan.svg?style=flat-square"></a>
-    <a href="https://ci.appveyor.com/project/enkomio/taipan"><img alt="Build" src="https://ci.appveyor.com/api/projects/status/j0t1m1wm46yrgvdr"></a>
+    <a href="https://github.com/taipan-scanner/Taipan/releases/latest"><img alt="Release" src="https://img.shields.io/github/release/taipan-scanner/Taipan.svg?svg=true"></a>
+    <a href="https://ci.appveyor.com/project/enkomio/taipan"><img alt="Build" src="https://ci.appveyor.com/api/projects/status/j0t1m1wm46yrgvdr?svg=true"></a>
+    <a href="https://github.com/enkomio/Taipan/blob/master/LICENSE.md"><img alt="Software License" src="https://img.shields.io/badge/License-CC%20BY%204.0-brightgreen.svg"></a>
   </p>
 
 _Taipan_ is a an automated web application scanner which allows to identify web vulnerabilities in an automatic fashion. This project is the core engine of a broader project which include other components, like a web dashboard where you can manage your scan or download a PDF report and a scanner agent to run on specific host. Below are some screenshots of the _Taipan_ dashboard:
