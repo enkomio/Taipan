@@ -1,7 +1,7 @@
 # Taipan - Web Application Security Scanner
  
  <p align="center">
-    <a href="https://github.com/taipan-scanner/Taipan/releases/latest"><img alt="Release" src="https://img.shields.io/github/release/taipan-scanner/Taipan.svg?svg=true"></a>
+    <a href="https://github.com/enkomio/Taipan/releases/latest"><img alt="Release" src="https://img.shields.io/github/release/enkomio/Taipan.svg?svg=true"></a>
     <a href="https://ci.appveyor.com/project/enkomio/taipan"><img alt="Build" src="https://ci.appveyor.com/api/projects/status/j0t1m1wm46yrgvdr?svg=true"></a>
     <a href="https://github.com/enkomio/Taipan/blob/master/LICENSE.md"><img alt="Software License" src="https://img.shields.io/badge/License-CC%20BY%204.0-brightgreen.svg"></a>
   </p>
