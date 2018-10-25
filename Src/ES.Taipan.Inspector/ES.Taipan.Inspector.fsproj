@@ -58,6 +58,9 @@
     </When>
   </Choose>
   <ItemGroup>
+    <Compile Include="AssemblyInfo.fs">
+      <Link>AssemblyInfo.fs</Link>
+    </Compile>
     <Compile Include="TestRequest.fs" />
     <Compile Include="ProbeRequest.fs" />
     <Compile Include="VulnerabilityScannerSettings.fs" />

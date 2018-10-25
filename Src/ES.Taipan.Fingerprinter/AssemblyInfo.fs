@@ -5,8 +5,17 @@ open System.Reflection
 [<assembly: AssemblyTitleAttribute("ES.Taipan.Fingerprinter")>]
 [<assembly: AssemblyProductAttribute("Taipan")>]
 [<assembly: AssemblyCompanyAttribute("Enkomio")>]
-[<assembly: AssemblyDescriptionAttribute("A web application vulnerability assessment tool.")>]
+[<assembly: AssemblyDescriptionAttribute("A web application vulnerability scanner tool.")>]
 [<assembly: AssemblyVersionAttribute("0.0.0")>]
 [<assembly: AssemblyFileVersionAttribute("0.0.0")>]
-[<assembly: AssemblyInformationalVersionAttribute("0.0.0")>]
+[<assembly: AssemblyInformationalVersionAttribute("0.0.0.*")>]
 do ()
+
+module internal AssemblyVersionInformation =
+    let [<Literal>] AssemblyTitle = "ES.Taipan.Fingerprinter"
+    let [<Literal>] AssemblyProduct = "Taipan"
+    let [<Literal>] AssemblyCompany = "Enkomio"
+    let [<Literal>] AssemblyDescription = "A web application vulnerability scanner tool."
+    let [<Literal>] AssemblyVersion = "0.0.0"
+    let [<Literal>] AssemblyFileVersion = "0.0.0"
+    let [<Literal>] AssemblyInformationalVersion = "0.0.0.*"

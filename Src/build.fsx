@@ -21,14 +21,8 @@ let project = "Taipan"
 // Short summary of the project
 let summary = "A web application vulnerability scanner tool."
 
-// Longer description of the project
-let description = "A web application vulnerability scanner tool."
-
 // List of author names (for NuGet package)
 let authors = [ "Enkomio" ]
-
-// File system information
-let solutionFile  = "TaipanSln.sln"
 
 // Specify if it is a local build. In local environment some tasks are skipped
 let isLocal = String.IsNullOrWhiteSpace(Environment.GetEnvironmentVariable("CI"))
@@ -65,17 +59,12 @@ let releaseNotesData =
     |> parseAllReleaseNotes
 
 let releaseNoteVersion = Version.Parse((List.head releaseNotesData).AssemblyVersion)
-let buildVersion = int32(DateTime.UtcNow.Subtract(new DateTime(1980,2,1,0,0,0)).TotalSeconds)
+let buildVersion = int32(DateTime.UtcNow.Subtract(new DateTime(1980,2,1,0,0,0)).TotalHours)
 let releaseVersionOfficial = new Version(releaseNoteVersion.Major, releaseNoteVersion.Minor, buildVersion)
 let releaseVersion = {List.head releaseNotesData with AssemblyVersion = releaseVersionOfficial.ToString()}
-trace("Version: " + releaseVersion.AssemblyVersion)
+trace("Build Version: " + releaseVersion.AssemblyVersion)
 
-let stable = 
-    match releaseNotesData |> List.tryFind (fun r -> r.NugetVersion.Contains("-") |> not) with
-    | Some stable -> stable
-    | _ -> releaseVersion
-
-let genFSAssemblyInfo (projectPath) =
+let genFSAssemblyInfo version projectPath =
     let projectName = System.IO.Path.GetFileNameWithoutExtension(projectPath)
     let folderName = System.IO.Path.GetFileName(System.IO.Path.GetDirectoryName(projectPath))
     let fileName = folderName @@ "AssemblyInfo.fs"
@@ -84,9 +73,9 @@ let genFSAssemblyInfo (projectPath) =
         Attribute.Product project
         Attribute.Company (authors |> String.concat ", ")
         Attribute.Description summary
-        Attribute.Version (releaseVersion.AssemblyVersion + ".*")
-        Attribute.FileVersion (releaseVersion.AssemblyVersion + ".*")
-        Attribute.InformationalVersion (releaseVersion.NugetVersion + ".*") ]
+        Attribute.Version (version + ".*")
+        Attribute.FileVersion (version + ".*")
+        Attribute.InformationalVersion (version + ".*") ]
 
 Target "Clean" (fun _ ->
     CleanDir buildDir
@@ -97,9 +86,13 @@ Target "Clean" (fun _ ->
 )
 
 Target "AssemblyInfo" (fun _ ->
-    if not isLocal then
-        let fsProjs =  !! "*/**/*.fsproj"
-        fsProjs |> Seq.iter genFSAssemblyInfo
+    let versionToUse =
+        if isLocal 
+        then "0.0.0"
+        else releaseVersion.AssemblyVersion
+
+    let fsProjs =  !! "*/**/*.fsproj"
+    fsProjs |> Seq.iter(genFSAssemblyInfo versionToUse)
 )
 
 Target "Compile" (fun _ ->
