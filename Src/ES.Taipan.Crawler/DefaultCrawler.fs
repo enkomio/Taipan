@@ -3,11 +3,9 @@
 open System
 open System.Threading
 open System.Collections.Generic
-open System.Collections.Concurrent
 open ES.Taipan.Infrastructure.Network
 open ES.Taipan.Infrastructure.Service
 open ES.Taipan.Infrastructure.Messaging
-open ES.Taipan.Infrastructure.Validation
 open ES.Fslog
 
 module private CrawlerIdGenerator =
@@ -224,11 +222,9 @@ type DefaultCrawler(settings: CrawlerSettings, webRequestor: IWebPageRequestor, 
         message.Item.AddResult(this, _serviceMetrics)
 
     let filterAddOn (addOn: ICrawlerAddOn) = 
-        if settings.ActivateAllAddOns || settings.AddOnIdsToActivate.Contains(addOn.Id) then 
-            _logger.AddOnActivated(addOn.Name)
-            true
-        else 
-            false 
+        let filter = settings.ActivateAllAddOns || settings.AddOnIdsToActivate.Contains(addOn.Id)
+        if filter then _logger.AddOnActivated(addOn.Name)
+        filter
 
     do 
         // set requestor settings and metrics
@@ -258,12 +254,11 @@ type DefaultCrawler(settings: CrawlerSettings, webRequestor: IWebPageRequestor, 
         if settings.MutateWebLinks then
             _linkMutator <- Some <| new WebLinkMutator(settings)
 
+    member val ServiceId = Guid.NewGuid() with get    
+    member val Diagnostics = _serviceDiagnostics with get
     member this.ProcessCompleted = _processCompleted.Publish
     member this.InitializationCompleted = _initializationCompleted.Publish
-    
-    member val ServiceId = Guid.NewGuid() with get    
-    member this.NoMoreWebRequestsToProcess = _noMoreWebRequestsToProcess.Publish
-    member val Diagnostics = _serviceDiagnostics with get
+    member this.NoMoreWebRequestsToProcess = _noMoreWebRequestsToProcess.Publish    
 
     member this.LinkMutator
         with get() = _linkMutator

@@ -47,7 +47,7 @@ type CrawlerSettings() =
     member val CrawlPageWithoutExtension = true with get, set   
 
     /// Try to do some mutation to the found link in order to discover hidden pages
-    member val MutateWebLinks = true with get, set
+    member val MutateWebLinks = false with get, set
 
     /// Tell if the crawler should submit POST request
     member val SubmitPost = true with get, set
