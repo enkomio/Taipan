@@ -27,7 +27,7 @@ type FileExistsSignature() =
         root <> null
 
     override this.Verify(directory: String, webPageRequestor: IWebPageRequestor) =
-        match WebUtility.getAbsoluteUriStringValueSameHost(directory, this.FilePath) with
+        match this.ComposeSignaturePath(directory, this.FilePath) with
         | Some urlString ->
             let httpRequest = new HttpRequest(urlString)
             httpRequest.Headers.Add(new HttpHeader(Name = "Referer", Value = directory))

@@ -3,6 +3,7 @@
 open System
 
 open ES.Taipan.Infrastructure.Network
+open ES.Taipan.Infrastructure.Text
 
 [<AbstractClass>]
 type BaseSignature() =
@@ -10,6 +11,12 @@ type BaseSignature() =
     member val Id = Guid.NewGuid() with get, set
     abstract Verify: String * IWebPageRequestor -> SignatureVerificationResult
     abstract AcquireFromXml : String -> unit
+
+    member this.ComposeSignaturePath(directory: String, path: String) =
+        let mutable normalizedPath = path.Replace("\\", "/")
+        if normalizedPath.StartsWith("/")
+        then normalizedPath <- normalizedPath.Substring(1)
+        WebUtility.getAbsoluteUriStringValueSameHost(directory, normalizedPath)
 
     interface ISignature with
 
