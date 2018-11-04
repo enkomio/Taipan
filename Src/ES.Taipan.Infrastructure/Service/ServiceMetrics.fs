@@ -18,6 +18,7 @@ type ServiceMetrics(serviceName: String) =
     let _metrics = new ConcurrentDictionary<String, Metric>()
     let _subMetrics = new ConcurrentDictionary<String, ServiceMetrics>()
     
+    member val Id = Guid.NewGuid() with get
     member val ServiceName = serviceName with get
     member val Temp = new ConcurrentDictionary<String, Object>() with get
 

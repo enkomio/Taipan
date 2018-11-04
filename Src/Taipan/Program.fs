@@ -86,7 +86,7 @@ module Cli =
     let prettyPrintMetrics(serviceMetrics: ServiceMetrics) =        
         let metrics = serviceMetrics.GetAll()
         if metrics.Any() then
-            Console.WriteLine("{0}Service: {1}", Environment.NewLine, serviceMetrics.ServiceName)
+            Console.WriteLine("{0}[{1}] Service: {2}", Environment.NewLine, serviceMetrics.Id, serviceMetrics.ServiceName)
             metrics
             |> List.iter(fun metric -> Console.WriteLine("[{0}] {1} = {2}", metric.TimeStamp, metric.Name, metric.Value))        
             

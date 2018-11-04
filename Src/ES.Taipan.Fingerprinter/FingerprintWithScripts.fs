@@ -61,7 +61,7 @@ type FingerprintWithScripts
             if not(stopRequested()) && not stateController.IsStopped then
                 match customScript with
                 | :? LuaScriptSignature as luaSignature when isScriptOkToRun(luaSignature, webApplicationFound) ->
-                    _serviceMetrics.AddMetric("Last executed script", luaSignature.FilePath)
+                    _serviceMetrics.AddMetric("Last executed script", luaSignature.FilePath)                    
                     let luaSignRes = luaSignature.Verify(fingerprintRequest.Request.Uri.AbsoluteUri, cacheableWebPageRequestor) :?> LuaSignatureVerificationResult
 
                     // if the app was found signal it with a message
