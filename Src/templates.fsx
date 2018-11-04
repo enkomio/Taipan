@@ -243,6 +243,41 @@ let notInvasive() =
         
     template
 
+let vulnerabilityScanner() =
+    let template = createTemplate("Run a vulnerability scanner on the crawled pages", "09AD6BCC-3BA3-49CE-AFBA-308B9AF0DE79")        
+    template.Description <- "Navigate the website and run security checks on the identified entry points. No web application fingerprint or resource discovery will be done."
+
+    // disable Javascript Engine
+    template.HttpRequestorSettings.UseJavascriptEngineForRequest <- false
+
+    // crawler settings
+    template.RunCrawler <- true
+    template.CrawlerSettings.ReCrawlPages <- true
+    template.CrawlerSettings.SubmitPost <- true
+    
+    // disable the Javascript Crawler parser
+    template.CrawlerSettings.ActivateAllAddOns <- false
+    template.CrawlerSettings.AddOnIdsToActivate.Clear()
+    template.CrawlerSettings.AddOnIdsToActivate.AddRange
+        ([
+            FormLinkScraper.AddOnId
+            HeaderRedirectLinkScraper.AddOnId
+            HyperLinkScraper.AddOnId
+            MetadataLinkScraper.AddOnId
+        ])
+
+    // web app fingerprinter settings
+    template.RunWebAppFingerprinter <- false
+
+    // discoverer settings
+    template.RunResourceDiscoverer <- false
+        
+    // vulnerability scanner settings
+    template.RunVulnerabilityScanner <- true
+    template.VulnerabilityScannerSettings.ActivateAllAddOns <- true
+        
+    template
+
 let bruteforce() = 
     let template = createTemplate("Http Auth Bruteforce", "876C650C-D864-4EDF-B3DC-901945CE49C8")        
     template.Description <- "Perform an HTTP bruteforce if an authentication request is found"
@@ -264,6 +299,7 @@ let templates = [
     fullScan()
     fullScanNoJavascript()
     bruteforce()
+    vulnerabilityScanner()
 ]
 
 let dumpTemplate(template: TemplateProfile) =
