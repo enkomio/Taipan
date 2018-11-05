@@ -54,6 +54,7 @@ let createTemplate(name: String, guid: String) =
     defaultProfile.ResourceDiscovererSettings.Dictionaries.Add("A8EF3FFE-7CCF-4D1F-AA0A-2248DE6A00DF") // common directories        
     defaultProfile.ResourceDiscovererSettings.Dictionaries.Add("8C2248F7-5D56-493F-B0BC-366904327B91") // Dirsearch dictionary    
     defaultProfile.ResourceDiscovererSettings.Dictionaries.Add("E4894EC1-FD53-4A24-B539-CF58C9489F89") // Struts dictionary    
+    defaultProfile.ResourceDiscovererSettings.Dictionaries.Add("E0662088-7A77-4D0A-BAAC-2AE4BB28D5F1") // custom pathes   
     
     // fingerprinter settings
     defaultProfile.WebAppFingerprinterSettings.BeRecursive <- false
