@@ -197,6 +197,7 @@
         let template = Templates.``Full template``()
         template.RunWebAppFingerprinter <- false
         template.Name <- "Crawler, Discoverer and Inspector template"
+        template.CrawlerSettings.MutateWebLinks <- true
 
         let resources = ["admin/"]
         createResources(resources)
@@ -220,6 +221,7 @@
     let ``Crawl to a link discover an hidden resource and found a vulnerability via link mutation and fingerprint application``(grovieraUrl: Uri) =   
         let template = Templates.``Full template``()
         template.WebAppFingerprinterSettings.StopAtTheFirstApplicationIdentified <- false
+        template.CrawlerSettings.MutateWebLinks <- true
         
         let resources = ["admin/"]
         createResources(resources)

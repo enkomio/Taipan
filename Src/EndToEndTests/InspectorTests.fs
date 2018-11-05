@@ -73,6 +73,8 @@
                 StartRequest = new WebRequest(new Uri(grovieraUrl, "/inspector/test5/")),
                 Template = Templates.``Full template``()
             )
+
+        scanContext.Template.CrawlerSettings.MutateWebLinks <- true
         scanContext.Template.RunResourceDiscoverer <- false
         scanContext.Template.RunWebAppFingerprinter <- false
         activatePlugin(scanContext, "AFA1E309-2AC4-4504-86BD-35216950CEFA")
