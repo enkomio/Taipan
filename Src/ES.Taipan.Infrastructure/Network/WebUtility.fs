@@ -1,4 +1,4 @@
-﻿namespace ES.Taipan.Infrastructure.Text
+﻿namespace ES.Taipan.Infrastructure.Network
 
 open System
 open System.Text
@@ -190,3 +190,83 @@ module WebUtility =
                     None
             with
             | :? UriFormatException -> None
+
+    let getBoundary(request: HttpRequest) =
+        request.Headers
+        |> Seq.tryFind(fun header -> header.Name.Equals("Content-Type", StringComparison.OrdinalIgnoreCase))
+        |> fun header ->
+            match header with
+            | Some header -> header.Value.Split([|"boundary="|], StringSplitOptions.RemoveEmptyEntries).[1]
+            | _ -> String.Empty
+
+    let isMultiPartFormData(request: HttpRequest) =
+        request.Headers
+        |> Seq.tryFind(fun header -> header.Name.Equals("Content-Type", StringComparison.OrdinalIgnoreCase))
+        |> fun header ->
+            match header with
+            | Some header when header.Value.StartsWith("multipart/form-data", StringComparison.OrdinalIgnoreCase) -> true
+            | _ -> false
+
+    let getParametersFromMultipartDataString(request: HttpRequest) =        
+        let headerBoundary = getBoundary(request)
+        let boundary = "--" + headerBoundary
+        let newLine = "\r\n"
+        let doubleNewLine = newLine + newLine        
+
+        request.Data.Split([|boundary|], StringSplitOptions.RemoveEmptyEntries)
+        |> Array.map(fun item -> item.Trim())
+        |> Array.filter((<>) "--")
+        |> Array.map(fun item ->
+            let mutable parameterName = String.Empty
+            let mutable filename: String option = None
+            
+            let items = item.Split([|doubleNewLine|], StringSplitOptions.RemoveEmptyEntries)
+            let (header, parameterValue) = 
+                if items.Length > 1
+                then (items.[0].Trim(), items.[1].Trim())
+                else (item.Trim(), String.Empty)
+
+            // extract the parameter name
+            let matchesName = Regex.Match(header, "name=\"(.*?)\"", RegexOptions.IgnoreCase)
+            if matchesName.Success then
+                parameterName <- matchesName.Groups.[1].Value
+
+            // extract the filename if found
+            let matchesFilename = Regex.Match(header, "filename=\"(.*?)\"", RegexOptions.IgnoreCase)
+            if matchesFilename.Success then
+                filename <- Some matchesFilename.Groups.[1].Value
+
+            (parameterName, parameterValue, filename)
+        )
+
+    let createMultipartDataString(parameters: (String option * String option * String) seq) =
+        // see: https://www.w3.org/TR/html401/interact/forms.html#h-17.13.4.2
+        let dataString = new StringBuilder()
+        let headerBoundary = "-------------------------" + Guid.NewGuid().ToString("N")
+        let boundary = "--" + headerBoundary
+        let encType = "multipart/form-data; boundary=" + headerBoundary
+        let newLine = "\r\n"
+
+        parameters
+        |> Seq.iter(fun (encTypeOpt, fileNameParameter, rawParameter) ->
+            let (paramName, paramValue) =
+                let indexOfEqual = rawParameter.IndexOf('=')
+                if indexOfEqual >= 0 then
+                    (System.Net.WebUtility.HtmlDecode(rawParameter.Substring(0, indexOfEqual)), System.Net.WebUtility.HtmlDecode(rawParameter.Substring(indexOfEqual + 1)))
+                else
+                    (System.Net.WebUtility.HtmlDecode(rawParameter), String.Empty)
+
+            dataString.Append(boundary).Append(newLine) |> ignore
+
+            match encTypeOpt with
+            | Some encType when encType.Trim().Equals("file", StringComparison.OrdinalIgnoreCase) ->                
+                dataString.Append(String.Format("Content-Disposition: form-data; name=\"{0}\"; filename=\"{1}\"", paramName, defaultArg fileNameParameter String.Empty)).Append(newLine) |> ignore
+                dataString.Append("Content-Type: text/plain").Append(newLine).Append(newLine) |> ignore
+
+                dataString.Append(paramValue).Append(newLine) |> ignore
+            | _ ->
+                dataString.Append(String.Format("Content-Disposition: form-data; name=\"{0}\"", paramName)).Append(newLine).Append(newLine) |> ignore
+                dataString.Append(paramValue).Append(newLine) |> ignore
+        )
+
+        (encType, dataString.ToString() + boundary + "--" + newLine)

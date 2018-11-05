@@ -78,7 +78,7 @@ type HttpRequest(uri: Uri) =
     member this.ToPlainText() =
         let content = new StringBuilder()
 
-        let statusLine = String.Format("{0} {1} {2}", this.Method.ToString().ToUpper(), this.Uri, this.HttpVersion)
+        let statusLine = String.Format("{0} {1} {2}", this.Method.ToString().ToUpper(), this.Uri.PathAndQuery, this.HttpVersion)
         content.AppendLine(statusLine) |> ignore
 
         for httpHeader in this.Headers do
@@ -86,13 +86,17 @@ type HttpRequest(uri: Uri) =
             content.AppendLine(line) |> ignore
 
         // add host
-        let line = String.Format("Host: {0}", this.Uri.Host)
+        let line = 
+            if this.Uri.IsDefaultPort 
+            then String.Format("Host: {0}", this.Uri.Host)
+            else  String.Format("Host: {0}:{1}", this.Uri.Host, this.Uri.Port)
         content.AppendLine(line) |> ignore
 
         for cookie in this.Cookies do
             let line = String.Format("Cookie: {0}={1}", cookie.Name.Trim(), cookie.Value.Trim())
             content.AppendLine(line) |> ignore
 
+        content.AppendLine(line) |> ignore
         if not <| String.IsNullOrEmpty(this.Data) then
             content.AppendLine().AppendLine(this.Data) |> ignore
 

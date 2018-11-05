@@ -107,7 +107,7 @@ module internal HttpRequestorUtility =
 
         // check for proxy usage
         if settings.ProxyUrl.IsSome && Uri.IsWellFormedUriString(settings.ProxyUrl.Value, UriKind.Absolute) then
-            httpWebRequest.Proxy <- new WebProxy(settings.ProxyUrl.Value, false)            
+            httpWebRequest.Proxy <- new WebProxy(settings.ProxyUrl.Value, false, BypassProxyOnLocal=false)            
         else
             httpWebRequest.Proxy <- null
 

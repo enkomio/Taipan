@@ -5,44 +5,11 @@ open System.Text
 open System.Collections.Generic
 open System.Text.RegularExpressions
 open System.ComponentModel.Composition
-open System.ComponentModel.Composition.Hosting
 open ES.Taipan.Crawler
 open ES.Taipan.Infrastructure.Network
 open ES.Taipan.Infrastructure.Text
 open ES.Taipan.Infrastructure.Messaging
 open ES.Fslog
-
-module FormLinkScraperUtility =    
-    let createMultipartDataString(parameters: (String option * String option * String) seq) =
-        let dataString = new StringBuilder()
-        let boundary = "---------------------------" + Guid.NewGuid().ToString("N")
-        let encType = "multipart/form-data; boundary=" + boundary
-
-        parameters
-        |> Seq.iter(fun (encTypeOpt, fileNameParameter, rawParameter) ->
-            let (paramName, paramValue) =
-                let indexOfEqual = rawParameter.IndexOf('=')
-                if indexOfEqual >= 0 then
-                    (System.Net.WebUtility.HtmlDecode(rawParameter.Substring(0, indexOfEqual)), System.Net.WebUtility.HtmlDecode(rawParameter.Substring(indexOfEqual + 1)))
-                else
-                    (System.Net.WebUtility.HtmlDecode(rawParameter), String.Empty)
-
-            dataString.Append(boundary).Append("\r\n") |> ignore
-
-            match encTypeOpt with
-            | Some encType when encType.Trim().Equals("file", StringComparison.OrdinalIgnoreCase) ->                
-                dataString.Append(String.Format("Content-Disposition: form-data; name=\"{0}\"; filename=\"{1}\"", paramName, defaultArg fileNameParameter String.Empty)).Append("\r\n") |> ignore
-                dataString.Append("Content-Type: text/plain").Append("\r\n\r\n") |> ignore
-                    
-                // add some bogus content
-                dataString.Append(Guid.NewGuid().ToString()).Append("\r\n") |> ignore
-            | _ ->
-                dataString.Append(String.Format("Content-Disposition: form-data; name=\"{0}\"", paramName)).Append("\r\n\r\n") |> ignore
-                dataString.Append(paramValue).Append("\r\n") |> ignore
-        )
-
-        if dataString.Length > 0 then (encType, dataString.ToString() + boundary + "--")
-        else (encType, String.Empty)
 
 [<InheritedExport(typeof<ICrawlerAddOn>)>]
 type FormLinkScraper() = 
@@ -233,7 +200,7 @@ type FormLinkScraper() =
         let mutable effectiveEncType = encType
         
         if encType.Equals("multipart/form-data", StringComparison.OrdinalIgnoreCase) then
-            FormLinkScraperUtility.createMultipartDataString(parameters)
+            WebUtility.createMultipartDataString(parameters)
         else
             parameters
             |> Seq.iter(fun (_, _, rawParameter) ->

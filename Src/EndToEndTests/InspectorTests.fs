@@ -101,7 +101,7 @@
             ("Missing X-Content-Type-Options", "/inspector/test6/")
         ]
 
-    let ``Identify Strinc Transport Layer with a too low maxage value``(grovieraUrl: Uri) =   
+    let ``Identify Strict Transport Layer with a too low maxage value``(grovieraUrl: Uri) =   
         let scanContext = 
             new ScanContext(
                 StartRequest = new WebRequest(new Uri(grovieraUrl, "/inspector/test7/")),
@@ -322,7 +322,11 @@
 
         // run the scan
         Utility.runScan(scanContext) 
-        |> Utility.verifyInspector [("Reflected Cross Site Scripting", "/inspector/test22/upload.php")]
+        |> Utility.verifyInspector [
+            ("Reflected Cross Site Scripting", "/inspector/test22/upload.php") // file1
+            ("Reflected Cross Site Scripting", "/inspector/test22/upload.php") // file2
+            ("Reflected Cross Site Scripting", "/inspector/test22/upload.php") // file3
+        ]
 
     let ``Sqli error based in name parameter``(grovieraUrl: Uri) =
         let scanContext = 

@@ -184,6 +184,8 @@ Target "EndToEndTests" (fun _ ->
         let result = ExecProcess (fun info -> info.FileName <- endToEndBinary ) (TimeSpan.MaxValue)
         if result <> 0 then 
             failwith "EndToEndTests returned with a non-zero exit code"
+    else
+        Console.WriteLine("[!] This is a local build, skip EndToEnd tests")
 )
 
 // Generate assembly info files with the right version & up-to-date information

@@ -137,6 +137,9 @@
                 Template = Templates.``Website crawling``()
             )
 
+        // enable mutation
+        scanContext.Template.CrawlerSettings.MutateWebLinks <- true
+
         // run the scan
         Utility.runScan(scanContext)
         |> Utility.verifyCrawler [get("/crawler/test11/page.php"); get("/crawler/test11/page.php?foo=bar")]
@@ -147,6 +150,9 @@
                 StartRequest = new WebRequest(new Uri(grovieraUrl, "/crawler/test12/")),
                 Template = Templates.``Website crawling``()
             )
+
+        // enable mutation
+        scanContext.Template.CrawlerSettings.MutateWebLinks <- true
 
         // run the scan
         Utility.runScan(scanContext)

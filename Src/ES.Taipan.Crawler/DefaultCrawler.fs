@@ -92,7 +92,7 @@ type DefaultCrawler(settings: CrawlerSettings, webRequestor: IWebPageRequestor, 
         )
 
     let processWebRequest(webLink: WebLink) =
-        if _crawlerState.IsCrawlerStateAvailable() && not _stateController.IsStopped && not(_crawlerState.IsStopRequested()) then
+        if _crawlerState.IsCrawlerStateAvailable() && not _stateController.IsStopped && not(_crawlerState.IsStopRequested()) then            
             let webResponse = webRequestor.RequestWebPage(webLink.Request)
             _serviceMetrics.AddMetric("Last Processed Web Page", webLink.Request.HttpRequest.Uri.ToString())
 

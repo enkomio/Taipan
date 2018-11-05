@@ -53,6 +53,9 @@ type ProbeParameter() as this =
     member this.IsStateSaved() =
         _stateSaved
 
+    member this.ComposeValue() =
+        String.Format("{0}={1}", this.Name, this.Value)
+
     member this.AcquireValue(parameter: ProbeParameter) =
         if parameter.IsStateSaved() then
             let (savedValue, savedFilename) = (parameter.Value, parameter.Filename)
@@ -102,36 +105,13 @@ type ProbeRequest(testRequest: TestRequest) =
                 _parameters.Add(new ProbeParameter(Name = name, Value = value, Type = QUERY))
             )
 
-        // get data parameters
-        match HttpUtility.tryGetHeader("Content-Type", _webRequest.HttpRequest.Headers) with
-        | Some hdr when hdr.Value.StartsWith("multipart/form-data", StringComparison.OrdinalIgnoreCase) ->             
-            let boundaryMatch = Regex.Match(hdr.Value, "boundary=(.+)", RegexOptions.Singleline)
-            if boundaryMatch.Success then
-                let boundary = boundaryMatch.Groups.[1].Value.Trim()                
-                for item in _webRequest.HttpRequest.Data.Split([|boundary|], StringSplitOptions.RemoveEmptyEntries) do
-                    if not <| item.Equals("--", StringComparison.Ordinal) then
-                        // parse header
-                        let itemHeader = item.Split([|"\r\n\r\n"|], StringSplitOptions.None).[0].Trim()
-                        let mutable name : String option = None
-                        let mutable filename : String option = None
-                        for line in itemHeader.Split([|"\r\n"|], StringSplitOptions.RemoveEmptyEntries) do
-                            if name.IsNone then name <- RegexUtility.getHtmlAttributeValueFromChunk(line, "name")
-                            if filename.IsNone then filename <- RegexUtility.getHtmlAttributeValueFromChunk(line, "filename")
-
-                        if name.IsSome then
-                            // parse content
-                            let chunks = item.Split([|"\r\n\r\n"|], StringSplitOptions.None)
-                            if chunks.Length > 2 then
-                                let itemContent = chunks.[1].Trim()
-                                _parameters.Add(new ProbeParameter(Name = name.Value, Value = itemContent, Filename = filename, Type = DATA))
+        if not(String.IsNullOrWhiteSpace(_webRequest.HttpRequest.Data)) then
+            if WebUtility.isMultiPartFormData(testRequest.WebRequest.HttpRequest) then
+                WebUtility.getParametersFromMultipartDataString(testRequest.WebRequest.HttpRequest)
+                |> Array.iter(fun (paramName, paramValue, paramFilename) ->
+                    _parameters.Add(new ProbeParameter(Name = paramName, Value = paramValue, Filename = paramFilename, Type = DATA))
+                )
             else
-                if not(String.IsNullOrWhiteSpace(_webRequest.HttpRequest.Data)) then
-                    WebUtility.getParametersFromData(_webRequest.HttpRequest.Data)
-                    |> Seq.iter(fun (name, value) ->
-                        _parameters.Add(new ProbeParameter(Name = name, Value = value, Type = DATA))
-                    )
-        | _ ->
-            if not(String.IsNullOrWhiteSpace(_webRequest.HttpRequest.Data)) then
                 WebUtility.getParametersFromData(_webRequest.HttpRequest.Data)
                 |> Seq.iter(fun (name, value) ->
                     _parameters.Add(new ProbeParameter(Name = name, Value = value, Type = DATA))
@@ -216,22 +196,24 @@ type ProbeRequest(testRequest: TestRequest) =
         )
 
         // create data
-        match HttpUtility.tryGetHeader("Content-Type", clonedRequest.Headers) with
-        | Some hdr when hdr.Value.StartsWith("multipart/form-data", StringComparison.OrdinalIgnoreCase) -> 
-            let (effectiveContentType, data) = 
+        if WebUtility.isMultiPartFormData(testRequest.WebRequest.HttpRequest) then
+            let getEncType(parameter: ProbeParameter) =
+                match parameter.Filename with
+                | Some _ -> Some "file"
+                | None -> None
+
+            let (effectiveContentType, data) =
                 this.GetParameters()
-                |> Seq.filter(fun p -> p.Type = DATA)
-                |> Seq.map(fun p -> 
-                    match p.Filename with
-                    | Some filename -> (Some "file", Some filename, p.Name + "=" + p.Value)
-                    | None -> (None, None, p.Name + "=" + p.Value)
-                )
-                |> FormLinkScraperUtility.createMultipartDataString
+                |> Seq.filter(fun parameter -> parameter.Type = DATA)
+                |> Seq.map(fun parameter -> (getEncType(parameter), parameter.Filename, parameter.ComposeValue()))
+                |> WebUtility.createMultipartDataString
             
             clonedRequest.Data <- data
-            clonedRequest.Headers.Remove(hdr) |> ignore
+            let contentType = clonedRequest.Headers |> Seq.find(fun hdr -> hdr.Name.Equals("Content-Type", StringComparison.OrdinalIgnoreCase))
+            clonedRequest.Headers.Remove(contentType) |> ignore
             clonedRequest.Headers.Add(new HttpHeader(Name="Content-Type", Value=effectiveContentType))
-        | _ -> clonedRequest.Data <- composeData(fun p -> p.Type = DATA)
+        else
+            clonedRequest.Data <- composeData(fun p -> p.Type = DATA)
 
         clonedRequest
 

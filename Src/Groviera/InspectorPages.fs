@@ -429,7 +429,16 @@ module InspectorPages =
             // *************************
             POST >=> choose [
                 path "/inspector/test19/vuln.php" >=> okReplyData
-                path "/inspector/test22/upload.php" >=> okReplyData 
+                path "/inspector/test22/upload.php" >=> fun (ctx: HttpContext) ->
+                    let mutable msg = "Data:<br/>"
+                    ctx.request.files
+                    |> Seq.iter(fun uploadedFile ->
+                        let fileContent = File.ReadAllText(uploadedFile.tempFilePath)
+                        msg <- msg + "<br/>" + String.Format("File '{0}', content: {1}", uploadedFile.fileName, fileContent)
+                    )
+
+                    OK msg ctx
+
                 path "/inspector/test24/show.php" >=> fun (ctx: HttpContext) ->
                     let username = 
                         match ctx.request.formData "name" with

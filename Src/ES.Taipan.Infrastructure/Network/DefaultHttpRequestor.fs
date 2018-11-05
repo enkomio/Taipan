@@ -262,8 +262,6 @@ type DefaultHttpRequestor(defaultSettings: HttpRequestorSettings, logProvider: I
     member private this.SendRequestAsync(httpRequest: HttpRequest) =         
         async {
             this.Metrics.AddMetric("Last HTTP request started", httpRequest.ToString())
-
-            use! holder = _requestGate.AsyncAcquire(_requestGateTimeout)
             let httpResponseResult: HttpResponse option ref = ref(None)
 
             try                

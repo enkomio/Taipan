@@ -175,7 +175,9 @@ type CrawlerState(settings: CrawlerSettings, httpRequestorSettings: HttpRequesto
         | EnteredPathAndBelow -> _pathRoot <- HttpUtility.getAbsolutePathDirectory(startUri)        
 
     member this.IsWebResponseValid(webResponse: WebResponse) =
-        isContentTypeAllowed(webResponse) && _md5pages.Add(toCleanTextMd5(webResponse.HttpResponse.Html))
+        webResponse.HttpResponse <> HttpResponse.Error &&
+        isContentTypeAllowed(webResponse) && 
+        _md5pages.Add(toCleanTextMd5(webResponse.HttpResponse.Html))
         
     member this.GetStatus() =
         if isMaxNumOfPageToCrawlReached() then

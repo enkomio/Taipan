@@ -258,6 +258,16 @@ module MockData
 
         let ``Website crawling``() =
             let crawlerProfile = new ES.Taipan.Application.TemplateProfile(Id = Guid.Parse("54983E19-3CDE-4650-9494-5DA90EF87907"), Name = "Crawl web application")
+            crawlerProfile.HttpRequestorSettings.Timeout <- 3000
+
+            // disable Javascript Engine
+            crawlerProfile.HttpRequestorSettings.UseJavascriptEngineForRequest <- false
+
+            crawlerProfile.HttpRequestorSettings.AdditionalHttpHeaders.Add("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/70.0.3538.77 Safari/537.36")
+            crawlerProfile.HttpRequestorSettings.AdditionalHttpHeaders.Add("Accept", "text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,image/apng,*/*;q=0.8")
+            crawlerProfile.HttpRequestorSettings.AdditionalHttpHeaders.Add("Accept-Encoding", "gzip, deflate, br")
+            crawlerProfile.HttpRequestorSettings.AdditionalHttpHeaders.Add("Accept-Language", "en-US,en;q=0.9")
+
             crawlerProfile.RunCrawler <- true  
             crawlerProfile.CrawlerSettings.Scope <- NavigationScope.EnteredPathAndBelow            
             crawlerProfile.CrawlerSettings.ActivateAllAddOns <- true
@@ -287,9 +297,6 @@ module MockData
                     "audio/voc"; "audio/x-voc"; "video/vosaic"; "audio/voxware"; "audio/x-twinvq-plugin"; "audio/x-twinvq"; "audio/wav"; "audio/x-wav"; 
                     "video/x-amt-demorun"; "audio/xm"; "video/x-amt-showrun"
                 ])
-            
-            // disable Javascript Engine
-            crawlerProfile.HttpRequestorSettings.UseJavascriptEngineForRequest <- false
 
             // disable the Crawler parser
             crawlerProfile.CrawlerSettings.ActivateAllAddOns <- false

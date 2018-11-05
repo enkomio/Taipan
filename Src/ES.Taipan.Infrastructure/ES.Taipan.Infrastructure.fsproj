@@ -122,7 +122,6 @@
     <Compile Include="Common\Environment.fs" />
     <Compile Include="Common\BinarySerializer.fs" />
     <Compile Include="Text\RegexUtility.fs" />
-    <Compile Include="Text\WebUtility.fs" />
     <Compile Include="Text\ConverterUtility.fs" />
     <Compile Include="Messaging\Envelope.fs" />
     <Compile Include="Messaging\IMessageBroker.fs" />
@@ -162,6 +161,7 @@
     <Compile Include="Network\DefaultWebPageRequestor.fs" />
     <Compile Include="Network\CacheableWebPageRequestor.fs" />
     <Compile Include="Network\WebProxy.fs" />
+    <Compile Include="Network\WebUtility.fs" />
     <Content Include="Network\Javascript\SendRequest.js">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </Content>

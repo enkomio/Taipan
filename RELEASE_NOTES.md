@@ -1,5 +1,6 @@
 ### 2.0.0 - 04/11/2018
 * Improved error reporting and enabled saving a txt format of the generated report
+* Improved testing of multipart input, included file input
 * Added integrity check when testing web form with password fields. If the values of the password fields is different there may be false negative
 * Added HTTP Basic bruteforce plugin
 

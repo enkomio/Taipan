@@ -317,7 +317,7 @@ function validateForm() {
                 path "/crawler/test9/form.php" >=> okIfData "username=foo&password=bar&invia=login" String.Empty
                 path "/crawler/test12/page.php" >=> okIfData "foo=bar" String.Empty
                 path "/crawler/test15/form.php" >=> ok
-                path "/crawler/test18/upload.php" >=> ok
+                path "/crawler/test18/upload.php" >=> okContent "File uploaded successfully"
                 path "/crawler/test19/login" >=> login "Login successful, see logged resource <a href='/crawler/test19/dashboard'>here</a>"
                 path "/crawler/test21/submit.php" >=> fun (ctx: HttpContext) ->
                     let username = 

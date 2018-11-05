@@ -60,7 +60,7 @@ let allTests : Expr<Uri -> unit> list = [
     <@ InspectorTests.``Identify info leak due to an email in an HTML comments`` @>
     <@ InspectorTests.``Identify info leak due to an hyperlink in an HTML content`` @>
     <@ InspectorTests.``Identify missing security headers`` @>
-    <@ InspectorTests.``Identify Strinc Transport Layer with a too low maxage value`` @>
+    <@ InspectorTests.``Identify Strict Transport Layer with a too low maxage value`` @>
     <@ InspectorTests.``Identify X-XSS-Protection but disabled`` @>
     <@ InspectorTests.``X-XSS-Protection, Public-Key-Pins and Strict-Transport-Security are correctly setted`` @>
     <@ InspectorTests.``Identify a web application with know vulnerabilities`` @>
@@ -75,7 +75,7 @@ let allTests : Expr<Uri -> unit> list = [
     <@ InspectorTests.``RXSS on data parameter`` @>
     <@ InspectorTests.``RXSS in User-Agent`` @>
     <@ InspectorTests.``Identify info leak in .DS_Store file`` @>
-    //<@ InspectorTests.``RXSS in filename parameter`` @> // suave seems to have problem with multi-part form. verify in some other way
+    <@ InspectorTests.``RXSS in filename parameter`` @>
     <@ InspectorTests.``Sqli error based in name parameter`` @>
     <@ InspectorTests.``Sqli error based in name parameter with AntiCSRF protection`` @>
     <@ InspectorTests.``RXSS on data parameter and AntiCSRF protection`` @>
@@ -134,7 +134,7 @@ let runTest (grovieraUri: Uri) (testExpr: Expr<Uri -> unit>) =
 [<EntryPoint>]
 let main argv = 
     let grovieraUri = Utility.runGrovieraServer()
-    let run = runTest grovieraUri    
+    let run = runTest grovieraUri 
     allTests |> List.iter(run)
     Utility.shutDownServer()
     0
