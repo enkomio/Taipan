@@ -63,22 +63,25 @@ module Cli =
         FileVersionInfo.GetVersionInfo(Assembly.GetExecutingAssembly().Location).ProductVersion
 
     let prettyPrintProfiles() =    
-        let separator = "+" + "-".PadLeft(31, '-') + "+" + "-".PadLeft(81, '-') + "+"
+        let bufferWidth = Console.BufferWidth - 36
+        let separator = "+" + "-".PadLeft(31, '-') + "+" + "-".PadLeft(bufferWidth+1, '-') + "+"
         Console.WriteLine()
         Console.WriteLine("Available profiles:")
         Console.WriteLine(separator)
-        Console.WriteLine(String.Format("| {0,-30}| {1, -80}|", "Name", "Description"))
+        Console.WriteLine(String.Format("| {0,-30}| {1, -" + bufferWidth.ToString() + "}|", "Name", "Description"))
         Console.WriteLine(separator)
         
         let truncate(txt: String, num: Int32) =
-            new String(txt.Take(min num (txt.Length)) |> Seq.toArray)
-
+            if txt.Length > num
+            then new String(txt.Take(min num (txt.Length-3)) |> Seq.toArray) + "..."
+            else txt
+        
         for profileFile in Directory.EnumerateFiles(Path.Combine(Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location), "Profiles"), "*.xml") do
             try
                 let profile = new TemplateProfile()
                 let profileContent = File.ReadAllText(profileFile)                        
-                profile.AcquireSettingsFromXml(profileContent)            
-                Console.WriteLine(String.Format("| {0,-30}| {1, -80}|", truncate(profile.Name, 29), truncate(profile.Description, 79)))
+                profile.AcquireSettingsFromXml(profileContent)                    
+                Console.WriteLine(String.Format("| {0,-30}| {1, -" + bufferWidth.ToString() + "}|", truncate(profile.Name, 29), truncate(profile.Description, bufferWidth - 3)))
             with _ -> ()
 
         Console.WriteLine(separator)
