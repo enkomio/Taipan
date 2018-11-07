@@ -94,7 +94,7 @@ See also the list of [contributors](https://github.com/enkomio/Taipan/graphs/con
 
 ## License
 
-Taipan is licensed under the [Creative Commons](LICENSE.TXT).
+Taipan is licensed under the [Creative Commons](LICENSE.md).
 
   [1]: https://github.com/enkomio/Taipan/tree/master/Src
   [2]: https://github.com/enkomio/Taipan/releases/latest
