@@ -23,11 +23,11 @@ _Taipan_ is a an automated web application scanner which allows to identify web 
 
 If you are interested in trying the full product, you can contact me at: aparata[AT]gmail.com
 
-## Release Download
+## Download
  - [Source code][1]
  - [Download binary][2]
  
-## Build Release Download
+## Build Release
 If you want to try the dev version of Taipan without to wait for an official release, you can download the build version. This version is built every time that a commit is done and the build process is not broken. 
 
 You can download it from the [Artifacts Directory](https://ci.appveyor.com/project/enkomio/taipan/build/artifacts).
@@ -55,6 +55,10 @@ To launch a new scan you have to provide the _url_ and the _profile_ which must 
 Below an example of execution:
 
 <a href="https://asciinema.org/a/166362" target="_blank"><img src="https://asciinema.org/a/166362.png" /></a>
+
+#### Using Docker
+
+**berez23** created a docker image for the CI release. For more information take a look at <a href="https://github.com/berez23/taipandocker">his project</a>.
 
 ## Build Taipan
 _Taipan_ is currently developed with using VisualStudio 2017 Community Edition and uses _paket_ as packet manager. To build the source code you have to:
