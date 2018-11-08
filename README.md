@@ -6,7 +6,7 @@
     <a href="https://github.com/enkomio/Taipan/blob/master/LICENSE.md"><img alt="Software License" src="https://img.shields.io/badge/License-CC%20BY%204.0-brightgreen.svg"></a>
   </p>
 
-_Taipan_ is a an automated web application scanner which allows to identify web vulnerabilities in an automatic fashion. This project is the core engine of a broader project which include other components, like a web dashboard where you can manage your scan or download a PDF report and a scanner agent to run on specific host. Below are some screenshots of the _Taipan_ dashboard:
+_Taipan_ is a an automated web application scanner that allows to identify web vulnerabilities in an automatic fashion. This project is the core engine of a broader project which includes other components, like a web dashboard where you can manage your scans, download a PDF report and a scanner agent to run on specific host. Below are some screenshots of the _Taipan_ dashboard:
 
 <table>
  <tr>
@@ -21,7 +21,7 @@ _Taipan_ is a an automated web application scanner which allows to identify web 
  </tr>
 </table>
 
-If you are interested in trying the full product, you can contact me at: aparata[AT]gmail.com
+If you are interested in trying the full product, you can visit the dedicated web site: <a href="https://taipansec.com/index.html">https://taipansec.com/index.html</a>.
 
 ## Download
  - [Source code][1]
