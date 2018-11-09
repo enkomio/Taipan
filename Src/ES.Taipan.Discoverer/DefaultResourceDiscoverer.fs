@@ -25,7 +25,7 @@ type DefaultResourceDiscoverer(settings: ResourceDiscovererSettings, webRequesto
     let _discoveredDirectories = new HashSet<String>()
     let _forbiddenDirectories = new List<String>()
     let _stateController = new ServiceStateController()
-    let _taskManager = new TaskManager(_stateController, true, false, ConcurrentLimit = _numOfParallelRequestWorkers)
+    let _taskManager = new TaskManager(_stateController, true, false, _numOfParallelRequestWorkers)
     let _processCompleted = new Event<IService>()
     let _initializationCompleted = new Event<IService>()
     let _noMoreWebRequestsToProcess = new Event<IResourceDiscoverer>()

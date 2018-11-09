@@ -126,7 +126,7 @@ type HttpBruteforcerAddOn() as this =
     let getTaskManager(serviceStateController: ServiceStateController) =
         match _taskManager with
         | None -> 
-            _taskManager <- Some <| new TaskManager(serviceStateController, true, false, ConcurrentLimit = _numOfConcurrentTasks)
+            _taskManager <- Some <| new TaskManager(serviceStateController, true, false, _numOfConcurrentTasks)
             _taskManager.Value
         | Some tm -> 
             tm

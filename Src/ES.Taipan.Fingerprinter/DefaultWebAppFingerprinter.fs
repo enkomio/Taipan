@@ -29,7 +29,7 @@ type DefaultWebAppFingerprinter(settings: WebAppFingerprinterSettings, webApplic
     let _numOfParallelRequestWorkers = 20
     let _requestsToProcess = new BlockingCollection<FingerprintRequest>()       
     let _stateController = new ServiceStateController()
-    let _taskManager = new TaskManager(_stateController, true, false, ConcurrentLimit = _numOfParallelRequestWorkers)
+    let _taskManager = new TaskManager(_stateController, true, false, _numOfParallelRequestWorkers)
     let _processCompleted = new Event<IService>()
     let _initializationCompleted = new Event<IService>()
     let _noMoreWebRequestsToProcess = new Event<IWebAppFingerprinter>()

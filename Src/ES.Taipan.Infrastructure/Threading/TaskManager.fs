@@ -12,11 +12,11 @@ This class is used in order to manage multiple Tasks in order to be Pause and/or
 in a coherent way. The task execyted through the manager, could be paused or stopped. 
 *)
 
-type TaskManager(statusToMonitor: ServiceStateController, releasePauseStatusMonitor: Boolean, releaseStopStatusMonitor: Boolean) as this =
+type TaskManager(statusToMonitor: ServiceStateController, releasePauseStatusMonitor: Boolean, releaseStopStatusMonitor: Boolean, concurrentLimit: Int32) as this =
     let _tasks = new ConcurrentDictionary<Guid, ServiceStateController>()
     let _taskObjects = new List<Task>()
     let _tasksSyncRoot = new Object()
-    let _lockObj = new Object()
+    let _semaphore = new Semaphore(concurrentLimit, concurrentLimit)
     let _stateControlAcquisitionLock = new Object()
     
     let methodCalled(sa: ServiceAction) =
@@ -34,43 +34,46 @@ type TaskManager(statusToMonitor: ServiceStateController, releasePauseStatusMoni
             serviceStateController.Pause() |> ignore
         elif statusToMonitor.IsStopped then 
             serviceStateController.Stop() |> ignore
-
+            
     do
         statusToMonitor.MethodCalled.Add(methodCalled)        
 
-    member val ConcurrentLimit = 5 with get, set
+    //member val ConcurrentLimit = 5 with get, set
     member val Id = Guid.NewGuid() with get
 
     member this.Count() =
         _taskObjects.Count
     
     member this.RunTask(taskMethod: ServiceStateController -> unit, removeTaskAfterCompletation: Boolean) =
-        while(_tasks.Count > this.ConcurrentLimit) do
-            lock _lockObj (fun () -> Monitor.Wait(_lockObj) |> ignore)
-        
-        let serviceStateController = new ServiceStateController()
-        lock _stateControlAcquisitionLock (fun () -> 
-            acquireState(serviceStateController)  
-            _tasks.[serviceStateController.Id] <- serviceStateController
-            
-            let taskObject = Task.Factory.StartNew(fun () -> 
-                taskMethod(serviceStateController)
-                if removeTaskAfterCompletation then
-                    lock _tasksSyncRoot (fun () ->
-                        match _tasks.TryRemove(serviceStateController.Id) with
-                        | (true, _) ->            
-                            // release blocks if necessary
-                            serviceStateController.UnlockPause()
-                            serviceStateController.ReleaseStopIfNecessary()
-                            lock _lockObj (fun () -> Monitor.Pulse(_lockObj))                      
-                        | _ -> failwith "Unable to remove task"
-                    )
-            , TaskCreationOptions.LongRunning)
-            checkConsistency(serviceStateController) |> ignore
+        let mutable taskObjectResult = Task.CompletedTask
+        if not statusToMonitor.IsStopped then
+            while not <| _semaphore.WaitOne(TimeSpan.FromSeconds(1.)) && not statusToMonitor.IsStopped do
+                // do nothing, it is just a spin loop
+                ()
 
-            _taskObjects.Add(taskObject)
-            taskObject
-        )
+            let serviceStateController = new ServiceStateController()
+            lock _stateControlAcquisitionLock (fun () -> 
+                acquireState(serviceStateController)  
+                _tasks.[serviceStateController.Id] <- serviceStateController
+            
+                taskObjectResult <- Task.Factory.StartNew(fun () -> 
+                    taskMethod(serviceStateController)
+                    if removeTaskAfterCompletation then
+                        lock _tasksSyncRoot (fun () ->
+                            match _tasks.TryRemove(serviceStateController.Id) with
+                            | (true, _) ->            
+                                // release blocks if necessary
+                                serviceStateController.UnlockPause()
+                                serviceStateController.ReleaseStopIfNecessary()                                                      
+                            | _ -> failwith "Unable to remove task"
+                        )
+                    _semaphore.Release() |> ignore
+                , TaskCreationOptions.LongRunning)
+                checkConsistency(serviceStateController) |> ignore
+                _taskObjects.Add(taskObjectResult)                    
+            )
+        
+        taskObjectResult
         
     member val StateController = statusToMonitor with get
 
