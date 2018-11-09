@@ -132,7 +132,7 @@ type HttpBruteforcerAddOn() as this =
             tm
             
     let runAllWorkers(taskManager: TaskManager) =         
-        for i=0 to _numOfConcurrentTasks do
+        for i=0 to _numOfConcurrentTasks-1 do
             taskManager.RunTask(fun serviceStateController -> 
                 bruteforceWoker(serviceStateController)
             , true) |> ignore
