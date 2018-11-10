@@ -47,7 +47,7 @@ type FingerprintWorkflow
     member this.Fingerprint(fingerprintRequest: FingerprintRequest, webApplicationFound: List<WebApplicationIdentified>) = 
         identifySupportedServerLanguages(fingerprintRequest)
 
-        let fingerprintWithSignature = 
+        use fingerprintWithSignature = 
             new FingerprintWithSignatures(
                 settings,
                 messageBroker,
@@ -60,7 +60,7 @@ type FingerprintWorkflow
                 stopRequested
             )
 
-        let fingerprintWithScripts =
+        use fingerprintWithScripts =
             new FingerprintWithScripts(
                 webPageRequestor,
                 messageBroker,

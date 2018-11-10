@@ -23,10 +23,10 @@ type FingerprintWithScripts
         log "FingerprintWithScripts"
         |> info "WebApplicationVersionFoundViaScript" "Web application '{0}' version '{1}' found at: {2} (via: {3})"
         |> build
-    do 
-        logProvider.AddLogSourceToLoggers(_logger)
-        messageBroker.Subscribe<RequestMetricsMessage>(fun (sender, msg) -> msg.Item.AddResult(this, _serviceMetrics))
-    
+
+    let requestMetricsMessageHandler(sender: Object, msg: Envelope<RequestMetricsMessage>) =
+        msg.Item.AddResult(this, _serviceMetrics)
+
     let isScriptOkToRun(luaSignature: LuaScriptSignature, webApplicationFound: List<WebApplicationIdentified>) =
         // avoid to analyze applications that were already found or that was already analyzed by the script
         webApplicationFound 
@@ -53,6 +53,10 @@ type FingerprintWithScripts
             let webAppVerFing = new WebApplicationVersionFingerprint(Version = luaSignRes.AppVersion)
             webAppVerFing.Signatures.Add(downcast luaSignRes.Signature.Value)
             (webAppFing, webAppVerFing)
+
+    do 
+        logProvider.AddLogSourceToLoggers(_logger)
+        messageBroker.Subscribe<RequestMetricsMessage>(requestMetricsMessageHandler)
         
     member this.Fingerprint(fingerprintRequest: FingerprintRequest, webApplicationFound: List<WebApplicationIdentified>) =
         let cacheableWebPageRequestor = new CacheableWebPageRequestor(webPageRequestor) 
@@ -81,3 +85,10 @@ type FingerprintWithScripts
                         // dispatch the event
                         messageBroker.Dispatch(this, new NewWebApplicationIdentifiedMessage(webAppIdentified))
                 | _ -> ()
+
+    member this.Dispose() =
+        messageBroker.Unsubscribe(this)
+
+    interface IDisposable with
+        member this.Dispose() =
+            this.Dispose()

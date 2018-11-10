@@ -133,3 +133,10 @@ type FingerprintWithSignatures
                 runFingerprint(webApplicationToAnalyze, webApplicationFound, fingerprintRequest)
 
         messageBroker.Unsubscribe(serviceMetricHandler)
+
+    member this.Dispose() =
+        messageBroker.Unsubscribe(this)
+
+    interface IDisposable with
+        member this.Dispose() =
+            this.Dispose()
