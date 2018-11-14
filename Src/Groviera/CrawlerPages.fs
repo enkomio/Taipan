@@ -7,6 +7,7 @@ open Suave.Filters
 open Suave.Successful
 open Suave.Writers
 open Suave.Operators
+open Suave.Cookie
 open Suave.RequestErrors
 open Suave.Authentication
 open ES.Groviera.Utility
@@ -310,6 +311,24 @@ function validateForm() {
                     OK html ctx
                 path "/crawler/test25/nooo" >=> ok
 
+                // Test 26
+                path "/crawler/test26/" >=> okContent """
+                Visit the Dashboard <a href="/crawler/test26/login">here</a>. But it is an authenticated web page,
+                you can visit it by setting the pre-authenticated cookie:
+                <b>authcookie=123456qwerty</b>
+                """
+
+                path "/crawler/test26/login" >=> fun (ctx: HttpContext) ->
+                    let mutable html = "Sorry but the received request is not authenticated, please try by setting an authenticated cookie."
+                    if ctx.request.cookies.ContainsKey "authcookie" && ctx.request.cookies.["authcookie"].value .Equals("123456qwerty") then
+                        html <- "Welcome authenticated user, visit the authenticated <a href='/crawler/test26/dashboard'>Dashboard</a>"                        
+                    OK html ctx
+
+                path "/crawler/test26/dashboard" >=> fun (ctx: HttpContext) ->
+                    if ctx.request.cookies.ContainsKey "authcookie" && ctx.request.cookies.["authcookie"].value .Equals("123456qwerty") then
+                        OK "Welcome authenticated user enjoy your awesome Dashboard :)" ctx
+                    else
+                        NOT_FOUND "Page not found or missing authentication cookie" ctx
             ]
 
             POST >=> choose [

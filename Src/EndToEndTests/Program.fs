@@ -52,6 +52,7 @@ let allTests : Expr<Uri -> unit> list = [
     <@ CrawlerTests.``Crawl a Digest HTTP Authenticated page`` @>
     <@ CrawlerTests.``Crawl a Bearer HTTP Authenticated page`` @>
     <@ CrawlerTests.``Ensure that a link on another port is not followed`` @>
+    <@ CrawlerTests.``Crawl an Authenticated page via pre-authenticated cookie`` @>
      
     // Inspector tests
     <@ InspectorTests.``Identify a directory listing`` @>

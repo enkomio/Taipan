@@ -104,9 +104,17 @@ let verifyCrawlerWithCallback(pagesToCheck: (String * String) list) (callback: W
             |> Seq.exists(fun (webLink, webResponse) -> 
                 let result = 
                     if String.IsNullOrEmpty(data) then
-                        isAllowedResponseCode(webResponse) && webLink.Request.HttpRequest.Uri.PathAndQuery.Equals(url, StringComparison.Ordinal)
+                        isAllowedResponseCode(webResponse) && 
+                        webLink.Request.HttpRequest.Uri.PathAndQuery.Equals(url, StringComparison.Ordinal)
                     else
-                        isAllowedResponseCode(webResponse) && webLink.Request.HttpRequest.Uri.PathAndQuery.Equals(url, StringComparison.Ordinal) && (data.Equals(webLink.Request.HttpRequest.Data) || (data + "=").Equals(webLink.Request.HttpRequest.Data))
+                        let dataCheck = 
+                            webLink.Request.HttpRequest.Data.Contains(data) || 
+                            (data + "=").Equals(webLink.Request.HttpRequest.Data) ||
+                            webResponse.HttpResponse.Html.Contains(data)
+
+                        isAllowedResponseCode(webResponse) && 
+                        webLink.Request.HttpRequest.Uri.PathAndQuery.Equals(url, StringComparison.Ordinal) && 
+                        dataCheck
 
                 if result then
                     callback(webLink, webResponse)

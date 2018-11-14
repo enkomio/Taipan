@@ -374,3 +374,17 @@
         with e -> 
             if not(e.Message.ToLower().Contains("some page wasn't found"))
             then reraise()
+
+    let ``Crawl an Authenticated page via pre-authenticated cookie``(grovieraUrl: Uri) =   
+        let scanContext = 
+            new ScanContext(
+                StartRequest = new WebRequest(new Uri(grovieraUrl, "/crawler/test26/")),
+                Template = Templates.``Website crawling``()
+            )
+
+        // set authenticated cookie
+        scanContext.Template.HttpRequestorSettings.AdditionalCookies.Add("authcookie", "123456qwerty")
+
+        // run the scan
+        Utility.runScan(scanContext)
+        |> Utility.verifyCrawler [("/crawler/test26/dashboard", "Welcome authenticated user enjoy your awesome Dashboard")]
