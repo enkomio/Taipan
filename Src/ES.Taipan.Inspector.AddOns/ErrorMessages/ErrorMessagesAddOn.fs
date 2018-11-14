@@ -90,6 +90,24 @@ type ErrorMessagesAddOn() as this =
 
         if isVulnerable then
             this.Context.Value.AddSecurityIssue(securityIssue) 
+
+    let checkJBossErrors(html: String, securityIssue: SecurityIssue) =
+        let matches =
+            [
+                "JBWEB000"
+                "The full stack trace of the root cause is available in the JBoss Web"
+                "org.apache.struts.action.ActionServlet"
+                "Exception report"
+            ]
+            |> List.filter(fun text -> html.ToLower().Contains(text.ToLower()))            
+
+        if matches.Length > 2 then            
+            securityIssue.Note <- "Jboss Struts error"
+            matches
+            |> List.iteri(fun i error -> 
+                securityIssue.Details.Properties.Add("Error" + string i, error)
+            )            
+            this.Context.Value.AddSecurityIssue(securityIssue)
             
     let checkForGenericError(webLink: WebLink, html: String, securityIssue: SecurityIssue) =  
         if webLink.OriginalWebLink.IsNone && ["<h2>500 - Internal server error.</h2>"; "<h3>There is a problem with the resource you are looking for, and it cannot be displayed.</h3>"] |> List.forall (html.Contains) then
@@ -114,3 +132,4 @@ type ErrorMessagesAddOn() as this =
             checkRubyErrors(html, securityIssue)
             checkDotNetErrors(html, securityIssue)
             checkApacheTomcatErrors(html, securityIssue)
+            checkJBossErrors(html, securityIssue)

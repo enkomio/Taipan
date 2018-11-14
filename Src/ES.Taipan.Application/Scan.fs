@@ -403,7 +403,10 @@ type Scan(scanContext: ScanContext, logProvider: ILogProvider) as this =
             | :? IDisposable as d -> d.Dispose()
             | _ -> ()
 
-            let noNeededCrawler = scanContext.Template.RunResourceDiscoverer || scanContext.Template.RunWebAppFingerprinter
+            let noNeededCrawler = 
+                scanContext.Template.RunResourceDiscoverer || 
+                scanContext.Template.RunWebAppFingerprinter ||
+                scanContext.Template.RunVulnerabilityScanner
             hostReachable <- (webResponse.PageExists || noNeededCrawler) && webResponse.HttpResponse <> HttpResponse.Error
         with e -> 
             _serviceMetrics.AddMetric("Status", "error")
