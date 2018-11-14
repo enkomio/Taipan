@@ -118,7 +118,7 @@ type ErrorMessagesAddOn() as this =
     static member Id = Guid.Parse("73EF90A2-C2A4-44AE-82DE-35349AEDFFB3")
                                         
     default this.Scan(testRequest: TestRequest, stateController: ServiceStateController) =
-        if _analyzedPages.Add(testRequest.WebRequest.HttpRequest.Uri.PathAndQuery) then
+        if _analyzedPages.Add(testRequest.WebRequest.HttpRequest.Uri.AbsolutePath) then
             let html = testRequest.WebResponse.HttpResponse.Html            
             let securityIssue = createSecurityIssue(testRequest.WebRequest.HttpRequest.Uri, testRequest.WebRequest, testRequest.WebResponse)
 
