@@ -27,6 +27,12 @@ If you are interested in trying the full product, you can visit the dedicated we
  - [Source code][1]
  - [Download binary][2]
  
+ ## Chat Room
+
+We have a chat room in case you feel like chatting a bit. 
+
+[![Chat Room](https://badges.gitter.im/TaipanSec/Lobby.png)](https://gitter.im/TaipanSec/Lobby)
+ 
 ## Build Release
 If you want to try the dev version of Taipan without to wait for an official release, you can download the build version. This version is built every time that a commit is done and the build process is not broken. 
 
