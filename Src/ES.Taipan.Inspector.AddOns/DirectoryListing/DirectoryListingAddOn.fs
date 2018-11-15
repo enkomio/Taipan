@@ -1,6 +1,7 @@
 ﻿namespace ES.Taipan.Inspector.AddOns.DirectoryListing
 
 open System
+open System.IO
 open System.Collections.Generic
 open System.Text.RegularExpressions
 open ES.Taipan.Inspector
@@ -65,10 +66,21 @@ type DirectoryListingAddOn() as this =
             | Some matches -> Some matches.Value
             | None -> None
 
+    let getPath(uri: Uri) =
+        let uriBuilder = new UriBuilder(uri)
+        uriBuilder.Query <- String.Empty
+        uriBuilder.Fragment <- String.Empty
+        
+        let extension = Path.GetExtension(uri.AbsolutePath)
+        if String.IsNullOrWhiteSpace(extension) && not(uri.AbsolutePath.EndsWith("/")) then
+            // if it is a path like /a/b/c, add a final / since it can be a directory
+            uriBuilder.Path <- uri.AbsolutePath + "/"
+        HttpUtility.getAbsolutePathDirectory(uriBuilder.Uri) + "/"
+
     static member Id = Guid.Parse("FDE5F6AD-C468-4ED4-AD95-BFC393D7F1AC")
         
     default this.Scan(testRequest: TestRequest, stateController: ServiceStateController) =
-        let path = HttpUtility.getAbsolutePathDirectory(testRequest.WebRequest.HttpRequest.Uri) + "/"
+        let path = getPath(testRequest.WebRequest.HttpRequest.Uri) 
         if _analyzedPath.Add(path) then
             let directoryUri = new Uri(testRequest.WebRequest.HttpRequest.Uri, path)
             let webRequest = new WebRequest(directoryUri)
