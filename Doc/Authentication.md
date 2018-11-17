@@ -22,13 +22,27 @@ Once that you have the cookie you have to modify the given scan profile. In the 
 Once done that, *Taipan* will send the configured cookie in all its requests.
 
 ## Configure an HTTP Basic/Digest authentication
-To configure an HTTP Basic/Digest authentication is necessary to modify the used scan profile. You have to identify the XML element **AuthenticationInfo** which is a children of the XML element **HttpRequestorSettings**. Once identified you have to add the childrens **Type**, **Username** and **Password**, where *Type* should assume the value **Basic** or **Digest**. All the other items must be empty. An example of configuration is the following:
+To configure an HTTP Basic/Digest authentication is necessary to modify the used scan profile. You have to identify the XML element **AuthenticationInfo** which is a children of the XML element **HttpRequestorSettings**. Once identified you have to add the childrens **Type**, **Username** and **Password**, where *Type* must assume the value **Basic** or **Digest**. All the other items must be empty. An example of configuration is the following:
 
     <AuthenticationInfo>
         <Type>Basic</Type>
         <Username>admin</Username>
         <Password>admin</Password>
         <Token></Token>
+        <Enabled>true</Enabled>
+        <LoginPattern />
+        <LogoutPattern />
+        <DynamicAuthParameterPatterns />
+    </AuthenticationInfo>
+    
+## Configure a Bearer (token based) authentication
+To configure an Bearer authentication (also known as token based authentication) is necessary to modify the used scan profile. You have to identify the XML element **AuthenticationInfo** which is a children of the XML element **HttpRequestorSettings**. Once identified you have to add the childrens **Type** and **Token**, where *Type* must assume the value **Bearer**. All the other items must be empty. An example of configuration is the following:
+
+    <AuthenticationInfo>
+        <Type>Bearer</Type>
+        <Username></Username>
+        <Password></Password>
+        <Token>1234567890qwertyuiop</Token>
         <Enabled>true</Enabled>
         <LoginPattern />
         <LogoutPattern />
