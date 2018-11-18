@@ -5,7 +5,7 @@ By modifiying the profile file, it is possible to create an authenticated scan. 
 * Add to Taipan an authenticated cookie
 * Configure an HTTP Basic/Digest authentication
 * Configure a Bearer (token based) authentication
-* Configure the HTTP request that must be done in order to automatically authenticate to a web form login
+* Web form authentication
 
 ## Add an authenticated cookie
 This method is probably the easier one. The first step is to obtain a cookie that was authenticated. In order to do you can login into your web application and then extracts the value of the coookie that was returned by server in order to identify your session. To grab the cookie you can use one the many available HTTP proxy.
@@ -48,3 +48,5 @@ To configure an Bearer authentication (also known as token based authentication)
         <LogoutPattern />
         <DynamicAuthParameterPatterns />
     </AuthenticationInfo>
+    
+## Web form authentication
