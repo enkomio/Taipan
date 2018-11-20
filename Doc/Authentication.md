@@ -19,7 +19,7 @@ Once that you have the cookie you have to modify the given scan profile. In the 
         </Cookie>
     </AdditionalCookies>
     
-Once done that, *Taipan* will send the configured cookie in all its requests.
+If you need more than one cookie for the authentication just add more **Cookie** elements to the **AdditionalCookies** element. Once done that, *Taipan* will send the configured cookie in all its requests.
 
 ## Configure an HTTP Basic/Digest authentication
 To configure an HTTP Basic/Digest authentication is necessary to modify the used scan profile. You have to identify the XML element **AuthenticationInfo** which is a children of the XML element **HttpRequestorSettings**. Once identified you have to add the childrens **Type**, **Username** and **Password**, where *Type* must assume the value **Basic** or **Digest**. All the other items must be empty. An example of configuration is the following:
