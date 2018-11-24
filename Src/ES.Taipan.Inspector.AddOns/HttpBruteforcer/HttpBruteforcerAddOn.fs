@@ -48,7 +48,7 @@ type HttpBruteforcerAddOn() as this =
         this.Context.Value.AddSecurityIssue(securityIssue)
         
     let authenticationRequired(statusCode: System.Net.HttpStatusCode) =
-        [System.Net.HttpStatusCode.Unauthorized; System.Net.HttpStatusCode.Forbidden]
+        [System.Net.HttpStatusCode.Unauthorized]
         |> List.contains statusCode
 
     let sendRequest(webRequest: WebRequest) =

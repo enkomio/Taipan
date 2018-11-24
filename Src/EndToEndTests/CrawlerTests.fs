@@ -308,7 +308,7 @@
                 Username = "admin",
                 Password = "admin"
             )
-
+    
         // run the scan
         Utility.runScan(scanContext)
         |> Utility.verifyCrawler [get("/crawler/test22/authok")]

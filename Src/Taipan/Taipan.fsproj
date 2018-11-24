@@ -26,7 +26,7 @@
     <PlatformTarget>x86</PlatformTarget>
     <DocumentationFile>bin\Debug\Taipan.XML</DocumentationFile>
     <Prefer32Bit>false</Prefer32Bit>
-    <StartArguments>-u http:127.0.0.1 -p r</StartArguments>
+    <StartArguments>-u https://nextcloud.apps.fastcloud.it/index.php -p fastweb</StartArguments>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
     <DebugType>pdbonly</DebugType>
