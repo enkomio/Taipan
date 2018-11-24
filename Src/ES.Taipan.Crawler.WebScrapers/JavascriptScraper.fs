@@ -51,7 +51,7 @@ type JavascriptScraper() as this =
         ]
 
         if not(isContentType(webResponse, forbiddenContentType)) then
-            if webResponse.PageExists && sourceWebLink.OriginalWebLink.IsNone then
+            if webResponse.PageExists && not(sourceWebLink.IsMutated()) then
                 initialize(messageBroker, logProvider)
 
                 let httpRequest = sourceWebLink.Request.HttpRequest
@@ -67,8 +67,12 @@ type JavascriptScraper() as this =
 
                 match _seleniumDriver.Value.ExecuteScript(httpRequest, jsSrc, new Dictionary<String, Object>()) with
                 | Some dict -> 
-                    let pageHtml = string dict.["html"]
-                    let result = dict.["output"] :?> Dictionary<String, Object>                    
+                    let result = dict.["output"] :?> Dictionary<String, Object>
+                    let pageHtml = 
+                        if String.IsNullOrWhiteSpace(result.["Html"].ToString())
+                        then string dict.["Html"]
+                        else string result.["Html"]
+                                        
                     let extractedLinks = result.["Result"] :?> IEnumerable<Object>
 
                     for item in extractedLinks do

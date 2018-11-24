@@ -7,7 +7,7 @@ open ES.Taipan.Infrastructure.Validation
 
 module WebUtility =
 
-    let notHyperlinkSchemas = ["#"; "file:"; "ftp:"; "data:"; "javascript:"; "mailto:"; "about:"]
+    let notHyperlinkSchemas = ["file:"; "ftp:"; "data:"; "javascript:"; "mailto:"; "about:"]
 
     let private relativeOrAbsolute(uriStr: String) =        
         if uriStr.Trim().StartsWith("/") then new Uri(uriStr, UriKind.Relative)

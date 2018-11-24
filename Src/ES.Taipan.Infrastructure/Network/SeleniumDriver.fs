@@ -6,7 +6,6 @@ open System.IO
 open System.Reflection
 open OpenQA.Selenium
 open OpenQA.Selenium.Chrome
-open OpenQA.Selenium.Remote
 open ES.Fslog
 
 type Platform =
@@ -137,6 +136,7 @@ type SeleniumDriver(logProvider: ILogProvider) =
                         "--ignore-certificate-errors",
                         "--disable-web-security",
                         "--disable-xss-auditor",
+                        "--log-level=3",
                         "--silent"
                         //"load-extension=" + _extensionDir
                     )
@@ -167,8 +167,10 @@ type SeleniumDriver(logProvider: ILogProvider) =
     member this.ExecuteScript(httpRequest: HttpRequest, scriptSrc: String, args: Object) =
         lock _syncRoot (fun () ->
             let mutable result: Dictionary<String, Object> option = None
-            let urlData = "data:text/html;charset=utf-8," + Uri.UnescapeDataString(httpRequest.Source.Value.DocumentHtml)
- 
+            let ub = new UriBuilder(httpRequest.Uri, Query=String.Empty, Fragment=String.Empty)
+            let baseTag = String.Format("<base href='{0}'>", ub.Uri.AbsoluteUri)
+            let urlData = "data:text/html;charset=utf-8," + baseTag + Uri.UnescapeDataString(httpRequest.Source.Value.DocumentHtml)
+            
             try
                 // try to reset browser state
                 _driver.Value.ResetInputState()            
@@ -176,16 +178,25 @@ type SeleniumDriver(logProvider: ILogProvider) =
                     // from time to time this operation generates an exception :?
                     _driver.Value.Manage().Cookies.DeleteAllCookies()
                 with _ -> ()
-                    
-                _driver.Value.Url <- urlData
+                                
                 let beforeExecutionLogs = getLogs() |> List.map(fun log -> log.Message)
                 
                 // add cookies
-                for cookie in httpRequest.Cookies do
-                    _driver.Value.Manage().Cookies.AddCookie(new Cookie(cookie.Name, cookie.Value, cookie.Path))
+                for cookie in httpRequest.Cookies do                    
+                    let seleniumCookie = new Cookie(cookie.Name, cookie.Value, cookie.Path, httpRequest.Uri.Host, new Nullable<DateTime>())
+                    _driver.Value.Manage().Cookies.AddCookie(seleniumCookie)                    
+                
+                // load the content via URI
+                _driver.Value.Url <- urlData
+
+                // wait until the content is fully loaded
+                let fullyLoaded = _driver.Value.ExecuteScript("return document.readyState;", Array.empty<Object>)
+                while not(fullyLoaded.ToString().Equals("complete", StringComparison.OrdinalIgnoreCase)) do
+                    Async.Sleep(500) |> Async.RunSynchronously
 
                 // execute send request script
                 let scriptOutput = _driver.Value.ExecuteScript(scriptSrc, [|args|])
+                
                 getLogs()
                 |> List.filter(fun log -> not(beforeExecutionLogs |> List.contains log.Message))
                 |> List.iter(fun logEntry ->

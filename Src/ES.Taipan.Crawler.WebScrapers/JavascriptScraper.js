@@ -18,6 +18,7 @@ function getEvents(elem) {
 var anchors = document.getElementsByTagName("a");
 for (var i = 0; i < anchors.length; i++) {
     anchors[i].setAttribute("taipan_id", taipan_attribute);
+    console.log("Found hyperlink: " + anchors[i].href);
     items.push({
         Id: taipan_attribute++,
         Url: anchors[i].href,
@@ -80,8 +81,14 @@ for (var i = 0; i < iframes.length; i++) {
     });
 }
 
+var html = "";
+for (var i = 0; i < window.document.childNodes.length; i++) {
+    html = window.document.childNodes[i].outerHTML;
+    if (html != null) {
+        break;
+    }
+}
 
-var html = window.document.childNodes[0].outerHTML;
 
 // compose result
 var result = {

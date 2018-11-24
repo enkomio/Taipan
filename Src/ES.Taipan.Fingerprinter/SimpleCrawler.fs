@@ -120,6 +120,9 @@ module internal SimpleCrawler =
                                     | Some httpResponse ->
                                         let html = httpResponse.Html
                                         let links = extractLinks url html
+                                        if not(webPages.ContainsKey(url)) then
+                                            webPages.Add(url, httpResponse)
+
                                         for link in links do
                                             if (isSameDomain(link) || url.Equals(startUrl, StringComparison.OrdinalIgnoreCase)) && not(webPages.ContainsKey(link)) then                                        
                                                 webPages.Add(link, httpResponse)
