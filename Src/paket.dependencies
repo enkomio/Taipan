@@ -21,7 +21,6 @@ nuget Topshelf
 nuget System.Data.SQLite
 nuget AngleSharp
 nuget Selenium.WebDriver
-nuget Selenium.WebDriver.ChromeDriver
 nuget difflib
 nuget LiteDB
 nuget Argu
