@@ -160,14 +160,11 @@ Target "CopyBrowserBinaries" (fun _ ->
     ["Taipan"; "EndToEndTests"]
     |> List.iter(fun directoryName ->
          // copy chrome
-        ensureDirectory (buildDir + "/" + directoryName + "/ChromeBins/Windows")    
-        Unzip  (buildDir + "/" + directoryName + "/ChromeBins/Windows") ("../Bins/chrome-win32.zip")
+        ensureDirectory (buildDir + "/" + directoryName + "/ChromeBins/Windows32")
+        Unzip  (buildDir + "/" + directoryName + "/ChromeBins/Windows32") ("../Bins/chrome-win32.zip")
         
-        ensureDirectory (buildDir + "/" + directoryName + "/ChromeBins/Unix32")
-        Unzip  (buildDir + "/" + directoryName + "/ChromeBins/Unix32") ("../Bins/chrome-linux32.zip")
-
-        ensureDirectory (buildDir + "/" + directoryName + "/ChromeBins/Unix64")
-        Unzip  (buildDir + "/" + directoryName + "/ChromeBins/Unix64") ("../Bins/chrome-linux64.zip")
+        ensureDirectory (buildDir + "/" + directoryName + "/ChromeBins/Linux64")
+        Unzip  (buildDir + "/" + directoryName + "/ChromeBins/Linux64") ("../Bins/chrome-linux64.zip")
 
         // copy ChromeDriver and clean build
         ensureDirectory (buildDir + "/" + directoryName + "/driver")
