@@ -35,9 +35,9 @@ type SeleniumDriver(logProvider: ILogProvider) =
     let _log = 
         log "SeleniumDriver"
         |> error "Exception" "Exception Message: {0}. Stack trace: {1}"
+        |> warning "BinaryNotFound" "The Chrome binary wasn't found, unable to run Javascript"
         |> verbose "ConsoleLog" "Browser [{0}]: {1}"
-        |> build
-    do logProvider.AddLogSourceToLoggers(_log)
+        |> buildAndAdd logProvider
 
     let getPlatform() =
         match Environment.OSVersion.Platform with
@@ -136,41 +136,43 @@ type SeleniumDriver(logProvider: ILogProvider) =
     member this.Initialize() =      
         lock _syncRoot (fun () ->
             //_extensionDir <- packExtension() 
-
             try
-                let chromeOptions = new ChromeOptionsWithPrefs(BinaryLocation = _chrome)            
-                chromeOptions.AddArguments
-                    (
-                        "--headless" ,
-                        "--disable-gpu", 
-                        "--no-sandbox", 
-                        "--disable-infobar",
-                        "--disable-setuid-sandbox",
-                        "--ignore-certificate-errors",
-                        "--disable-web-security",
-                        "--disable-xss-auditor",
-                        "--log-level=3",
-                        "--silent",
-                        "--blink-settings=imagesEnabled=false"
-                        //"load-extension=" + _extensionDir
-                    )
-                chromeOptions.AddExcludedArgument("test-type")
+                if File.Exists(_chrome) then
+                    let chromeOptions = new ChromeOptionsWithPrefs(BinaryLocation = _chrome)            
+                    chromeOptions.AddArguments
+                        (
+                            "--headless" ,
+                            "--disable-gpu", 
+                            "--no-sandbox", 
+                            "--disable-infobar",
+                            "--disable-setuid-sandbox",
+                            "--ignore-certificate-errors",
+                            "--disable-web-security",
+                            "--disable-xss-auditor",
+                            "--log-level=3",
+                            "--silent",
+                            "--blink-settings=imagesEnabled=false"
+                            //"load-extension=" + _extensionDir
+                        )
+                    chromeOptions.AddExcludedArgument("test-type")
                 
-                // set proxy if necessary (must be in the form: <IP>:<PORT>)
-                if this.ProxyUrl.IsSome && not(String.IsNullOrWhiteSpace(this.ProxyUrl.Value)) then                    
-                    // in headless mode the HTTPS proxy doesn't seem to work :\
-                    let proxySettings= String.Format("--proxy-server=https={0};http={0}", this.ProxyUrl.Value)
-                    chromeOptions.AddArgument(proxySettings)
+                    // set proxy if necessary (must be in the form: <IP>:<PORT>)
+                    if this.ProxyUrl.IsSome && not(String.IsNullOrWhiteSpace(this.ProxyUrl.Value)) then                    
+                        // in headless mode the HTTPS proxy doesn't seem to work :\
+                        let proxySettings= String.Format("--proxy-server=https={0};http={0}", this.ProxyUrl.Value)
+                        chromeOptions.AddArgument(proxySettings)
 
-                // avoid to load images
-                // see: https://stackoverflow.com/questions/18657976/disable-images-in-selenium-google-chromedriver
-                let images = new Dictionary<String, Object>()
-                images.Add("images", 2)                
-                chromeOptions.prefs.Add("profile.default_content_settings", images)
+                    // avoid to load images
+                    // see: https://stackoverflow.com/questions/18657976/disable-images-in-selenium-google-chromedriver
+                    let images = new Dictionary<String, Object>()
+                    images.Add("images", 2)                
+                    chromeOptions.prefs.Add("profile.default_content_settings", images)
 
-                // create the driver                
-                let chromeDriverService = ChromeDriverService.CreateDefaultService(getChromeDriverPath(),  getChromeDriverExecName())
-                _driver <- Some <| new ChromeDriver(chromeDriverService, chromeOptions)
+                    // create the driver                
+                    let chromeDriverService = ChromeDriverService.CreateDefaultService(getChromeDriverPath(),  getChromeDriverExecName())
+                    _driver <- Some <| new ChromeDriver(chromeDriverService, chromeOptions)
+                else
+                    _log?BinaryNotFound()
              with _ as ex -> 
                 _log?Exception(ex.Message, ex.StackTrace)
         )        
@@ -186,7 +188,7 @@ type SeleniumDriver(logProvider: ILogProvider) =
             let urlData = Uri.UnescapeDataString(httpRequest.Source.Value.DocumentHtml)
             
             try
-                if not(String.IsNullOrWhiteSpace(urlData)) then
+                if _driver.IsSome && not(String.IsNullOrWhiteSpace(urlData)) then
                     // try to reset browser state
                     _driver.Value.ResetInputState()            
                     try
