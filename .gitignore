@@ -5,7 +5,7 @@
 ES.Taipan.Infrastructure/Network/Windows/*
 ES.Taipan.Infrastructure/Network/Unix32/*
 ES.Taipan.Infrastructure/Network/Unix64/*
-Bins/
+Bins/*
 
 
 #################
