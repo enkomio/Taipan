@@ -305,7 +305,7 @@ type DefaultHttpRequestor(defaultSettings: HttpRequestorSettings, logProvider: I
                         
                     | _ -> ()      
 
-                // if the request via PhantomJS fails try the standard way
+                // if the request via Selenium fails try the standard way
                 if (!httpResponseResult).IsNone then
                     let httpWebRequest = HttpRequestorUtility.createHttpWebRequest(_settings, httpRequest)
                     use httpWebResponse = httpWebRequest.GetResponse() :?> HttpWebResponse

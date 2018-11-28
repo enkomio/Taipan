@@ -47,12 +47,13 @@ module private SecurityHeadersChecks =
         | None -> addSecurityIssue(securityIssue)
 
     let checkHeaderPresence(testRequest: TestRequest, headerName: String,  id: Guid, name: String, addSecurityIssue: SecurityIssue -> unit) =
-        let securityIssue = createSecurityIssue(testRequest, id, name)
-        securityIssue.Details.Properties.Add("MissingHeader", headerName)
+        if testRequest.WebResponse.PageExists then
+            let securityIssue = createSecurityIssue(testRequest, id, name)
+            securityIssue.Details.Properties.Add("MissingHeader", headerName)
              
-        match tryGetHeader testRequest.WebResponse.HttpResponse.Headers headerName with
-        | None -> addSecurityIssue(securityIssue)
-        | _ -> ()
+            match tryGetHeader testRequest.WebResponse.HttpResponse.Headers headerName with
+            | None -> addSecurityIssue(securityIssue)
+            | _ -> ()
 
     let isMissingContentSecurityPolicy(testRequest: TestRequest,id: Guid, name: String, addSecurityIssue: SecurityIssue -> unit) =           
         checkHeaderPresence(testRequest, "Content-Security-Policy", id, name, addSecurityIssue)
@@ -64,15 +65,16 @@ module private SecurityHeadersChecks =
         checkHeaderPresence(testRequest, "X-Frame-Options", id, name, addSecurityIssue)
 
     let isMissingXXSSProtection(testRequest: TestRequest, id: Guid, name: String, addSecurityIssue: SecurityIssue -> unit) =           
-        let securityIssue = createSecurityIssue(testRequest, id, name)
-        securityIssue.Details.Properties.Add("MissingHeader", "X-Xss-Protection")
+        if testRequest.WebResponse.PageExists then
+            let securityIssue = createSecurityIssue(testRequest, id, name)
+            securityIssue.Details.Properties.Add("MissingHeader", "X-Xss-Protection")
              
-        match tryGetHeader testRequest.WebResponse.HttpResponse.Headers "X-XSS-Protection" with
-        | Some header ->
-            if header.Value.Trim().StartsWith("0") then
-                securityIssue.Details.Properties.Add("ProtectionDisabled", "1")
-                addSecurityIssue(securityIssue)
-        | None -> addSecurityIssue(securityIssue)
+            match tryGetHeader testRequest.WebResponse.HttpResponse.Headers "X-XSS-Protection" with
+            | Some header ->
+                if header.Value.Trim().StartsWith("0") then
+                    securityIssue.Details.Properties.Add("ProtectionDisabled", "1")
+                    addSecurityIssue(securityIssue)
+            | None -> addSecurityIssue(securityIssue)
 
     let isMissingXContentTypeOptions(testRequest: TestRequest, id: Guid, name: String, addSecurityIssue: SecurityIssue -> unit) =           
         checkHeaderPresence(testRequest, "X-Content-Type-Options", id, name, addSecurityIssue)

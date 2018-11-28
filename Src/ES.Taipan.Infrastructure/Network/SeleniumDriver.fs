@@ -7,6 +7,7 @@ open System.Reflection
 open OpenQA.Selenium
 open OpenQA.Selenium.Chrome
 open ES.Fslog
+open System.Text
 
 type Platform =
     | Windows
@@ -29,6 +30,7 @@ type SeleniumDriver(logProvider: ILogProvider) =
     let _syncRoot = new Object()
     let mutable _driver: ChromeDriver option = None
     let mutable _extensionDir = String.Empty
+    let mutable _initialRequestDone = false
     
     let _log = 
         log "SeleniumDriver"
@@ -50,19 +52,21 @@ type SeleniumDriver(logProvider: ILogProvider) =
     let getChromePath() =
         let platformDirectory = 
             match getPlatform() with
-            | Windows -> "Windows"
-            | Unix -> 
-                if Environment.Is64BitOperatingSystem then "Unix64"
-                else "Unix32"
+            | Windows -> "Windows32"
+            | Unix -> "Linux64"
             | MacOSX -> failwith "OS not yet supported"
         Path.Combine(_basePath, "ChromeBins", platformDirectory)
-        
-    let getChromeDriverExec() =
+
+    let getChromeDriverPath() =
         match getPlatform() with
-        | Platform.Windows -> Path.Combine(_basePath, "driver", "win32", "chromedriver.exe")
-        | Platform.Unix -> 
-            let arch = if Environment.Is64BitOperatingSystem  then "linux64" else "linux32"
-            Path.Combine(_basePath, "driver", arch, "chromedriver")
+        | Platform.Windows -> Path.Combine(_basePath, "driver", "win32")
+        | Platform.Unix -> Path.Combine(_basePath, "driver", "linux64")
+        | Platform.MacOSX -> failwith "OS not yet supported"
+        
+    let getChromeDriverExecName() =
+        match getPlatform() with
+        | Platform.Windows -> "chromedriver.exe"
+        | Platform.Unix -> "chromedriver"
         | Platform.MacOSX -> failwith "OS not yet supported"
 
     let getChromeExecName() =
@@ -114,6 +118,15 @@ type SeleniumDriver(logProvider: ILogProvider) =
             for logEntry in _driver.Value.Manage().Logs.GetLog(logType) do
                 yield logEntry
     ]
+
+    let doInitialRequestIfNecessary(httpRequest: HttpRequest) =
+        if not _initialRequestDone then
+            _initialRequestDone <- true
+            let ub = new UriBuilder(httpRequest.Uri)
+            ub.Path <- String.Empty
+            ub.Query <- String.Empty
+            let initialUri = new Uri(ub.Uri, Guid.NewGuid().ToString("N"))
+            _driver.Value.Url <- initialUri.AbsoluteUri
             
     let _chrome = Path.Combine(getChromePath(), getChromeExecName())
 
@@ -128,7 +141,7 @@ type SeleniumDriver(logProvider: ILogProvider) =
                 let chromeOptions = new ChromeOptionsWithPrefs(BinaryLocation = _chrome)            
                 chromeOptions.AddArguments
                     (
-                        "--headless", 
+                        "--headless" ,
                         "--disable-gpu", 
                         "--no-sandbox", 
                         "--disable-infobar",
@@ -137,23 +150,26 @@ type SeleniumDriver(logProvider: ILogProvider) =
                         "--disable-web-security",
                         "--disable-xss-auditor",
                         "--log-level=3",
-                        "--silent"
+                        "--silent",
+                        "--blink-settings=imagesEnabled=false"
                         //"load-extension=" + _extensionDir
                     )
-                chromeOptions.AddExcludedArgument("test-type")   
-            
-                // set proxy if necessary
-                if this.ProxyUrl.IsSome && not(String.IsNullOrWhiteSpace(this.ProxyUrl.Value)) then
-                    chromeOptions.Proxy.HttpProxy <- this.ProxyUrl.Value
+                chromeOptions.AddExcludedArgument("test-type")
+                
+                // set proxy if necessary (must be in the form: <IP>:<PORT>)
+                if this.ProxyUrl.IsSome && not(String.IsNullOrWhiteSpace(this.ProxyUrl.Value)) then                    
+                    // in headless mode the HTTPS proxy doesn't seem to work :\
+                    let proxySettings= String.Format("--proxy-server=https={0};http={0}", this.ProxyUrl.Value)
+                    chromeOptions.AddArgument(proxySettings)
 
                 // avoid to load images
                 // see: https://stackoverflow.com/questions/18657976/disable-images-in-selenium-google-chromedriver
                 let images = new Dictionary<String, Object>()
                 images.Add("images", 2)                
                 chromeOptions.prefs.Add("profile.default_content_settings", images)
-                
-                // create the driver
-                let chromeDriverService = ChromeDriverService.CreateDefaultService(_basePath,  getChromeDriverExec())
+
+                // create the driver                
+                let chromeDriverService = ChromeDriverService.CreateDefaultService(getChromeDriverPath(),  getChromeDriverExecName())
                 _driver <- Some <| new ChromeDriver(chromeDriverService, chromeOptions)
              with _ as ex -> 
                 _log?Exception(ex.Message, ex.StackTrace)
@@ -167,99 +183,115 @@ type SeleniumDriver(logProvider: ILogProvider) =
     member this.ExecuteScript(httpRequest: HttpRequest, scriptSrc: String, args: Object) =
         lock _syncRoot (fun () ->
             let mutable result: Dictionary<String, Object> option = None
-            let ub = new UriBuilder(httpRequest.Uri, Query=String.Empty, Fragment=String.Empty)
-            let baseTag = String.Format("<base href='{0}'>", ub.Uri.AbsoluteUri)
-            let urlData = "data:text/html;charset=utf-8," + baseTag + Uri.UnescapeDataString(httpRequest.Source.Value.DocumentHtml)
+            let urlData = Uri.UnescapeDataString(httpRequest.Source.Value.DocumentHtml)
             
             try
-                // try to reset browser state
-                _driver.Value.ResetInputState()            
-                try
-                    // from time to time this operation generates an exception :?
-                    _driver.Value.Manage().Cookies.DeleteAllCookies()
-                with _ -> ()
-                                
-                let beforeExecutionLogs = getLogs() |> List.map(fun log -> log.Message)
-                
-                // add cookies
-                for cookie in httpRequest.Cookies do                    
-                    let seleniumCookie = new Cookie(cookie.Name, cookie.Value, cookie.Path, httpRequest.Uri.Host, new Nullable<DateTime>())
-                    _driver.Value.Manage().Cookies.AddCookie(seleniumCookie)                    
-                
-                // load the content via URI
-                _driver.Value.Url <- urlData
-
-                // wait until the content is fully loaded
-                let fullyLoaded = _driver.Value.ExecuteScript("return document.readyState;", Array.empty<Object>)
-                while not(fullyLoaded.ToString().Equals("complete", StringComparison.OrdinalIgnoreCase)) do
-                    Async.Sleep(500) |> Async.RunSynchronously
-
-                // execute send request script
-                let scriptOutput = _driver.Value.ExecuteScript(scriptSrc, [|args|])
-                
-                getLogs()
-                |> List.filter(fun log -> not(beforeExecutionLogs |> List.contains log.Message))
-                |> List.iter(fun logEntry ->
-                    let level = logEntry.Level.ToString()
-                    let msg = logEntry.Message
-                    _log?ConsoleLog(level, msg)
-                )   
-
-                // verify if page has full loaded by checking the existence of result variable
-                let mutable executionCompleted = false
-                while not executionCompleted do
+                if not(String.IsNullOrWhiteSpace(urlData)) then
+                    // try to reset browser state
+                    _driver.Value.ResetInputState()            
                     try
-                        result <- Some(_driver.Value.ExecuteScript("return result;", [||])  :?> Dictionary<String, Object>)
-                        let counter = ref 1
-                        while result.IsSome && (!counter) < 20 do
-                            incr counter
-                            if not(String.IsNullOrWhiteSpace(result.Value.["error"].ToString())) then
-                                executionCompleted <- true
-                            else
-                                // read result againt until I get an exception
-                                System.Threading.Thread.Sleep(500 * (!counter))
-                                result <- Some(_driver.Value.ExecuteScript("return result;", [||])  :?> Dictionary<String, Object>)
-
-                        // some unknow error :\
-                        result.Value.["error"] <- "Unknow error"
-                        executionCompleted <- true
-                    with 
-                        | :? UnhandledAlertException as e ->
-                            let alert = _driver.Value.SwitchTo().Alert()
-                            alert.Accept()
-                        | _ ->
-                            // result not defined, this means final page has loaded
-                            executionCompleted <- true
-
-                if result.IsNone || String.IsNullOrWhiteSpace(result.Value.["error"].ToString()) then
-                    // page full loaded without errors, read content
-                    result <- Some(new Dictionary<String, Object>())
-                    result.Value.["error"] <- String.Empty
-                    result.Value.["html"] <- _driver.Value.PageSource
-                    result.Value.["output"] <- scriptOutput
+                        // from time to time this operation generates an exception :?
+                        _driver.Value.Manage().Cookies.DeleteAllCookies()
+                    with _ -> ()
                 
-                // save a screenshot if specified
-                if this.TakeScreenShot then
-                    let screenshot = _driver.Value.GetScreenshot()
-                    let filename = Guid.NewGuid().ToString("N")
-                    screenshot.SaveAsFile(filename, OpenQA.Selenium.ScreenshotImageFormat.Gif)
-                    result.Value.["gif"] <- File.ReadAllBytes(filename)
-                    File.Delete(filename)
+                    // make the initial request if necessary, this will set the
+                    // origin inside the Chrome browser
+                    doInitialRequestIfNecessary(httpRequest)
 
-                // add cookies
-                let cookies = new List<System.Net.Cookie>()
-                result.Value.["cookies"] <- cookies
-                for cookie in _driver.Value.Manage().Cookies.AllCookies do                
-                    let netCookie = new System.Net.Cookie(cookie.Name, cookie.Value, cookie.Path, cookie.Domain)
-                    netCookie.HttpOnly <- cookie.IsHttpOnly
-                    netCookie.Secure <- cookie.Secure
-                    cookies.Add(netCookie)
+                    let beforeExecutionLogs = 
+                        getLogs() 
+                        |> List.map(fun log -> log.Message)
+                
+                    // add cookies via Javascript, for some reason I wasn't able to set it via webdriver
+                    for cookie in httpRequest.Cookies do  
+                        // if you wonder why of this replacement, take a look at: https://googlechrome.github.io/samples/cookie-prefixes/
+                        let cookieValue = cookie.Value.Replace("__Host-", String.Empty).Replace("__Secure-", String.Empty)
+                        let setCookieJs = String.Format("document.cookie = '{0}={1}';", cookie.Name, cookieValue)
+                        _driver.Value.ExecuteScript(setCookieJs, Array.empty<Object>) |> ignore
 
-                // This features is not implemented since Chrome HEadless doesn't support extension at this time
-                // Try to use installed extension to read all the requests and responses done
-                if result.IsSome && String.IsNullOrWhiteSpace(result.Value.["error"].ToString()) then                              
-                    let responses = _driver.Value.ExecuteScript("if (typeof networkRequests !== 'undefined') {return networkRequests;}", [||])
-                    result.Value.["network"] <- responses
+                    // load the data by doing a document.write. Not the origin should already be set
+                    let encodedUrlData = Convert.ToBase64String(Encoding.Default.GetBytes(urlData))
+                    let evalScript = String.Format("document.write(atob('{0}'));", encodedUrlData)
+                    _driver.Value.ExecuteScript(evalScript, Array.empty<Object>) |> ignore
+
+                    // wait until the content is fully loaded
+                    let mutable trialLimit = 0
+                    let mutable fullyLoaded = _driver.Value.ExecuteScript("return document.readyState;", Array.empty<Object>)
+                    while trialLimit < 10 && not(fullyLoaded.ToString().Equals("complete", StringComparison.OrdinalIgnoreCase)) do
+                        Async.Sleep(500) |> Async.RunSynchronously
+                        fullyLoaded <- _driver.Value.ExecuteScript("return document.readyState;", Array.empty<Object>)
+                        trialLimit <- trialLimit + 1
+
+                    // execute send request script
+                    let scriptOutput = _driver.Value.ExecuteScript(scriptSrc, [|args|])
+                
+                    getLogs()
+                    |> List.filter(fun log -> not(beforeExecutionLogs |> List.contains log.Message))
+                    |> List.iter(fun logEntry ->
+                        let level = logEntry.Level.ToString()
+                        let msg = logEntry.Message
+                        _log?ConsoleLog(level, msg)
+                    )   
+
+                    // verify if page has full loaded by checking the existence of result variable
+                    let mutable executionCompleted = false
+                    while not executionCompleted do
+                        try
+                            result <- Some(_driver.Value.ExecuteScript("return result;", [||])  :?> Dictionary<String, Object>)
+                            let counter = ref 1
+                            while result.IsSome && (!counter) < 20 do
+                                incr counter
+                                if not(String.IsNullOrWhiteSpace(result.Value.["error"].ToString())) then
+                                    executionCompleted <- true
+                                else
+                                    // read result againt until I get an exception
+                                    System.Threading.Thread.Sleep(500 * (!counter))
+                                    result <- Some(_driver.Value.ExecuteScript("return result;", [||])  :?> Dictionary<String, Object>)
+
+                            // some unknow error :\
+                            result.Value.["error"] <- "Unknow error"
+                            executionCompleted <- true
+                        with 
+                            | :? UnhandledAlertException as e ->
+                                let alert = _driver.Value.SwitchTo().Alert()
+                                alert.Accept()
+                            | _ ->
+                                // result not defined, this means final page has loaded
+                                executionCompleted <- true
+
+                    if result.IsNone || String.IsNullOrWhiteSpace(result.Value.["error"].ToString()) then
+                        // page full loaded without errors, read content
+                        result <- Some(new Dictionary<String, Object>())
+                        result.Value.["error"] <- String.Empty
+                        result.Value.["html"] <- _driver.Value.PageSource
+                        result.Value.["output"] <- scriptOutput
+
+                    elif result.IsSome then
+                        result.Value.["html"] <- _driver.Value.PageSource
+                        result.Value.["output"] <- scriptOutput
+                
+                    // save a screenshot if specified
+                    if this.TakeScreenShot then
+                        let screenshot = _driver.Value.GetScreenshot()
+                        let filename = Guid.NewGuid().ToString("N")
+                        screenshot.SaveAsFile(filename, OpenQA.Selenium.ScreenshotImageFormat.Gif)
+                        result.Value.["gif"] <- File.ReadAllBytes(filename)
+                        File.Delete(filename)
+
+                    // add cookies
+                    let cookies = new List<System.Net.Cookie>()
+                    result.Value.["cookies"] <- cookies
+                    for cookie in _driver.Value.Manage().Cookies.AllCookies do                
+                        let netCookie = new System.Net.Cookie(cookie.Name, cookie.Value, cookie.Path, cookie.Domain)
+                        netCookie.HttpOnly <- cookie.IsHttpOnly
+                        netCookie.Secure <- cookie.Secure
+                        cookies.Add(netCookie)
+
+                    // This features is not implemented since Chrome Headless doesn't support extension at this time
+                    // Try to use installed extension to read all the requests and responses done
+                    if result.IsSome && String.IsNullOrWhiteSpace(result.Value.["error"].ToString()) then                              
+                        let responses = _driver.Value.ExecuteScript("if (typeof networkRequests !== 'undefined') {return networkRequests;}", [||])
+                        result.Value.["network"] <- responses
             
             with _ as ex -> 
                 _log?Exception(ex.Message, ex.StackTrace)

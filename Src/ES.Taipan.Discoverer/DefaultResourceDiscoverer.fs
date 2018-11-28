@@ -148,7 +148,10 @@ type DefaultResourceDiscoverer(settings: ResourceDiscovererSettings, webRequesto
             true
 
     let isRequestAllowed(discoverRequest: DiscoverRequest) =
-        isDepthLevelAllowed(discoverRequest) && isNotAForbiddenDirectory(discoverRequest) && isDirectoryNew(discoverRequest) && isRecurionsSatisfied()
+        isDepthLevelAllowed(discoverRequest) && 
+        isNotAForbiddenDirectory(discoverRequest) && 
+        isDirectoryNew(discoverRequest) && 
+        isRecurionsSatisfied()
 
     let addExtensionsIfNeeded(resources: ConcurrentQueue<Resource>) =
         let newResources = new List<Resource>()

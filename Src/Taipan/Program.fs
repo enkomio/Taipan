@@ -81,7 +81,7 @@ module Cli =
                 let profile = new TemplateProfile()
                 let profileContent = File.ReadAllText(profileFile)                        
                 profile.AcquireSettingsFromXml(profileContent)                    
-                Console.WriteLine(String.Format("| {0,-30}| {1, -" + bufferWidth.ToString() + "}|", truncate(profile.Name, 29), truncate(profile.Description, bufferWidth - 3)))
+                Console.WriteLine(String.Format("| {0,-30}| {1, -" + bufferWidth.ToString() + "}|", truncate(profile.Name, 27), truncate(profile.Description, bufferWidth - 3)))
             with _ -> ()
 
         Console.WriteLine(separator)
