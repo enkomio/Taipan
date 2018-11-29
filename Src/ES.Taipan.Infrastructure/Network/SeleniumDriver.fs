@@ -183,6 +183,7 @@ type SeleniumDriver(logProvider: ILogProvider) =
             _driver.Value.Quit()
 
     member this.ExecuteScript(httpRequest: HttpRequest, scriptSrc: String, args: Object) =
+        let a = GC.GetTotalMemory(true)
         lock _syncRoot (fun () ->
             let mutable result: Dictionary<String, Object> option = None
             let urlData = Uri.UnescapeDataString(httpRequest.Source.Value.DocumentHtml)
@@ -298,6 +299,7 @@ type SeleniumDriver(logProvider: ILogProvider) =
             with _ as ex -> 
                 _log?Exception(ex.Message, ex.StackTrace)
 
+            Console.WriteLine("Used memory: {0}", GC.GetTotalMemory(true) - a)
             result
         )        
         
