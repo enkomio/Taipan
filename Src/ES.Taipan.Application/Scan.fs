@@ -38,9 +38,9 @@ type Scan(scanContext: ScanContext, logProvider: ILogProvider) as this =
     let _serviceCompletedLock = new Object()
 
     // local storage for assessment phase
-    let _newResourceDiscoveredMessageList = new ConcurrentQueue<NewResourceDiscoveredMessage>()
-    let _pageProcessedMessageList = new ConcurrentQueue<PageProcessedMessage>()
-    let _pageReProcessedMessage = new ConcurrentQueue<PageReProcessedMessage>()
+    let mutable _newResourceDiscoveredMessageList = new ConcurrentQueue<NewResourceDiscoveredMessage>()
+    let mutable _pageProcessedMessageList = new ConcurrentQueue<PageProcessedMessage>()
+    let mutable _pageReProcessedMessage = new ConcurrentQueue<PageReProcessedMessage>()
     let mutable _assessmentPhaseStarted = false
     let mutable _stopRequested = false
 
@@ -127,6 +127,11 @@ type Scan(scanContext: ScanContext, logProvider: ILogProvider) as this =
                     if scanContext.Template.RunVulnerabilityScanner then
                         _messageBroker.Value.Dispatch(this, convertPageReProcessedToTestRequest(message))
             )
+
+            // cleanup
+            _newResourceDiscoveredMessageList <- new ConcurrentQueue<NewResourceDiscoveredMessage>()
+            _pageProcessedMessageList <- new ConcurrentQueue<PageProcessedMessage>()
+            _pageReProcessedMessage <- new ConcurrentQueue<PageReProcessedMessage>()
 
     let rec getAllMetrics(serviceMetrics: ServiceMetrics) = [
         yield serviceMetrics
@@ -357,7 +362,8 @@ type Scan(scanContext: ScanContext, logProvider: ILogProvider) as this =
             // Creates more than one crawler if I have authentication, in this way the not authenticated part and the authenticated
             // part will have two different crawlers. This will allow to identify possilbe EoP.            
             if scanContext.Template.HttpRequestorSettings.Authentication.Type <> AuthenticationType.NoAuthentication then
-                // this is a very dirty trick. By setting the authentication to Enabled and the type to NoAuthentication,
+                // this is a very dirty trick. By setting the authentication 
+                // to Enabled and the type to NoAuthentication,
                 // I avoid to follow the Journey path for this specific case.
                 instantiateCrawlers([new AuthenticationInfo(Enabled = true); scanContext.Template.HttpRequestorSettings.Authentication])
             else

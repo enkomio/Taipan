@@ -187,7 +187,13 @@ type CrawlerState(settings: CrawlerSettings, httpRequestorSettings: HttpRequesto
 
     member this.IsCrawlerStateAvailable() =
         this.GetStatus() = CrawlerStateAddPageStatusResult.Success
-    
+
+    member this.Release() =
+        _pagesInProcess.Clear()
+        _pagesProcessed.Clear()
+        _md5pages.Clear()
+        _requestsPerPage.Clear()
+
     member this.AddPageToCrawl(webLink: WebLink) =
         if _stopRequested then  
             CrawlerStateAddPageStatusResult.Success

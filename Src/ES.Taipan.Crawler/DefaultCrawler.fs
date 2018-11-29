@@ -128,6 +128,7 @@ type DefaultCrawler(settings: CrawlerSettings, webRequestor: IWebPageRequestor, 
             _stateController.ReleaseStopIfNecessary()
             _stateController.UnlockPause()
             _processCompleted.Trigger(this)
+            _crawlerState.Release()
                         
             if _stateController.IsStopped then
                 _serviceMetrics.AddMetric("Status", "Stopped")
