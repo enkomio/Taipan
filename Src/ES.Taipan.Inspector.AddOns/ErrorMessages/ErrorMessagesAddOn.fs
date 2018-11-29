@@ -23,7 +23,18 @@ type ErrorMessagesAddOn() as this =
                     EntryPoint = EntryPoint.Other "Page Content"  
                 )
         securityIssue.Transactions.Add(webRequest, webResponse)
-        securityIssue                    
+        securityIssue 
+        
+    let checkForJasperException(html: String, securityIssue: SecurityIssue) =
+        if Regex.IsMatch(html, "JasperException - Unable to compile class for JSP", RegexOptions.Singleline) then            
+            let rxMatch = Regex.Match(html, "An error occurred at line: \\[[0-9]+\\] in the generated java file: \\[(.+?)\\]")
+            if rxMatch.Success then
+                securityIssue.Details.Properties.Add("Error", rxMatch.Groups.[0].Value.Trim())
+                let fullPath = rxMatch.Groups.[1].Value.Trim()
+                securityIssue.Details.Properties.Add("Java file", fullPath)
+                        
+            securityIssue.Note <- "Jasper exception error"                        
+            this.Context.Value.AddSecurityIssue(securityIssue)
 
     let checkSymfonyException(html: String, securityIssue: SecurityIssue) =
         if Regex.IsMatch(html, "Symfony.Component.HttpKernel.Exception.NotFoundHttpException", RegexOptions.Singleline) then            
@@ -133,3 +144,4 @@ type ErrorMessagesAddOn() as this =
             checkDotNetErrors(html, securityIssue)
             checkApacheTomcatErrors(html, securityIssue)
             checkJBossErrors(html, securityIssue)
+            checkForJasperException(html, securityIssue)
