@@ -196,7 +196,8 @@ let notInvasive() =
     template.CrawlerSettings.ActivateAllAddOns <- true
     template.CrawlerSettings.ReCrawlPages <- false
     template.CrawlerSettings.SubmitPost <- false
-    
+    template.CrawlerSettings.MutateWebLinks <- false
+
     // disable the Crawler parser
     template.CrawlerSettings.ActivateAllAddOns <- false
     template.CrawlerSettings.AddOnIdsToActivate.Clear()
