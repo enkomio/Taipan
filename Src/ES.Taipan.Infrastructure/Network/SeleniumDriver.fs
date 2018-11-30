@@ -126,7 +126,7 @@ type SeleniumDriver(logProvider: ILogProvider) =
             ub.Path <- String.Empty
             ub.Query <- String.Empty
             let initialUri = new Uri(ub.Uri, Guid.NewGuid().ToString("N"))
-            _driver.Value.Url <- initialUri.AbsoluteUri
+            _driver.Value.Url <- initialUri.AbsoluteUri    
             
     let _chrome = Path.Combine(getChromePath(), getChromeExecName())
 
@@ -183,7 +183,6 @@ type SeleniumDriver(logProvider: ILogProvider) =
             _driver.Value.Quit()
 
     member this.ExecuteScript(httpRequest: HttpRequest, scriptSrc: String, args: Object) =
-        let a = GC.GetTotalMemory(true)
         lock _syncRoot (fun () ->
             let mutable result: Dictionary<String, Object> option = None
             let urlData = Uri.UnescapeDataString(httpRequest.Source.Value.DocumentHtml)
@@ -235,7 +234,7 @@ type SeleniumDriver(logProvider: ILogProvider) =
                         let msg = logEntry.Message
                         _log?ConsoleLog(level, msg)
                     )   
-
+                    
                     // verify if page has full loaded by checking the existence of result variable
                     let mutable executionCompleted = false
                     while not executionCompleted do
@@ -253,6 +252,8 @@ type SeleniumDriver(logProvider: ILogProvider) =
 
                             // some unknow error :\
                             result.Value.["error"] <- "Unknow error"
+                            result.Value.["html"] <- String.Empty
+                            result.Value.["output"] <- new Dictionary<String, Object>()
                             executionCompleted <- true
                         with 
                             | :? UnhandledAlertException as e ->
@@ -276,10 +277,7 @@ type SeleniumDriver(logProvider: ILogProvider) =
                     // save a screenshot if specified
                     if this.TakeScreenShot then
                         let screenshot = _driver.Value.GetScreenshot()
-                        let filename = Guid.NewGuid().ToString("N")
-                        screenshot.SaveAsFile(filename, OpenQA.Selenium.ScreenshotImageFormat.Gif)
-                        result.Value.["gif"] <- File.ReadAllBytes(filename)
-                        File.Delete(filename)
+                        result.Value.["gif"] <- screenshot.AsByteArray
 
                     // add cookies
                     let cookies = new List<System.Net.Cookie>()
@@ -299,7 +297,6 @@ type SeleniumDriver(logProvider: ILogProvider) =
             with _ as ex -> 
                 _log?Exception(ex.Message, ex.StackTrace)
 
-            Console.WriteLine("Used memory: {0}", GC.GetTotalMemory(true) - a)
             result
         )        
         
