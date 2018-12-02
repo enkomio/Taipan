@@ -160,7 +160,6 @@
     <Compile Include="Network\HeuristicPageNotFoundIdentifier.fs" />
     <Compile Include="Network\DefaultWebPageRequestor.fs" />
     <Compile Include="Network\CacheableWebPageRequestor.fs" />
-    <Compile Include="Network\WebProxy.fs" />
     <Compile Include="Network\WebUtility.fs" />
     <Content Include="Network\Javascript\SendRequest.js">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>

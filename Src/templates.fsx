@@ -63,7 +63,7 @@ let createTemplate(name: String, guid: String) =
 
     // crawler settings 
     defaultProfile.CrawlerSettings.ReCrawlPages <- true
-    defaultProfile.CrawlerSettings.MaxNumOfRequestsToTheSamePage <- 100
+    defaultProfile.CrawlerSettings.MaxNumOfRequestsToTheSamePage <- 5
     defaultProfile.CrawlerSettings.MaxNumberOfPagesToCrawl <- 2000
     defaultProfile.CrawlerSettings.Scope <- NavigationScope.EnteredPathAndBelow            
     defaultProfile.CrawlerSettings.ActivateAllAddOns <- true

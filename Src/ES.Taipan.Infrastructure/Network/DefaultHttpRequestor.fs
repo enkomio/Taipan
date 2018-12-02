@@ -19,6 +19,7 @@ open System.Timers
 
 type DefaultHttpRequestor(defaultSettings: HttpRequestorSettings, logProvider: ILogProvider) as this =
     let _requestGateTimeout = 1000 * 60 * 60 * 10 // 10 minutes
+    let _authenticationLock = new Object()
     let _maxParallelism = 100
     let _requestGate = new RequestGate(_maxParallelism)
     let _certificationValidate = new Event<CertificationValidateEventArgs>()
@@ -48,10 +49,14 @@ type DefaultHttpRequestor(defaultSettings: HttpRequestorSettings, logProvider: I
             let headerName = kv.Key
             let headerValue = kv.Value
             let headerAlredyPresent =
-                httpRequest.Headers |> Seq.toList
+                httpRequest.Headers 
+                |> Seq.toList
                 |> List.exists (fun hdr -> hdr.Name.Equals(headerName, StringComparison.Ordinal))
             if not headerAlredyPresent then
-                httpRequest.Headers.Add(new HttpHeader(Name=headerName, Value=headerValue))
+                if headerName.Equals("cookie", StringComparison.OrdinalIgnoreCase) then 
+                    httpRequest.Cookies.AddRange(HttpUtility.parseCookieHeaderValue(headerValue, httpRequest.Uri.Host))
+                else 
+                    httpRequest.Headers.Add(new HttpHeader(Name=headerName, Value=headerValue))
 
         // add cookies
         for kv in _settings.AdditionalCookies do
@@ -123,8 +128,11 @@ type DefaultHttpRequestor(defaultSettings: HttpRequestorSettings, logProvider: I
             match _seleniumDriver with
             | Some _ -> ()
             | None ->
+                if _settings.ProxyUrl.IsSome then
+                    let proxyUri = new Uri(_settings.ProxyUrl.Value)
+                    _seleniumDriver.Value.ProxyUrl <- Some(String.Format("{0}:{1}", proxyUri.Host, proxyUri.Port))
+
                 _seleniumDriver <- Some(new SeleniumDriver(logProvider))
-                _seleniumDriver.Value.ProxyUrl <- _settings.ProxyUrl
                 _seleniumDriver.Value.Initialize()
         )
 
@@ -134,15 +142,6 @@ type DefaultHttpRequestor(defaultSettings: HttpRequestorSettings, logProvider: I
 
     let rec sendJourneyTransaction (path: JourneyPath) (transaction: JourneyTransaction) : HttpResponse option =
         let httpRequest = transaction.BuildBaseHttpRequest()
-
-        // add to setting also the headers of the template request
-        httpRequest.Headers
-        |> Seq.filter(fun hdr -> 
-            ["Content"] 
-            |> List.exists(fun pattern -> hdr.Name.StartsWith(pattern, StringComparison.OrdinalIgnoreCase)) 
-            |> not
-        )
-        |> Seq.iter(fun hdr -> _settings.AdditionalHttpHeaders.[hdr.Name] <- hdr.Value)
 
         // manage parameters
         let data = new StringBuilder()
@@ -184,6 +183,13 @@ type DefaultHttpRequestor(defaultSettings: HttpRequestorSettings, logProvider: I
                 this.SessionState.Value.RetrieveSessionParametersFromResponse(httpRequest, httpResponse.Value)
             
         httpResponse
+
+    let isStatusCodeValidForauthenticationCheck(httpResponse: HttpResponse option) =
+        match httpResponse with
+        | None -> false
+        | Some _ ->
+            let sc = int httpResponse.Value.StatusCode
+            sc >= 200 && sc < 400
 
     let followPathNavigation() =        
         match _settings.Journey.Paths |> Seq.tryHead with
@@ -307,7 +313,7 @@ type DefaultHttpRequestor(defaultSettings: HttpRequestorSettings, logProvider: I
 
                 // if the request via Selenium fails try the standard way
                 if (!httpResponseResult).IsNone then
-                    let httpWebRequest = HttpRequestorUtility.createHttpWebRequest(_settings, httpRequest)
+                    let httpWebRequest = HttpRequestorUtility.createHttpWebRequest(_settings, httpRequest)                    
                     use httpWebResponse = httpWebRequest.GetResponse() :?> HttpWebResponse
 
                     // convert the http response to my object
@@ -391,7 +397,7 @@ type DefaultHttpRequestor(defaultSettings: HttpRequestorSettings, logProvider: I
                     httpResponse.Headers 
                     |> Seq.filter(fun hdr -> hdr.Name.Equals("set-cookie", StringComparison.Ordinal))
                     |> Seq.iter(fun hdr ->
-                        let cookies = HttpRequestorUtility.parseCookieHeaderValue(hdr.Value, httpResponse.ResponseUri.Value.Host)
+                        let cookies = HttpUtility.parseCookieHeaderValue(hdr.Value, httpResponse.ResponseUri.Value.Host)
                         this.SessionState.Value.AddCookieToSession(httpRequest, cookies)
                     )
 
@@ -414,36 +420,38 @@ type DefaultHttpRequestor(defaultSettings: HttpRequestorSettings, logProvider: I
 
     member private this.VerifyIfIsNeededToAuthenticate(httpRequest: HttpRequest, httpResponse: HttpResponse option) =
         if not _skipAuthenticationProcess && _settings.Authentication.Enabled then
-            let savedValue = _skipAuthenticationProcess
-            _skipAuthenticationProcess <- true
+            lock _authenticationLock (fun () ->            
+                let savedValue = _skipAuthenticationProcess
+                _skipAuthenticationProcess <- true
 
-            let httpResponseResult = ref httpResponse                          
-            match _settings.Authentication.Type with
-            | HttpDigest -> 
-                if httpResponse.IsSome && _httpDigestInfo.IsNone && httpResponse.Value.StatusCode = HttpStatusCode.Unauthorized then
-                    // retrieve the Auth digest info and re-send the request with the correct token
-                    _httpDigestInfo <- HttpDigestAuthenticationUtility.retrieveAuthenticationInfo(httpResponse.Value)
-                    httpResponseResult := this.SendRequestDirect(httpRequest)
+                let httpResponseResult = ref httpResponse                          
+                match _settings.Authentication.Type with
+                | HttpDigest -> 
+                    if httpResponse.IsSome && _httpDigestInfo.IsNone && httpResponse.Value.StatusCode = HttpStatusCode.Unauthorized then
+                        // retrieve the Auth digest info and re-send the request with the correct token
+                        _httpDigestInfo <- HttpDigestAuthenticationUtility.retrieveAuthenticationInfo(httpResponse.Value)
+                        httpResponseResult := this.SendRequestDirect(httpRequest)
       
-            | WebForm when httpResponse.IsSome && httpResponse.Value.StatusCode = HttpStatusCode.OK ->
-                match this.SessionState with
-                | Some _ ->
-                    if not(this.AuthenticationSuccessful([|httpResponse.Value|])) then                   
-                        // a specific logout condition was found, need to re-authenticate by following the Authentication Journey path
-                        if this.AuthenticationSuccessful(followPathNavigation()) then
-                            // finally re-do the request in an authentication context
-                            httpResponseResult := this.SendRequestDirect(httpRequest)
-                        else
-                            _logger.AuthenticationFailed()
+                | WebForm when isStatusCodeValidForauthenticationCheck(httpResponse) ->
+                    match this.SessionState with
+                    | Some _ ->
+                        if not(this.AuthenticationSuccessful([|httpResponse.Value|])) then                   
+                            // a specific logout condition was found, need to re-authenticate by following the Authentication Journey path
+                            if this.AuthenticationSuccessful(followPathNavigation()) then
+                                // finally re-do the request in an authentication context
+                                httpResponseResult := this.SendRequestDirect(httpRequest)
+                            else
+                                _logger.AuthenticationFailed()
 
-                | None -> _logger.SessionStateNullOnWebAuth()
-            | _ -> 
-                // no authentication process needed
-                ()
+                    | None -> _logger.SessionStateNullOnWebAuth()
+                | _ -> 
+                    // no authentication process needed
+                    ()
 
-            // restore value
-            _skipAuthenticationProcess <- savedValue
-            !httpResponseResult
+                // restore value
+                _skipAuthenticationProcess <- savedValue
+                !httpResponseResult
+            )
         
         else
             httpResponse

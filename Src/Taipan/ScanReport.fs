@@ -1,13 +1,13 @@
 ﻿namespace Taipan
 
-open ES.Taipan.Application
 open System
+open System.Reflection
 open System.Linq
 open System.IO
-open Newtonsoft.Json
-open ES.Taipan.Inspector
 open System.Collections.Generic
 open System.Text
+open Newtonsoft.Json
+open ES.Taipan.Application
 
 type ReportFormat =
     | Json
@@ -94,7 +94,11 @@ type ScanReport(scanResult: ScanResult) =
         reportContent.ToString()
 
     member this.Save(reportFilename: String option) =
-        let defaultName = String.Format("{0}_{1}{2}", scanResult.Scan.Context.StartRequest.HttpRequest.Uri.Host, Guid.NewGuid().ToString("N"), this.Type.ToString())
+        let baseName = String.Format("{0}_{1}{2}", scanResult.Scan.Context.StartRequest.HttpRequest.Uri.Host, Guid.NewGuid().ToString("N"), this.Type.ToString())
+        let reportDirectory = Path.Combine(Path.GetDirectoryName(Assembly.GetEntryAssembly().Location), "Report")
+        Directory.CreateDirectory(reportDirectory) |> ignore
+        let defaultName = Path.Combine(reportDirectory, baseName)
+
         let filename = defaultArg reportFilename defaultName
 
         let reportContent =

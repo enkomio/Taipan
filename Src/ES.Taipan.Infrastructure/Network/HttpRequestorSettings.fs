@@ -37,6 +37,10 @@ type HttpRequestorSettings() =
 
     /// This property specify if the Javascript engine should be used to send requests
     member val UseJavascriptEngineForRequest = true with get, set
+
+    member this.PermanentDisableAuthentication() =
+        this.Authentication.Enabled <- false
+        this.Journey.Paths.Clear()
     
     member this.ToXml() =
         let additionalHttpHeaders = new XElement(x"AdditionalHttpHeaders")
@@ -54,7 +58,8 @@ type HttpRequestorSettings() =
               new XElement(x"AllowAutoRedirect", this.AllowAutoRedirect),
               new XElement(x"UseJavascriptEngineForRequest", this.UseJavascriptEngineForRequest),
               new XElement(x"Proxy",
-                if this.ProxyUrl.IsSome && Uri.IsWellFormedUriString(this.ProxyUrl.Value, UriKind.Absolute) then this.ProxyUrl.Value
+                if this.ProxyUrl.IsSome
+                then this.ProxyUrl.Value
                 else String.Empty
               ),
               new XElement(x"StaticExtensions", String.Join(",", this.StaticExtensions)),
@@ -82,7 +87,8 @@ type HttpRequestorSettings() =
 
         let proxyElement = root.Element(x"Proxy")
         this.ProxyUrl <-
-            if proxyElement <> null then Some <| proxyElement.Value.Trim()
+            if proxyElement <> null && not(String.IsNullOrWhiteSpace(proxyElement.Value.Trim())) 
+            then Some <| proxyElement.Value.Trim()
             else None
 
         root.Element(x"AdditionalHttpHeaders").Elements(x"HttpHeader")

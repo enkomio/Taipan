@@ -1,6 +1,7 @@
 ﻿namespace ES.Taipan.Infrastructure.Network
 
 open System
+open System.Net
 open System.Text
 open System.IO
 open System.Collections.Generic
@@ -60,7 +61,12 @@ type JourneyTransaction() =
 
         // add headers
         this.TemplateRequest.Headers
-        |> List.iter(fun (name, value) -> httpRequest.Headers.Add(new HttpHeader(Name = name, Value = value)))
+        |> List.iter(fun (name, value) -> 
+            if name.Equals("cookie", StringComparison.OrdinalIgnoreCase) then                 
+                httpRequest.Cookies.AddRange(HttpUtility.parseCookieHeaderValue(value, httpRequest.Uri.Host))
+            else 
+                httpRequest.Headers.Add(new HttpHeader(Name = name, Value = value))
+        )
         
         httpRequest
         

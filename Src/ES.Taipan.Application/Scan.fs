@@ -365,7 +365,12 @@ type Scan(scanContext: ScanContext, logProvider: ILogProvider) as this =
                 // this is a very dirty trick. By setting the authentication 
                 // to Enabled and the type to NoAuthentication,
                 // I avoid to follow the Journey path for this specific case.
-                instantiateCrawlers([new AuthenticationInfo(Enabled = true); scanContext.Template.HttpRequestorSettings.Authentication])
+                instantiateCrawlers([
+                    scanContext.Template.HttpRequestorSettings.Authentication
+                    
+                    // TODO, until the plugin for differential analysis isn't readym this settings is not useful
+                    // new AuthenticationInfo(Enabled = true)
+                ])
             else
                 instantiateCrawlers([new AuthenticationInfo()])
 
@@ -395,6 +400,7 @@ type Scan(scanContext: ScanContext, logProvider: ILogProvider) as this =
             // try to get the IP and verify if the host is reachable
             ip <- Some(Dns.GetHostAddresses(uri.Host) |> Seq.head)
             let webRequestor = _container.Value.Resolve<IWebPageRequestor>()            
+            webRequestor.HttpRequestor.Settings.PermanentDisableAuthentication()
             let mutable webResponse = webRequestor.RequestInitialWebPage(new WebRequest(uri))
 
             // check for redirect

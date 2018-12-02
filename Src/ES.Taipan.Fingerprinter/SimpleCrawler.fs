@@ -32,6 +32,9 @@ module internal SimpleCrawler =
     ]
     
     let crawl startUrl limit (httpRequestor: IHttpRequestor) =
+        // disable Auth since we don't need it for fingerpriting
+        httpRequestor.Settings.PermanentDisableAuthentication()
+        
         // Concurrent queue for saving collected urls.
         let q = ConcurrentQueue<string>()
     

@@ -10,6 +10,7 @@ open ES.Taipan.Infrastructure.Service
 (*
 This class is used in order to manage multiple Tasks in order to be Pause and/or Stopped 
 in a coherent way. The task execyted through the manager, could be paused or stopped. 
+When Pause/Stop is called, it is guaranteed that all the managed tasks have paused/stopped.
 *)
 
 type TaskManager(statusToMonitor: ServiceStateController, releasePauseStatusMonitor: Boolean, releaseStopStatusMonitor: Boolean, concurrentLimit: Int32) as this =
