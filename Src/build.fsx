@@ -156,24 +156,6 @@ Target "GenerateAddOnData" (fun _ ->
         reraise()
 )
 
-Target "CopyBrowserBinaries" (fun _ ->
-    ["Taipan"; "EndToEndTests"]
-    |> List.iter(fun directoryName ->
-         // copy chrome
-        ensureDirectory (buildDir + "/" + directoryName + "/ChromeBins/Windows32")
-        Unzip  (buildDir + "/" + directoryName + "/ChromeBins/Windows32") ("../Bins/chrome-win32.zip")
-        
-        ensureDirectory (buildDir + "/" + directoryName + "/ChromeBins/Linux64")
-        Unzip  (buildDir + "/" + directoryName + "/ChromeBins/Linux64") ("../Bins/chrome-linux64.zip")
-
-        // copy ChromeDriver and clean build
-        ensureDirectory (buildDir + "/" + directoryName + "/driver")
-        FileUtils.rm (buildDir + "/" + directoryName + "/chromedriver")
-        FileUtils.rm (buildDir + "/" + directoryName + "/chromedriver.exe")
-        FileUtils.cp_r "../Bins/driver/" (buildDir + "/" + directoryName + "/driver")    
-    )
-)
-
 Target "EndToEndTests" (fun _ ->
     if not isLocal then
         Console.WriteLine("[!] Start End To End tests")
@@ -206,7 +188,6 @@ Target "All" DoNothing
   ==> "Compile"    
   ==> "GenerateTemplates"  
   ==> "GenerateAddOnData"
-  ==> "CopyBrowserBinaries"
   ==> "EndToEndTests"
   ==> "Release"
   ==> "All"
