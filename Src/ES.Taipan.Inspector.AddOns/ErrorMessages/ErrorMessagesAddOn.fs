@@ -79,12 +79,30 @@ type ErrorMessagesAddOn() as this =
     let checkDotNetErrors(html: String, securityIssue: SecurityIssue) =  
         let errors = 
             [
-                "<b> Description: </b>"; 
+                "<b> Description: </b>"
                 "An exception occurred while processing your request. Additionally, another exception occurred while executing the custom error page for the first exception. The request has been terminated."
             ]
         if errors |> List.forall (html.Contains) then            
             securityIssue.Note <- "ASP.NET error"            
             securityIssue.Details.Properties.Add("Error", errors.[0])
+            this.Context.Value.AddSecurityIssue(securityIssue) 
+
+    let checkIISErrors(html: String, securityIssue: SecurityIssue) =  
+        let errors = 
+            [
+                "Failed Request Tracing Log Directory"
+                "Detailed Error Information"
+                "Requested URL"
+                "Physical Path"
+            ]
+        if errors |> List.forall (html.Contains) then            
+            securityIssue.Note <- "IIS error"            
+            securityIssue.Details.Properties.Add("Error", errors.[0])
+
+            let rxMatch = Regex.Match(html, "<tr><th>Physical Path</th><td>(.+?)</td></tr> ", RegexOptions.Singleline)
+            if rxMatch.Success then
+                securityIssue.Details.Properties.Add("Physical Path", rxMatch.Groups.[0].Value.Trim())
+
             this.Context.Value.AddSecurityIssue(securityIssue) 
 
     let checkApacheTomcatErrors(html: String, securityIssue: SecurityIssue) =  
@@ -145,3 +163,4 @@ type ErrorMessagesAddOn() as this =
             checkApacheTomcatErrors(html, securityIssue)
             checkJBossErrors(html, securityIssue)
             checkForJasperException(html, securityIssue)
+            checkIISErrors(html, securityIssue)
