@@ -93,9 +93,9 @@ type HeuristicPageNotFoundIdentifier(httpRequestor: IHttpRequestor, percentageOf
             
         for i=0 to 3 do
             yield! [
-                extension
-                extension + ".ini"
                 Guid.NewGuid().ToString("N")
+                Guid.NewGuid().ToString("N") + ".ini"
+                Guid.NewGuid().ToString("N") + ".txt"                
                 Guid.NewGuid().ToString("N") + extension
                 Guid.NewGuid().ToString("N") + "/"
                 "%" + Guid.NewGuid().ToString("N") + "%"                
