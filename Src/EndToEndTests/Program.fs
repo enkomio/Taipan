@@ -1,4 +1,6 @@
 ﻿open System
+open System.Net
+open System.IO
 open System.Reflection
 open ES.Taipan.Crawler
 open ES.Taipan.Discoverer
@@ -7,6 +9,7 @@ open Microsoft.FSharp.Quotations
 open Microsoft.FSharp.Quotations.Patterns
 open Microsoft.FSharp.Quotations.DerivedPatterns
 open FSharp.Quotations.Evaluator
+open System.IO.Compression
 
 let allTests : Expr<Uri -> unit> list = [
     
@@ -115,6 +118,39 @@ let allTests : Expr<Uri -> unit> list = [
     
 ]
 
+let downloadFile(url: String) =
+    let webClient = new WebClient()
+    let tempFilename = Path.Combine(Path.GetTempPath(), Path.GetTempFileName())
+    webClient.DownloadFile(url, tempFilename)
+    tempFilename
+
+let extractZipFileToFolder(zipFile: String, destFolder: String) =
+    Directory.CreateDirectory(destFolder) |> ignore
+    ZipFile.ExtractToDirectory(zipFile, destFolder)
+
+let downloadChromeBins(directory: String) =
+        let windZip = downloadFile("https://s3.eu-west-2.amazonaws.com/taipansec/chrome-win32.zip")
+        let chromeWin32Bins = Path.Combine(directory, "ChromeBins", "Windows32")
+        Directory.CreateDirectory(chromeWin32Bins) |> ignore 
+        extractZipFileToFolder(windZip, chromeWin32Bins)
+        File.Delete(windZip)
+
+let downloadChromeDriver(directory: String) =
+        let driveZip =  downloadFile("https://s3.eu-west-2.amazonaws.com/taipansec/driver.zip")
+        Directory.CreateDirectory(directory) |> ignore
+        extractZipFileToFolder(driveZip, directory)
+        File.Delete(driveZip)
+
+let verifyChromBinaryInstallation() =
+    let curDir = Path.GetDirectoryName(Assembly.GetEntryAssembly().Location)
+    let chromeWin32Bins = Path.Combine(curDir, "ChromeBins")
+    let driverFolder = Path.Combine(curDir, "driver")
+
+    if not(Directory.Exists(chromeWin32Bins)) || not(Directory.Exists(driverFolder)) then
+        Console.WriteLine("Download Chrome Windows binary and driver")
+        downloadChromeBins(curDir)
+        downloadChromeDriver(curDir)
+
 let runTest (grovieraUri: Uri) (testExpr: Expr<Uri -> unit>) =    
     match testExpr with
     | Lambda (_, c) -> 
@@ -134,7 +170,8 @@ let runTest (grovieraUri: Uri) (testExpr: Expr<Uri -> unit>) =
     
 [<EntryPoint>]
 let main argv = 
-    let grovieraUri = Utility.runGrovieraServer()
+    verifyChromBinaryInstallation()    
+    let grovieraUri = Utility.runGrovieraServer()    
     let run = runTest grovieraUri 
     allTests |> List.iter(run)
     Utility.shutDownServer()
