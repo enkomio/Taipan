@@ -22,7 +22,7 @@ type WebFormBruteforcerAddOn() as this =
     inherit BaseStatelessAddOn("Web Form Bruteforcer AddOn", string WebFormBruteforcerAddOn.Id, 1)    
     let _progressIndexes = new Dictionary<String, String * Int32 * Int32 * Int32>()
 
-    let _numOfConcurrentTasks = 5
+    let _numOfConcurrentTasks = 10
     let _analyzedPages = new HashSet<String>()
     let _scanLock = new Object()
     let _testRequests = new BlockingCollection<TestRequest>()
@@ -62,9 +62,9 @@ type WebFormBruteforcerAddOn() as this =
         lock _progressIndexes (fun _ ->
             if _progressIndexes.ContainsKey(index) then
                 let (username, currentIndex, totalCount, lastPercentage) = _progressIndexes.[index]
-                let percentage = (float currentIndex / float totalCount) * 100. |> int32
+                let percentage = System.Math.Round((float currentIndex / float totalCount) * 100.) |> int32
                 _progressIndexes.[index] <- (username, currentIndex+1, totalCount, lastPercentage)
-
+                
                 if forcePrint || lastPercentage < percentage && percentage % 5 = 0 then
                     _progressIndexes.[index] <- (username, currentIndex, totalCount, percentage)    
                     _logger?UpdateStatus(index, username, percentage, currentIndex, totalCount)
@@ -116,8 +116,12 @@ type WebFormBruteforcerAddOn() as this =
         | Some tm -> tm
 
     let bruteforcePasswordList(testRequest: TestRequest, username: String, usernameInputs: String list, passwordInputs: String list, resultVerifier: WebResponse -> Boolean, serviceStateController: ServiceStateController) =        
+        // add all password and set the queue to completed
+        let queue = new BlockingCollection<String>()        
+        _passwords |> List.iter(queue.Add)
+        queue.CompleteAdding()
+
         // run in parallels all the instantiated workers
-        let queue = new BlockingCollection<String>()
         let tasks = new List<Task>()
         let taskManager = getTaskManager(serviceStateController)
         let passwordFound = ref 0
@@ -152,11 +156,7 @@ type WebFormBruteforcerAddOn() as this =
                                     Interlocked.Increment(passwordFound) |> ignore
                 , true) |> tasks.Add
 
-        // add all password and set the queue to completed
-        _passwords |> List.iter(queue.Add)
-        queue.CompleteAdding()
-
-        // wait for all task completed
+        // wait for all task completed        
         let counter = ref 0
         while not(Task.WaitAll(tasks |> Seq.toArray, 1000)) do
             incr counter

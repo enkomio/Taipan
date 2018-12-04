@@ -67,7 +67,7 @@ type HttpBruteforcerAddOn() as this =
         lock _progressIndexes (fun _ ->
             if _progressIndexes.ContainsKey(index) then
                 let (username, currentIndex, totalCount, lastPercentage) = _progressIndexes.[index]
-                let percentage = (float currentIndex / float totalCount) * 100. |> int32
+                let percentage = System.Math.Round((float currentIndex / float totalCount) * 100.) |> int32
                 _progressIndexes.[index] <- (username, currentIndex+1, totalCount, lastPercentage)
 
                 if lastPercentage < percentage && percentage % 5 = 0 then
