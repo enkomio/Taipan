@@ -239,7 +239,9 @@ type DefaultCrawler(settings: CrawlerSettings, webRequestor: IWebPageRequestor, 
         messageBroker.Subscribe<ExtractWebLinksMessage>(handleExtractWebLinksMessage)
         messageBroker.Subscribe<GetSettingsMessage>(handleGetSettings)
         messageBroker.Subscribe<RequestMetricsMessage>(handleRequestMetricsMessage)
+        
         logProvider.AddLogSourceToLoggers(_logger)
+        _logger.CrawlerScope(settings.Scope)
 
         // load only enabled addOn
         addOnManager.LoadAddOns()        

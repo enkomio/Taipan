@@ -29,7 +29,7 @@ type HttpBruteforcerAddOn() as this =
         log "HttpBruteforcerAddOn"
         |> info "BruteforceUsername" "Start to identify password for username: {0}"
         |> info "UpdateStatus" "Bruteforce of {0}, username {1} at {2}% [{3}/{4}]"
-        |> info "TestForCombination" "Test for combination on directory: {0}"
+        |> info "TestForCombination" "Test for username/password combination on directory: {0}"
         |> build
 
     let reportSecurityIssue(username: String, password: String, webRequest: WebRequest, webResponse: WebResponse) =  
@@ -60,19 +60,19 @@ type HttpBruteforcerAddOn() as this =
         let authHeader = new HttpHeader(Name="Authorization", Value=String.Format("Basic {0}", toAsciiBase64(token)))
         request.Headers.Add(authHeader)
 
-    let initLogStatus(directory: String, username: String, totalReq: Int32) =
-        lock _progressIndexes (fun _ -> _progressIndexes.[directory] <- (username, 0, totalReq, 0))
+    let initLogStatus(index: String, username: String, totalReq: Int32) =
+        lock _progressIndexes (fun _ -> _progressIndexes.[index] <- (username, 0, totalReq, 0))
 
-    let logStatus(directory: String) =
+    let logStatus(index: String) =
         lock _progressIndexes (fun _ ->
-            if _progressIndexes.ContainsKey(directory) then
-                let (username, currentIndex, totalCount, lastPercentage) = _progressIndexes.[directory]
+            if _progressIndexes.ContainsKey(index) then
+                let (username, currentIndex, totalCount, lastPercentage) = _progressIndexes.[index]
                 let percentage = (float currentIndex / float totalCount) * 100. |> int32
-                _progressIndexes.[directory] <- (username, currentIndex+1, totalCount, lastPercentage)
+                _progressIndexes.[index] <- (username, currentIndex+1, totalCount, lastPercentage)
 
                 if lastPercentage < percentage && percentage % 5 = 0 then
-                    _progressIndexes.[directory] <- (username, currentIndex, totalCount, percentage)    
-                    _logger?UpdateStatus(directory, username, percentage, currentIndex, totalCount)
+                    _progressIndexes.[index] <- (username, currentIndex, totalCount, percentage)    
+                    _logger?UpdateStatus(index, username, percentage, currentIndex, totalCount)
         )   
 
     let testUsernameAndPassword(username: String, password: String, testRequest: TestRequest, serviceStateController: ServiceStateController) =

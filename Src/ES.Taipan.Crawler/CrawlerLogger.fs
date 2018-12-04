@@ -89,3 +89,7 @@ type CrawlerLogger() =
     [<Log(13, Message = "Start re-crawling", Level = LogLevel.Informational)>]
     member this.StartReCrawling() =
         this.WriteLog(13, [||])
+
+    [<Log(14, Message = "Crawler navigation scope: {0}", Level = LogLevel.Informational)>]
+    member this.CrawlerScope(scope: NavigationScope) =
+        this.WriteLog(14, [|scope|])

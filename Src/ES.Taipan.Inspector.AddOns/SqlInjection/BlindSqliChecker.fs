@@ -5,7 +5,7 @@ open System.Collections.Generic
 open ES.Fslog
 open ES.Taipan.Inspector
 open ES.Taipan.Infrastructure.Network
-open DiffLib
+open ES.Taipan.Infrastructure.Text
 
 type BlindSqliChecker(webRequestor: IWebPageRequestor, logProvider: ILogProvider) =
     
@@ -47,12 +47,7 @@ type BlindSqliChecker(webRequestor: IWebPageRequestor, logProvider: ILogProvider
         let webRequest = new WebRequest(probeRequest.BuildHttpRequest(true))
         let webResponse = webRequestor.RequestWebPage(webRequest)
         parameter.AlterValue(originalValue)  
-        (webRequest, webResponse)       
-        
-    let computeDifferenceRatio(text1: String, text2: String) =        
-        let sections = Diff.CalculateSections(text1.ToCharArray(), text2.ToCharArray()) |> Seq.toList
-        let matchingSections = sections |> List.filter(fun section -> section.IsMatch)
-        float matchingSections.Length / float sections.Length
+        (webRequest, webResponse)  
 
     let testProbeRequest(parameter: ProbeParameter, trueQuery: String, falseQuery: String, probeRequest: ProbeRequest, ratio: Double) =
         let mutable result: AttackDetails option = None
@@ -63,7 +58,7 @@ type BlindSqliChecker(webRequestor: IWebPageRequestor, logProvider: ILogProvider
         // verify result
         if box(trueWebResponse.HttpResponse) <> null && box(falseWebResponse.HttpResponse) <> null then
             probeRequest.WebResponse <- Some trueWebResponse
-            let attackRatio = computeDifferenceRatio(trueWebResponse.HttpResponse.Html, falseWebResponse.HttpResponse.Html)
+            let attackRatio = TextUtility.computeDifferenceRatio(trueWebResponse.HttpResponse.Html, falseWebResponse.HttpResponse.Html)
 
             if attackRatio < ratio then
                 result <- Some {
@@ -94,7 +89,7 @@ type BlindSqliChecker(webRequestor: IWebPageRequestor, logProvider: ILogProvider
         parameter.AlterValue(originalValue)  
         let alteredHtml = webResponse.HttpResponse.Html
 
-        let ratio = computeDifferenceRatio(originalHtml, alteredHtml)
+        let ratio = TextUtility.computeDifferenceRatio(originalHtml, alteredHtml)
         ratio >= RatioThreshold
                 
     member this.VulnName 
@@ -112,7 +107,7 @@ type BlindSqliChecker(webRequestor: IWebPageRequestor, logProvider: ILogProvider
         let newResponse = webRequestor.RequestWebPage(probeRequest.TestRequest.WebRequest)
         if box(newResponse.HttpResponse) <> null && not(String.IsNullOrEmpty(newResponse.HttpResponse.Html)) then            
             // verify that the page is stable
-            let ratio = computeDifferenceRatio(probeRequest.TestRequest.WebResponse.HttpResponse.Html, newResponse.HttpResponse.Html)
+            let ratio = TextUtility.computeDifferenceRatio(probeRequest.TestRequest.WebResponse.HttpResponse.Html, newResponse.HttpResponse.Html)
 
             if ratio < RatioThreshold then
                 if parameter.Type = ProbeParameterType.DATA || parameter.Type = ProbeParameterType.QUERY

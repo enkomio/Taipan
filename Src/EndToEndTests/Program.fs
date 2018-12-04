@@ -97,6 +97,7 @@ let allTests : Expr<Uri -> unit> list = [
     <@ InspectorTests.``Avoid to raise a FP when encounter an email pattern with invalid TLD`` @>
     <@ InspectorTests.``RXSS on a user registration form with password and repassword check`` @>
     <@ InspectorTests.``HTTP Basic bruteforced page`` @>
+    <@ InspectorTests.``Web Form password only bruteforced page`` @>
     
     // Composed tests
     <@ ComposedTests.``Identify an hidden directory and discover a know web application`` @>
@@ -172,7 +173,7 @@ let runTest (grovieraUri: Uri) (testExpr: Expr<Uri -> unit>) =
 let main argv = 
     verifyChromBinaryInstallation()    
     let grovieraUri = Utility.runGrovieraServer()    
-    let run = runTest grovieraUri 
+    let run = runTest grovieraUri
     allTests |> List.iter(run)
     Utility.shutDownServer()
     0

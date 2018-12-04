@@ -46,7 +46,7 @@ let createTemplate(name: String, guid: String) =
     defaultProfile.ResourceDiscovererSettings.BlackListedWords.Add("Rate Limit Exceeded") |> ignore    
     defaultProfile.ResourceDiscovererSettings.ForbiddenDirectories.AddRange(
         [
-            "manual/"; "icons/"; "icon/"
+            "manual/"; "icons/"; "icon/"; "doc/"
         ])
     [
         ".tmp"; ".zip"; ".bak"
@@ -95,7 +95,7 @@ let createTemplate(name: String, guid: String) =
         ])
     defaultProfile.CrawlerSettings.BlacklistedPattern.AddRange(
         [
-            "/logout.[a-z]+"; "/manual/"
+            "/logout.[a-z]+"; "/manual/"; "doc/"
         ]
     )
 
@@ -281,16 +281,29 @@ let vulnerabilityScanner() =
     template
 
 let bruteforce() = 
-    let template = createTemplate("Http Auth Bruteforce", "876C650C-D864-4EDF-B3DC-901945CE49C8")        
-    template.Description <- "Perform an HTTP bruteforce if an authentication request is found"
+    let template = createTemplate("Auth Bruteforce", "876C650C-D864-4EDF-B3DC-901945CE49C8")        
+    template.Description <- "Perform an account bruteforce on HTTP or WebForm"
 
-    template.RunVulnerabilityScanner <- true    
+    template.RunVulnerabilityScanner <- true   
+    template.RunCrawler <- true
     template.VulnerabilityScannerSettings.ActivateAllAddOns <- false
     template.VulnerabilityScannerSettings.AddOnIdsToActivate.Clear()
     template.VulnerabilityScannerSettings.AddOnIdsToActivate.Add(HttpBruteforcer.HttpBruteforcerAddOn.Id)
+    template.VulnerabilityScannerSettings.AddOnIdsToActivate.Add(WebFormBruteforcer.WebFormBruteforcerAddOn.Id)
 
-    // disable Javascript for request
-    template.HttpRequestorSettings.UseJavascriptEngineForRequest <- false    
+    // disable Javascript for requests
+    template.HttpRequestorSettings.UseJavascriptEngineForRequest <- false 
+
+    // disable the Javascript Crawler parser
+    template.CrawlerSettings.ActivateAllAddOns <- false
+    template.CrawlerSettings.AddOnIdsToActivate.Clear()
+    template.CrawlerSettings.AddOnIdsToActivate.AddRange
+        ([
+            FormLinkScraper.AddOnId
+            HeaderRedirectLinkScraper.AddOnId
+            HyperLinkScraper.AddOnId
+            MetadataLinkScraper.AddOnId
+        ])
 
     template
 

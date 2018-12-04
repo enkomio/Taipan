@@ -166,14 +166,15 @@ let writeSqliData(buildDir: String) =
     Writer.writeAddOnData(sqliAddOn, sqliErrors, "Errors", buildDir)
 
 let writeUsernameAndPassword(buildDir: String) =
-    let bruteforceAddOn = new ES.Taipan.Inspector.AddOns.HttpBruteforcer.HttpBruteforcerAddOn()
+    let httpBruteforceAddOn = new ES.Taipan.Inspector.AddOns.HttpBruteforcer.HttpBruteforcerAddOn()
+    let webFormBruteforceAddOn = new ES.Taipan.Inspector.AddOns.WebFormBruteforcer.WebFormBruteforcerAddOn()
 
     // credit to: https://github.com/danielmiessler/SecLists/blob/master/Usernames/top-usernames-shortlist.txt
-    let usernames = new List<String>(["root"; "admin"; "test"; "guest"; "info"; "adm"; "mysql"; "user"; "administrator"])
-    Writer.writeAddOnData(bruteforceAddOn, usernames, "Usernames", buildDir)
+    Writer.writeAddOnData(httpBruteforceAddOn, new List<String>(["root"; "admin"; "test"; "guest"; "info"; "adm"; "mysql"; "user"; "administrator"]), "Usernames", buildDir)
+    Writer.writeAddOnData(webFormBruteforceAddOn, new List<String>(["root"; "admin"]), "Usernames", buildDir)
     
     // credit to: https://github.com/danielmiessler/SecLists/blob/master/Passwords/Common-Credentials/500-worst-passwords.txt
-    let passwords = new List<String>([
+    let passwordsSmall = new List<String>([
         "123456"; "password"; "12345678"; "1234"; "pussy"; "12345"; "dragon"; "qwerty"; "696969"; "mustang"; "letmein"; "baseball"; "master"; "michael"; 
         "football"; "shadow"; "monkey"; "abc123"; "pass"; "fuckme"; "6969"; "jordan"; "harley"; "ranger"; "iwantu"; "jennifer"; "hunter"; "fuck"; "2000"; 
         "test"; "batman"; "trustno1"; "thomas"; "tigger"; "robert"; "access"; "love"; "buster"; "1234567"; "soccer"; "hockey"; "killer"; "george"; "sexy"; 
@@ -209,7 +210,8 @@ let writeUsernameAndPassword(buildDir: String) =
         "enjoy"; "girl"; "apollo"; "parker"; "qwert"; "time"; "sydney"; "women"; "voodoo"; "magnum"; "juice"; "abgrtyu"; "777777"; "dreams"; "maxwell"; "music"; 
         "rush2112"; "russia"; "scorpion"; "rebecca"; "tester"; "mistress"; "phantom"; "billy"; "6666"; "albert"
     ])
-    Writer.writeAddOnData(bruteforceAddOn, passwords, "Passwords", buildDir)
+    Writer.writeAddOnData(httpBruteforceAddOn, passwordsSmall, "Passwords", buildDir)
+    Writer.writeAddOnData(webFormBruteforceAddOn, new List<String>(File.ReadAllLines("10passwords.txt")), "Passwords", buildDir)
 
     let combinations = new List<String * String>([
         ("admin", "1"); ("admin", "123"); ("admin", "0000"); ("admin", "00000000"); ("admin", "12345"); ("admin", "123456"); ("admin", "1234567"); 
@@ -231,7 +233,8 @@ let writeUsernameAndPassword(buildDir: String) =
         ("admin", "lord"); ("admin", "fdpm0r"); ("admin", "15011974"); ("admin", "s15011974"); ("admin", "vr10vr10tajn1pa55"); ("admin", "Polkilo44"); 
         ("admin", "celkirulyat")
     ])
-    Writer.writeAddOnData(bruteforceAddOn, combinations, "Combinations", buildDir)
+    Writer.writeAddOnData(httpBruteforceAddOn, combinations, "Combinations", buildDir)
+    Writer.writeAddOnData(webFormBruteforceAddOn, combinations, "Combinations", buildDir)
 
 let createAddOnData(buildDir: String) =
     ensureDirectory (buildDir + "/Taipan/Data")  

@@ -5,6 +5,7 @@ VisualStudioVersion = 15.0.27428.2015
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Build", "Build", "{E58CD0A9-4D33-45C3-AE59-F65C692F7495}"
 	ProjectSection(SolutionItems) = preProject
+		10passwords.txt = 10passwords.txt
 		addOnData.fsx = addOnData.fsx
 		build.fsx = build.fsx
 		paket.dependencies = paket.dependencies

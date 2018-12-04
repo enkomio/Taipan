@@ -81,6 +81,7 @@ module InspectorPages =
         <li>TEST37: <a href="/inspector/test37/">/inspector/test37/</a> Regression: Avoid a FP when found an email with invalid TLD</li>
         <li>TEST38: <a href="/inspector/test38/">/inspector/test38/</a> RXSS on a password type parameter which implements check on password and retype password</li>
         <li>TEST39: <a href="/inspector/test39/">/inspector/test39/</a> An HTTP Basic protected page (admin:admin)</li>
+        <li>TEST40: <a href="/inspector/test40/">/inspector/test40/</a> A Web Form only password protected page (admin)</li>
 	</ul><br/>
   </body>
 </html>""" ctx
@@ -422,6 +423,51 @@ module InspectorPages =
                     let webPart = OK "Welcome to the authenticated part of the website!!! You can also visit <a href='/inspector/test39/newPage'>this page!</h1>" 
                     Authentication.authenticateBasic ((=) ("admin", "admin")) webPart
                 )
+
+                path "/inspector/test40/" >=> fun (ctx: HttpContext) ->
+                    let html = """
+                         <html>
+                            <head>
+	                            <title>.::amz</title>
+	                            <link rel="stylesheet" href="html/css/main.css" type="text/css"/>	
+	                            <meta http-equiv="Content-Type" content="text/html; charset=UTF-8"/>	
+                            </head>
+                            <body>
+	                            <table width=100% height=100% style="border:0px;background:#FFFFFF">
+		                            <tr>
+			                            <td style="vertical-align:center;" align=center>
+				                            <form name=loginform action="index.php" method=post>
+					                            <input type="hidden" name="action" value="do_login">
+					                            <table style="border: 8px solid #E1E3F4;" cellspacing=0 cellpadding=0>
+						                            <tr>
+						                            <td style="border: 1px solid #83B6EF;">
+						                            <table cellspacing=0 cellpadding=0 style="border:0px;padding:0px">
+						                            <tr style="height:10px">
+							                            <td align=center style="font-weight:bold;text-align:left;border-bottom:1px dotted #83B6EF;padding:5px;font-size:15px">
+
+							                            .::amz@AmazonCCGrab							</td>
+						                            </tr>		
+						                            <tr>
+							                            <td align=center style="padding:10px">
+								                            Password:
+								                            <input type=password name=password>&nbsp;<input type=submit value="Sign in">
+							                            </td>
+						                            </tr>
+						                            </td>
+						                            </tr>
+						                            </table>
+					                            </table>
+				                            </form>
+			                            </td>
+		                            </tr>
+	                            </table>
+	                            <script>document.loginform.password.focus();</script>
+                            </body>
+                        </html>
+                    """
+                    OK html ctx
+
+                path "/inspector/test40/dashboard.php" >=> okContent "Welcome authenticated user"
             ]
         
             // *************************
@@ -528,6 +574,22 @@ module InspectorPages =
                     if password1.Equals(password2) then
                         let data = String.Join(", ", [username; password1])
                         OK ("Thanks for subscription, find below your details: " + data) ctx
+                    else
+                        OK "Sorry but the password that you inserted are not equals" ctx
+
+                path "/inspector/test40/index.php" >=> fun (ctx: HttpContext) ->
+                    let action = 
+                        match ctx.request.formData "action" with
+                        | Choice1Of2 v -> v
+                        | _ -> String.Empty
+
+                    let password = 
+                        match ctx.request.formData "password" with
+                        | Choice1Of2 v -> v
+                        | _ -> "bla"
+
+                    if password.Equals("admin") && action.Equals("do_login") then                        
+                        Redirection.redirect "/inspector/test40/dashboard.php" ctx
                     else
                         OK "Sorry but the password that you inserted are not equals" ctx
             ]

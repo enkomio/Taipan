@@ -82,6 +82,8 @@
     <Compile Include="VCSInformationDisclosure\GitDownloader.fs" />
     <Compile Include="VCSInformationDisclosure\VCSInformationDisclosureAddOn.fs" />
     <Compile Include="WebApplicationVulnerability\WebApplicationVulnerabilityAddOn.fs" />
+    <Compile Include="WebFormBruteforcer\BruteforceHelper.fs" />
+    <Compile Include="WebFormBruteforcer\WebFormBruteforcerAddOn.fs" />
     <None Include="paket.references" />
   </ItemGroup>
   <ItemGroup>
