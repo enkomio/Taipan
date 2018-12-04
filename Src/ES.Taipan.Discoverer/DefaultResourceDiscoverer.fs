@@ -226,7 +226,25 @@ type DefaultResourceDiscoverer(settings: ResourceDiscovererSettings, webRequesto
 
             serviceStateController.ReleaseStopIfNecessary()
             serviceStateController.UnlockPause()
-        }                    
+        } 
+        
+    let getEffectiveUriToScan(inputDiscoverRequest: DiscoverRequest) =
+        let mutable uri = inputDiscoverRequest.Request.Uri.AbsoluteUri
+        if String.IsNullOrWhiteSpace(Path.GetExtension(uri)) && not(uri.EndsWith("/")) then
+            // maybe it is a directory with missing trailing '/', send the request
+            let savedAllowRedirect = webRequestor.HttpRequestor.Settings.AllowAutoRedirect
+            webRequestor.HttpRequestor.Settings.AllowAutoRedirect <- false
+            let httpResponse = webRequestor.HttpRequestor.SendRequest(new HttpRequest(uri))
+            webRequestor.HttpRequestor.Settings.AllowAutoRedirect <- savedAllowRedirect
+
+            // if the response is a redirect with a path similar with added '/' it is a directory
+            if httpResponse.IsSome && HttpUtility.isRedirect(httpResponse.Value.StatusCode) then
+                match HttpUtility.tryGetHeader("Location", httpResponse.Value.Headers) with
+                | Some locationHdr -> 
+                    if locationHdr.Value.Equals(uri + "/") then
+                        uri <- locationHdr.Value
+                | None -> ()
+        uri
 
     do 
         logProvider.AddLogSourceToLoggers(_logger)
@@ -299,10 +317,11 @@ type DefaultResourceDiscoverer(settings: ResourceDiscovererSettings, webRequesto
     member this.Discover(inputDiscoverRequest: DiscoverRequest) : ResourceDiscovered list =
         let identifiedResources = new ConcurrentBag<ResourceDiscovered>()    
         let extensionMarker = "%EXT%"    
-
+        let uri = new Uri(getEffectiveUriToScan(inputDiscoverRequest))
+        
         // create the effective discover request, this is necessary if the request ask to discover a file
-        let pathDirectory = HttpUtility.getAbsolutePathDirectory(inputDiscoverRequest.Request.Uri) + "/"
-        let discoverRequest = new DiscoverRequest(new HttpRequest(new Uri(inputDiscoverRequest.Request.Uri, pathDirectory)))
+        let pathDirectory = HttpUtility.getAbsolutePathDirectory(uri) + "/"
+        let discoverRequest = new DiscoverRequest(new HttpRequest(new Uri(uri, pathDirectory)))
         
         if isRequestAllowed(discoverRequest) then
             _logger.DiscoverRequest(discoverRequest)
