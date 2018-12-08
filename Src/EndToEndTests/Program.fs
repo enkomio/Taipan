@@ -171,9 +171,13 @@ let runTest (grovieraUri: Uri) (testExpr: Expr<Uri -> unit>) =
     
 [<EntryPoint>]
 let main argv = 
+    let started = DateTime.Now
+    Console.WriteLine("Start: {0}", started)
     verifyChromBinaryInstallation()    
     let grovieraUri = Utility.runGrovieraServer()    
     let run = runTest grovieraUri
     allTests |> List.iter(run)
     Utility.shutDownServer()
+    let completed = DateTime.Now
+    Console.WriteLine("Completed: {0} [{1} seconds]", completed, (completed-started).TotalSeconds)
     0
