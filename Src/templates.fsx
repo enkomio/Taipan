@@ -296,6 +296,7 @@ let bruteforce() =
 
     // disable the Javascript Crawler parser
     template.CrawlerSettings.ActivateAllAddOns <- false
+    template.CrawlerSettings.SubmitPost <- false
     template.CrawlerSettings.AddOnIdsToActivate.Clear()
     template.CrawlerSettings.AddOnIdsToActivate.AddRange
         ([
