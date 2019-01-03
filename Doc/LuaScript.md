@@ -16,4 +16,13 @@ The parameters meaning are:
    * **ApplicationName** The application name that is identified. This name will be displayed in the result report
    * **TargetLanguage** The language that was used to develop the application. For Wordpress is PHP
    
- WIP
+## Global vars
+In order to report to Taipan the Application that was identified and its version, the script must set a couple of global vars that will be later used by the Taipan scanner. Each script must return a _Boolean_ result after its execution. The result meaning is:
+
+* True: if the script was able to identify a given application version
+* False: otherwise
+
+If the script is able to identify the application, the version must be placed in a global vaiables named *appVersion*.
+
+The format of this variable must be compliant to the <a href="https://semver.org/">Semantic Version</a> standard. For a sample of LUA script take a look at the <a href="https://github.com/enkomio/Taipan/blob/master/Src/ES.Taipan.Fingerprinter/Lua/Php/Joomla/joomla.lua">Joomla fingeprintg script</a>.
+
