@@ -14,6 +14,7 @@ open ES.Taipan.Crawler
 open ES.Taipan.Discoverer
 open ES.Fslog
 open System.Runtime.Remoting.Messaging
+open System.Net.NetworkInformation
 
 type ScanState =
     | Created
@@ -146,6 +147,20 @@ type Scan(scanContext: ScanContext, logProvider: ILogProvider) as this =
     let handleNewWebPageRequestorMessage(sender: Object, message: Envelope<NewWebPageRequestorMessage>) =
         let webPageRequestor = _container.Value.Resolve<IWebPageRequestor>()
         message.Item.WebPageRequestor <- Some webPageRequestor
+
+    let getTaipanIp() =
+        let mutable ip = "<no network>"        
+        if NetworkInterface.GetIsNetworkAvailable() then
+            NetworkInterface.GetAllNetworkInterfaces()
+            |> Seq.filter(fun network -> network.NetworkInterfaceType = NetworkInterfaceType.Ethernet)
+            |> Seq.map(fun network -> network.GetIPProperties().UnicastAddresses)
+            |> Seq.concat
+            |> Seq.filter(fun ip -> ip.Address.AddressFamily = System.Net.Sockets.AddressFamily.InterNetwork)
+            |> Seq.tryHead
+            |> function
+                | Some ipInfo -> ip <- ipInfo.Address.ToString()
+                | None -> ()
+        ip
         
     do
         _serviceMetrics.AddMetric("Status", "created")
@@ -250,6 +265,7 @@ type Scan(scanContext: ScanContext, logProvider: ILogProvider) as this =
     member internal this.StartScanIp(ip: String) =   
         _serviceMetrics.AddMetric("Status", "running")
         _logger.ScanStarted(ip, scanContext)
+        _logger.TaipanIp(getTaipanIp())
         _logger.UsedTemplate(scanContext.Template)
         
         this.State <- ScanState.Running

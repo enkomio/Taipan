@@ -1,3 +1,9 @@
+### 2.1.0 - 05/01/2019
+* Improved profile displaying
+* Improved Error page detection by identifying JBoss error pages
+* Added Web Form authentication bruteforcer
+* Minor bug fixing
+
 ### 2.0.0 - 04/11/2018
 * Improved error reporting and enabled saving a txt format of the generated report
 * Improved testing of multipart input, included file input

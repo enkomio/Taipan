@@ -74,3 +74,7 @@ type internal ScanLogger() =
     [<Log(11, Message = "Start assessment step for web site: {0}", Level = LogLevel.Informational)>]
     member this.StartAssessment(uri: String) =
         this.WriteLog(11, [|uri|])
+
+    [<Log(12, Message = "Taipan scanner IP: {0}", Level = LogLevel.Informational)>]
+    member this.TaipanIp(ip: String) =
+        this.WriteLog(12, [|ip|])
