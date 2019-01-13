@@ -84,6 +84,7 @@
     <Compile Include="WebApplicationVulnerability\WebApplicationVulnerabilityAddOn.fs" />
     <Compile Include="WebFormBruteforcer\BruteforceHelper.fs" />
     <Compile Include="WebFormBruteforcer\WebFormBruteforcerAddOn.fs" />
+	<Compile Include="XMLExternalEntity\XMLExternalEntityAddOn.fs" />
     <None Include="paket.references" />
   </ItemGroup>
   <ItemGroup>

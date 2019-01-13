@@ -199,7 +199,8 @@ type WebFormBruteforcerAddOn() as this =
     let resultVerifier(falseResponse: WebResponse) (testResponse: WebResponse) =
         if falseResponse.HttpResponse.StatusCode = testResponse.HttpResponse.StatusCode then        
             if HttpUtility.isRedirect(falseResponse.HttpResponse.StatusCode) then                
-                // if it is a relocation, check if the destinations are different
+                // if it is a relocation, check if the destinations are different. If they are different 
+                // then a login has been successfully executed
                 let templateLocation = HttpUtility.tryGetHeader("Location", falseResponse.HttpResponse.Headers)
                 let testLocation = HttpUtility.tryGetHeader("Location", testResponse.HttpResponse.Headers)
 

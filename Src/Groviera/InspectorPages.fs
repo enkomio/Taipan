@@ -5,6 +5,10 @@ open System.IO
 open System.IO.Compression
 open System.Reflection
 open System.Collections.Generic
+open System.Xml
+open System.Xml.Linq
+open System.Xml.Schema
+open System.Text
 open Suave
 open Suave.Filters
 open Suave.Successful
@@ -15,14 +19,10 @@ open Suave.Writers
 open Suave.Operators
 open Suave.Cookie
 open Suave.RequestErrors
-open Suave.Authentication
 open ES.Groviera.Utility
 open System.Data.SQLite
 
 module InspectorPages =
-    open System.Text
-    open System.Text
-
     let mutable private _test24Token = new List<String>()
     let mutable private _test25Token = new List<String>()
     let _baseDir = Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location)  
@@ -82,6 +82,7 @@ module InspectorPages =
         <li>TEST38: <a href="/inspector/test38/">/inspector/test38/</a> RXSS on a password type parameter which implements check on password and retype password</li>
         <li>TEST39: <a href="/inspector/test39/">/inspector/test39/</a> An HTTP Basic protected page (admin:admin)</li>
         <li>TEST40: <a href="/inspector/test40/">/inspector/test40/</a> A Web Form only password protected page (admin)</li>
+        <li>TEST41: <a href="/inspector/test41/">/inspector/test41/</a> XXE Vulnerability</li>
 	</ul><br/>
   </body>
 </html>""" ctx
@@ -468,6 +469,57 @@ module InspectorPages =
                     OK html ctx
 
                 path "/inspector/test40/dashboard.php" >=> okContent "Welcome authenticated user"
+
+                path "/inspector/test41/" >=> okContent """
+                    <html>
+	                    <head><title>Blind XXE vulnerability</title></head>
+	                    <body>
+		                    <a href="/inspector/test41/xml.php">This endpoint accept XML document if send with POST</a><br>
+		                    Test the endpoint:<br><br>                            
+		                    <textarea rows="10" cols="60" id="data"> 
+<note>
+    <user>Antonio</user>
+    <message>Hello from XML message</message>
+</note>
+                            </textarea><br>
+		                    <button type="button" onclick="testEndpoint();">Test me</button>
+
+                            <br><br>
+                            <h2>Result</h2>
+                            <div id="result"></div>
+
+		                    <script>
+			                    function testEndpoint()
+			                    {
+				                    var data = document.getElementById("data").value;
+
+				                    var xmlhttp = new XMLHttpRequest();
+				                    xmlhttp.open("POST","/inspector/test41/xml.php");
+				                    var xmlDoc;
+				                    xmlhttp.onreadystatechange = function() {
+					                    if (xmlhttp.readyState == 4 && xmlhttp.status == 200) {
+                                            document.getElementById("result").innerText += "\n" + xmlhttp.responseText;
+					                    }
+				                    };
+				                    xmlhttp.setRequestHeader('Content-Type', 'text/xml');
+				                    xmlhttp.send(data);
+				                    return true;
+			                    }
+		                    </script>                    
+	                    </body>
+                    </html>
+                """
+
+                path "/inspector/test41/xml.php" >=> fun (ctx: HttpContext) ->
+                    let xmlError = """
+                    <result>
+                        <errors>
+                            <error>The request is invalid: The requested resource could not be found.</error>
+                        </errors>
+                    </result>
+                    """
+                    (NOT_FOUND xmlError >=> setHeader "Content-Type" "text/xml") ctx
+                    
             ]
         
             // *************************
@@ -592,6 +644,28 @@ module InspectorPages =
                         Redirection.redirect "/inspector/test40/dashboard.php" ctx
                     else
                         OK "Sorry but the password that you inserted are not equals" ctx
+
+                path "/inspector/test41/xml.php" >=> fun (ctx: HttpContext) ->
+                    try
+                        let xmlRequest = Encoding.Default.GetString(ctx.request.rawForm)
+                        let settings = 
+                            new XmlReaderSettings(
+                                DtdProcessing = DtdProcessing.Parse,
+                                IgnoreProcessingInstructions = false,
+                                ValidationType = ValidationType.DTD,
+                                ValidationFlags = (XmlSchemaValidationFlags.ProcessInlineSchema ||| XmlSchemaValidationFlags.ReportValidationWarnings)
+
+                            )        
+                        settings.XmlResolver <- new XmlUrlResolver()
+
+                        use reader = XmlReader.Create(new StringReader(xmlRequest), settings)
+                        let root = XDocument.Load(reader).Root
+                        let from = root.Element(XName.Get("user")).Value
+                        let body = root.Element(XName.Get("message")).Value
+                        let xmlResponse = String.Format("<response>{0} said: {1}</response>", from, body)
+                        (OK xmlResponse >=> setHeader "Content-Type" "text/xml") ctx
+                    with e ->
+                        INTERNAL_ERROR (e.ToString()) ctx
             ]
         ]   
 
