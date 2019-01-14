@@ -1,2 +1,0 @@
-# List of directories that shouldn.t be scanned
-manual/
