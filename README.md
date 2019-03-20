@@ -1,4 +1,4 @@
-# Taipan - Web Application Security Scanner
+# Taipan - Web Application Vulnerability Scanner
  
  <p align="center">
     <a href="https://github.com/enkomio/Taipan/releases/latest"><img alt="Release" src="https://img.shields.io/github/release/enkomio/Taipan.svg?svg=true"></a>
@@ -6,7 +6,7 @@
     <a href="https://github.com/enkomio/Taipan/blob/master/LICENSE.md"><img alt="Software License" src="https://img.shields.io/badge/License-CC%20BY%204.0-brightgreen.svg"></a>
   </p>
 
-_Taipan_ is a an automated web application scanner that allows to identify web vulnerabilities in an automatic fashion. This project is the core engine of a broader project which includes other components, like a web dashboard where you can manage your scans, download a PDF report and a scanner agent to run on specific host. Below are some screenshots of the _Taipan_ dashboard:
+_Taipan_ is a an automated web application vulnerability scanner that allows to identify web vulnerabilities in an automatic fashion. This project is the core engine of a broader project which includes other components, like a web dashboard where you can manage your scans, download a PDF report and a scanner agent to run on specific host. Below are some screenshots of the _Taipan Pro Edition_ dashboard:
 
 <table>
  <tr>
@@ -23,73 +23,23 @@ _Taipan_ is a an automated web application scanner that allows to identify web v
 
 If you are interested in trying the full product, you can visit the dedicated web site: <a href="https://taipansec.com/index.html">https://taipansec.com/index.html</a>.
 
-## Download
- - [Source code][1]
- - [Download binary][2]
- 
- ## Chat Room
+We have also created a more affordable version, the *Consultant Edition*. You can read more at the <a href="https://taipansec.com/news_consultant_24">Taipan web site</a>.
 
-We have a chat room in case you feel like chatting a bit. 
+Below you can watch a demonstration video of the Consultant Edition:
 
-[![Chat Room](https://badges.gitter.im/TaipanSec/Lobby.png)](https://gitter.im/TaipanSec/Lobby)
- 
-## Build Release
-If you want to try the dev version of Taipan without to wait for an official release, you can download the build version. This version is built every time that a commit is done and the build process is not broken. 
+<iframe width="560" height="315" src="https://www.youtube.com/embed/HeRaKpoZnL8" frameborder="0" allow="accelerometer; autoplay; encrypted-media; gyroscope; picture-in-picture" allowfullscreen=""></iframe>
 
-You can download it from the [Artifacts Directory](https://ci.appveyor.com/project/enkomio/taipan/build/artifacts).
+## Community Edition
+We believe that security is a necessity for everyone and it is for this reason that we have decided to release a *Community* version of the core of our scanner. 
 
-## Using Taipan
-_Taipan_ can run on both Windows (natively) and Linux (with mono). To run it in Linux you have to install **mono in version >= 4.8.0**. You can track the implementation of the new features in the related <a href="https://github.com/taipan-scanner/Taipan/projects/1">Kanban board</a>.
-
-### Scan Profile
-_Taipan_ allow to scan the given web site by specify different kind of profiles. Each profile enable or disable a specific scan feature, to show all the available profile just run _Taipan_ with the `--show-profiles_` option.
-
-### Pause/Stop/Resume a scan
-During a scan you can interact with it by set the scan in Pause or Stop it if necessary. In order to do so you have to press:
-
-- P: pause the scan
-- S: stop the scan
-- R: resume a paused scan
-
-The change is not immediate and you have to wait until all threads have reached the desider state.
-
-### Launch a Full scan
-To launch a new scan you have to provide the _url_ and the _profile_ which must be used. It is not necessary to specify the full profile name, a prefix is enough. 
-
-    Taipan.exe -p Full -u http://127.0.0.1/
+The Community version carries the exact same code as the commercial version but without the advanced features. You can use the Community to scan your personal website or for any not commercial purpose.
 
 Below an example of execution:
 
 <a href="https://asciinema.org/a/166362" target="_blank"><img src="https://asciinema.org/a/166362.png" /></a>
 
-#### Using Docker
-
-**berez23** created a docker image for the CI release. For more information take a look at <a href="https://github.com/berez23/taipandocker">his project</a>.
-
-## Build Taipan
-_Taipan_ is currently developed with using VisualStudio 2017 Community Edition and uses _paket_ as packet manager. To build the source code you have to:
-* clone the repository
-* run ``paket.exe install``
-* open the solution in VisualStudio and compile it
-
-## Taipan Components
-_Taipan_ is composed of four main components: 
-
-### Web Application fingerprinter 
-it inspects the given application in order to identify if it is a COTS application. If so, it extracts the identified version. This components is very important since it allows to identify vulnerable web applications.
-
-### Hidden Resource Discovery 
-this component scans the application in order to identify resources that are not directly navigable or that shouldn't be accessed, like secret pages or test pages.
-
-### Crawler
-This component navigates the web site in order to provide to the other components a list of pages to analyze. It allows to mutate the request in order to find not so common pathes.
-
-### Vulnerability Scanner
-this component probes the web application and tries to identify possible vulnerabilities. It is composed of various AddOn in order to easily expand its Knowledge Base. It is also in charge for the identification of know vulnerabilities which are defined by the user.
-
-## Versioning
-
-We use [SemVer](http://semver.org/) for versioning. For the versions available, see the [tags on this repository](https://github.com/enkomio/Taipan/tags). 
+## Using Taipan
+_Taipan_ can run on both Windows (natively) and Linux (with mono). To run it in Linux you have to install **mono in version >= 4.8.0**. For more information on how to use Taipan please refer to the <a href="https://taipansec.com/support">official documentation</a>.
 
 ## Authors
 
