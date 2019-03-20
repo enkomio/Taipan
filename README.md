@@ -27,7 +27,7 @@ We have also created a more affordable version, the *Consultant Edition*. You ca
 
 Below you can watch a demonstration video of the Consultant Edition:
 
-<iframe width="560" height="315" src="https://www.youtube.com/embed/HeRaKpoZnL8" frameborder="0" allow="accelerometer; autoplay; encrypted-media; gyroscope; picture-in-picture" allowfullscreen=""></iframe>
+[![Taipan Consultant](https://img.youtube.com/vi/HeRaKpoZnL8/0.jpg)](https://www.youtube.com/watch?v=HeRaKpoZnL8)
 
 ## Community Edition
 We believe that security is a necessity for everyone and it is for this reason that we have decided to release a *Community* version of the core of our scanner. 
