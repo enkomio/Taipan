@@ -17,6 +17,7 @@ _Taipan_ is a an automated web application vulnerability scanner that allows to 
 
 If you are interested in trying the full product, you can visit the dedicated web site: <a href="https://taipansec.com/index.html">https://taipansec.com/index.html</a>.
 
+## Consultant Edition
 We have also created a more affordable version, the *Consultant Edition*. You can read more at the <a href="https://taipansec.com/news_consultant_24">Taipan web site</a>.
 
 Below you can watch a demonstration video of the Consultant Edition:
