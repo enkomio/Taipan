@@ -41,8 +41,6 @@ _Taipan_ can run on both Windows (natively) and Linux (with mono). To run it in 
 * **Antonio Parata** - *Core Developer* - [s4tan](https://twitter.com/s4tan)
 * **Andrea Gulino** - *Front End Developer* - [andreagulino](https://www.linkedin.com/in/andreagulino/)
 
-See also the list of [contributors](https://github.com/enkomio/Taipan/graphs/contributors) who participated in this project.
-
 ## License
 
 Taipan is licensed under the [Creative Commons](LICENSE.md).
