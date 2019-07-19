@@ -1,6 +1,6 @@
 # Taipan - Web Application Vulnerability Scanner
 
-_Taipan_ is a an automated web application vulnerability scanner that allows to identify web vulnerabilities in an automatic fashion.
+_Taipan_ is an automated web application vulnerability scanner that allows to identify web vulnerabilities in an automatic fashion.
 Latest version: 2.7, <a href="https://github.com/enkomio/Taipan/releases/latest">download here</a>
 
 ## Pro Edition
