@@ -1,6 +1,11 @@
 # Taipan - Web Application Vulnerability Scanner
 
-_Taipan_ is a an automated web application vulnerability scanner that allows to identify web vulnerabilities in an automatic fashion. This project is the core engine of a broader project which includes other components, like a web dashboard where you can manage your scans, download a PDF report and a scanner agent to run on specific host. Below are some screenshots of the _Taipan Pro Edition_ dashboard:
+_Taipan_ is an automated web application vulnerability scanner that allows to identify web vulnerabilities in an automatic fashion.
+
+Latest version: 2.7, <a href="https://github.com/enkomio/Taipan/releases/latest">download here</a>
+
+## Pro Edition
+The _Pro edition_ is a broader project which includes other components, like a web dashboard where you can manage your scans, download a PDF report and a scanner agent to run on specific host. Below are some screenshots of the _Taipan Pro Edition_ dashboard:
 
 <table>
  <tr>
@@ -15,8 +20,9 @@ _Taipan_ is a an automated web application vulnerability scanner that allows to 
  </tr>
 </table>
 
-If you are interested in trying the full product, you can visit the dedicated web site: <a href="https://taipansec.com/index.html">https://taipansec.com/index.html</a>.
+If you are interested in trying the full product, you can visit the dedicated web site: <a href="https://taipansec.com">https://taipansec.com</a>.
 
+## Consultant Edition
 We have also created a more affordable version, the *Consultant Edition*. You can read more at the <a href="https://taipansec.com/news_consultant_24">Taipan web site</a>.
 
 Below you can watch a demonstration video of the Consultant Edition:
@@ -39,8 +45,6 @@ _Taipan_ can run on both Windows (natively) and Linux (with mono). To run it in 
 
 * **Antonio Parata** - *Core Developer* - [s4tan](https://twitter.com/s4tan)
 * **Andrea Gulino** - *Front End Developer* - [andreagulino](https://www.linkedin.com/in/andreagulino/)
-
-See also the list of [contributors](https://github.com/enkomio/Taipan/graphs/contributors) who participated in this project.
 
 ## License
 
