@@ -2,7 +2,7 @@
 
 _Taipan_ is an automated web application vulnerability scanner that allows to identify web vulnerabilities in an automatic fashion.
 
-Latest version: 2.7, <a href="https://github.com/enkomio/Taipan/releases/latest">download here</a>
+Latest version: <a href="https://github.com/enkomio/Taipan/releases/latest">download here</a>
 
 ## Pro Edition
 The _Pro edition_ is a broader project which includes other components, like a web dashboard where you can manage your scans, download a PDF report and a scanner agent to run on specific host. Below are some screenshots of the _Taipan Pro Edition_ dashboard:
