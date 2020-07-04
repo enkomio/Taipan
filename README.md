@@ -1,5 +1,7 @@
+# Taipan is now a sponsored project. To know more visit: <a href="https://github.com/enkomio-sponsor/info">https://github.com/enkomio-sponsor/info</a>
+
 ---
-# Taipan is now a sponsored project. To know more visit: https://github.com/sponsors/enkomio
+## Outdate content
 ---
 
 # Taipan - Web Application Vulnerability Scanner
