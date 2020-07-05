@@ -1,8 +1,10 @@
-# Taipan is now a sponsored project. To know more visit: <a href="https://github.com/enkomio-sponsor/info">https://github.com/enkomio-sponsor/info</a>
+# Taipan is now a sponsored project. 
+
+### The Community sponsor will receive access to the laset version of Taipan Communirt Edition. The free version is release after three months from the release date.
+### To know more visit: <a href="https://github.com/enkomio-sponsor/info">https://github.com/enkomio-sponsor/info</a>
 
 ---
-## Outdate content
----
+
 
 # Taipan - Web Application Vulnerability Scanner
 
