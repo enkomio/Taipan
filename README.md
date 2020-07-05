@@ -1,7 +1,7 @@
 # Taipan is now a sponsored project. 
 
 ### The Community sponsor will receive access to the laset version of Taipan Communirt Edition. The free version is release after three months from the release date.
-### To know more visit: <a href="https://github.com/enkomio-sponsor/info">https://github.com/enkomio-sponsor/info</a>
+### To know more visit: <a href="https://github.com/enkomio-sponsor/info">https://github.com/enkomio-sponsor/info</a> or <a href="https://taipansec.com">https://taipansec.com</a>.
 
 ---
 
@@ -9,8 +9,6 @@
 # Taipan - Web Application Vulnerability Scanner
 
 _Taipan_ is an automated web application vulnerability scanner that allows to identify web vulnerabilities in an automatic fashion.
-
-# Taipan is now a sponsor
 
 ## Pro Edition
 The _Pro edition_ is a broader project which includes other components, like a web dashboard where you can manage your scans, download a PDF report and a scanner agent to run on specific host. Below are some screenshots of the _Taipan Pro Edition_ dashboard:
