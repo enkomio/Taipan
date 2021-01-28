@@ -3,7 +3,7 @@
 ### The Community sponsor will receive access to the laset version of Taipan Communirt Edition. The free version is release after three months from the release date.
 ### To know more visit: <a href="https://github.com/enkomio-sponsor/info">https://github.com/enkomio-sponsor/info</a> or <a href="https://taipansec.com">https://taipansec.com</a>.
 
-### Latest Version
+### Latest Community Version Download
 |Date|Version|
 | ------------- |:-------------:|
 |2021-01-28 |<a href="https://github.com/enkomio/Taipan/releases/tag/2.9.498.18">2.9.498.18</a>|
