@@ -1,6 +1,6 @@
 # Taipan is now a sponsored project. 
 
-### The Community sponsor will receive access to the laset version of Taipan Communirt Edition. The free version is release after three months from the release date.
+### The Community sponsor will receive access to the laset version of Taipan Community Edition. The free version is release after three months from the release date.
 ### To know more visit: <a href="https://github.com/enkomio-sponsor/info">https://github.com/enkomio-sponsor/info</a> or <a href="https://taipansec.com">https://taipansec.com</a>.
 
 ### Latest Community Version Download
@@ -10,7 +10,7 @@
 
 ---
 
-# -=[ The content below migh be Outdated ]=-
+# -=[ The content below might be Outdated ]=-
 
 # Taipan - Web Application Vulnerability Scanner
 
