@@ -53,6 +53,8 @@ Below an example of execution:
 ## Using Taipan
 _Taipan_ can run on both Windows (natively) and Linux (with mono). To run it in Linux you have to install **mono in version >= 4.8.0**. For more information on how to use Taipan please refer to the <a href="https://taipansec.com/support">official documentation</a>.
 
+For Windows it is necessary to pre-install [.NET 5.0 Runtime](https://aka.ms/dotnet-core-applaunch?missing_runtime=true&arch=x64&rid=win10-x64&apphost_version=5.0.1).
+
 ## Authors
 
 * **Antonio Parata** - *Core Developer* - [s4tan](https://twitter.com/s4tan)
